@@ -39,6 +39,12 @@
                class="block px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('toppings.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
                 🍡 Quản lý Topping
             </a>
+
+            {{-- Quản lý Voucher --}}
+            <a href="{{ route('vouchers.index') }}" 
+               class="block px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('vouchers.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
+                🎟️ Quản lý Voucher
+            </a>
             
             {{-- Quản lý Đơn hàng --}}
             <a href="#" 

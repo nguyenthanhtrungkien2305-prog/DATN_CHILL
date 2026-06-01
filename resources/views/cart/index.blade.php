@@ -104,10 +104,10 @@
                                 {{ number_format(($item['price'] + $item['topping_total']) * $item['quantity'], 0, ',', '.') }} đ
                             </div>
 
-                            <div class="flex items-center border border-espresso/20 rounded-full h-9 bg-white">
-                                <button onclick="updateCartItemQty('{{ $cartKey }}', -1)" class="w-8 h-full flex items-center justify-center text-espresso hover:text-coral font-bold">-</button>
-                                <input type="number" value="{{ $item['quantity'] }}" readonly class="w-10 text-center bg-transparent border-none outline-none font-bold text-sm text-espresso focus:ring-0 p-0 pointer-events-none">
-                                <button onclick="updateCartItemQty('{{ $cartKey }}', 1)" class="w-8 h-full flex items-center justify-center text-espresso hover:text-coral font-bold">+</button>
+                            <div class="flex items-center justify-between border border-espresso/20 rounded-full h-9 w-24 bg-white overflow-hidden">
+                                <button onclick="updateCartItemQty('{{ $cartKey }}', -1)" class="w-7 h-full flex items-center justify-center text-espresso hover:text-coral font-bold text-base transition-colors">-</button>
+                                <input type="text" value="{{ $item['quantity'] }}" readonly class="w-8 h-full text-center bg-transparent border-none outline-none font-bold text-sm text-espresso focus:ring-0 p-0 m-0 leading-none">
+                                <button onclick="updateCartItemQty('{{ $cartKey }}', 1)" class="w-7 h-full flex items-center justify-center text-espresso hover:text-coral font-bold text-base transition-colors">+</button>
                             </div>
                         </div>
                     </div>
@@ -126,10 +126,23 @@
                     {{-- Khu vực nhập VOUCHER --}}
                     <div class="mb-6 pb-6 border-b border-espresso/10">
                         <label class="block text-sm font-medium text-espresso/80 mb-2">Mã ưu đãi (Voucher)</label>
-                        <div class="flex gap-2">
-                            <input type="text" placeholder="Nhập mã giảm giá..." class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-coral text-sm uppercase">
-                            <button class="bg-espresso text-white px-6 py-3 rounded-xl font-bold hover:bg-coral transition-colors text-sm whitespace-nowrap">Áp dụng</button>
-                        </div>
+                        @if(session()->has('voucher'))
+                            <div class="flex items-center justify-between p-3 bg-coral/5 border border-coral/20 rounded-xl">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xl">🎟️</span>
+                                    <div>
+                                        <span class="block font-bold text-espresso uppercase text-sm">{{ session('voucher')['code'] }}</span>
+                                        <span class="text-xs text-coral">Đã áp dụng thành công</span>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="removeVoucher()" class="text-xs font-bold text-red-500 hover:text-red-700 hover:underline">Hủy áp dụng</button>
+                            </div>
+                        @else
+                            <div class="flex gap-2">
+                                <input type="text" id="voucher-input" placeholder="Nhập mã giảm giá..." class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-coral text-sm uppercase">
+                                <button type="button" onclick="applyVoucher()" class="bg-espresso text-white px-6 py-3 rounded-xl font-bold hover:bg-coral transition-colors text-sm whitespace-nowrap">Áp dụng</button>
+                            </div>
+                        @endif
                     </div>
 
                     {{-- Chi tiết thanh toán --}}
@@ -140,14 +153,18 @@
                         </div>
                         <div class="flex justify-between text-espresso/80">
                             <span>Giảm giá (Voucher)</span>
-                            <span class="font-medium text-coral">- 0 đ</span>
+                            <span class="font-medium text-coral">- {{ number_format(session()->has('voucher') ? session('voucher')['discount_amount'] : 0, 0, ',', '.') }} đ</span>
                         </div>
                     </div>
 
                     {{-- Tổng cộng --}}
+                    @php
+                        $discount = session()->has('voucher') ? session('voucher')['discount_amount'] : 0;
+                        $finalTotal = max(0, $subTotal - $discount);
+                    @endphp
                     <div class="flex justify-between items-end mb-8 pt-6 border-t border-espresso/10">
                         <span class="font-bold text-espresso">Tổng cộng</span>
-                        <span class="font-black text-3xl text-coral">{{ number_format($subTotal, 0, ',', '.') }} đ</span>
+                        <span class="font-black text-3xl text-coral">{{ number_format($finalTotal, 0, ',', '.') }} đ</span>
                     </div>
 
                     <a href="{{ route('checkout.index') }}" class="block text-center w-full py-4 bg-coral text-white rounded-full font-bold text-lg hover:bg-[#d5523b] shadow-lg shadow-coral/30 transition-all">
@@ -222,7 +239,11 @@
         if(confirm('Bạn có chắc chắn muốn xóa món này khỏi giỏ hàng?')) {
             fetch('{{ route('cart.remove') }}', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
                 body: JSON.stringify({ _token: csrfToken, cart_key: cartKey })
             })
             .then(res => res.json())
@@ -241,7 +262,11 @@
     function updateCartItemQty(cartKey, change) {
         fetch('{{ route('cart.update') }}', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
             body: JSON.stringify({ _token: csrfToken, cart_key: cartKey, change: change })
         })
         .then(res => res.json())
@@ -259,7 +284,11 @@
     function openEditToppingModal(cartKey) {
         fetch('{{ route('cart.getItem') }}', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
             body: JSON.stringify({ _token: csrfToken, cart_key: cartKey })
         })
         .then(res => res.json())
@@ -285,10 +314,10 @@
                                     <span class="font-bold text-coral">+${formattedPrice}đ</span>
                                 </div>
                             </div>
-                            <div class="flex items-center border border-espresso/20 rounded-full h-10 w-28 bg-white shrink-0">
-                                <button type="button" onclick="updateModalToppingQty(${top.topping_id}, -1)" class="w-10 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-lg">-</button>
-                                <input type="number" id="modal-topping-qty-${top.topping_id}" value="${top.qty}" min="0" class="modal-topping-input w-full text-center bg-transparent border-none outline-none font-bold text-sm text-espresso focus:ring-0 p-0 pointer-events-none">
-                                <button type="button" onclick="updateModalToppingQty(${top.topping_id}, 1)" class="w-10 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-lg">+</button>
+                            <div class="flex items-center justify-between border border-espresso/20 rounded-full h-10 w-28 bg-white shrink-0 overflow-hidden">
+                                <button type="button" onclick="updateModalToppingQty(${top.topping_id}, -1)" class="w-8 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-lg transition-colors">-</button>
+                                <input type="text" id="modal-topping-qty-${top.topping_id}" value="${top.qty}" readonly class="modal-topping-input w-12 h-full text-center bg-transparent border-none outline-none font-bold text-sm text-espresso focus:ring-0 p-0 m-0 leading-none">
+                                <button type="button" onclick="updateModalToppingQty(${top.topping_id}, 1)" class="w-8 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-lg transition-colors">+</button>
                             </div>
                         </div>
                         `;
@@ -340,7 +369,11 @@
 
         fetch('{{ route('cart.updateToppings') }}', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
             body: JSON.stringify({ _token: csrfToken, cart_key: cartKey, toppings: toppingsData })
         })
         .then(res => res.json())
@@ -350,6 +383,63 @@
             } else {
                 alert(data.message);
             }
+        });
+    }
+
+    // 7. Áp dụng Voucher qua AJAX
+    function applyVoucher() {
+        const codeInput = document.getElementById('voucher-input');
+        const code = codeInput ? codeInput.value.trim() : '';
+        if (!code) {
+            alert('Vui lòng nhập mã giảm giá!');
+            return;
+        }
+
+        fetch('{{ route('cart.applyVoucher') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify({ voucher_code: code })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Có lỗi xảy ra khi áp dụng mã giảm giá!');
+        });
+    }
+
+    // 8. Hủy Voucher qua AJAX
+    function removeVoucher() {
+        fetch('{{ route('cart.removeVoucher') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify({})
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Có lỗi xảy ra khi hủy mã giảm giá!');
         });
     }
 </script>

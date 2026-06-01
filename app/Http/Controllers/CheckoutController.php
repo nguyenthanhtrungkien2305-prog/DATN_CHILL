@@ -16,6 +16,9 @@ class CheckoutController extends Controller
         }
 
         $user = auth()->user(); // Lấy thông tin user đang đăng nhập
+        if (!$user) {
+            return redirect()->route('cart.index')->with('login_required', 'Vui lòng đăng nhập tài khoản để tiến hành thanh toán và đặt hàng!');
+        }
         
         // Xử lý cột address: Chuyển dữ liệu text thành mảng
         $addresses = [];
@@ -88,32 +91,81 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống!');
         }
 
+        if (!auth()->check()) {
+            return redirect()->route('cart.index')->with('login_required', 'Vui lòng đăng nhập tài khoản để đặt hàng!');
+        }
+
         // Tính tổng tiền
         $totalAmount = 0;
         foreach ($cart as $item) {
             $totalAmount += ($item['price'] + $item['topping_total']) * $item['quantity'];
         }
 
+        // Đọc voucher từ session
+        $voucher = session()->get('voucher');
+        $discountAmount = 0;
+        $voucherId = null;
+        if ($voucher) {
+            $voucherId = $voucher['voucher_id'];
+            $discountAmount = $voucher['discount_amount'];
+        }
+
+        $finalAmount = max(0, $totalAmount - $discountAmount);
+
         // Lưu vào Database
-        \DB::table('orders')->insert([
+        $orderId = \DB::table('orders')->insertGetId([
             'user_id' => auth()->id(),
+            'voucher_id' => $voucherId,
             'customer_name' => $request->customer_name ?? auth()->user()->name,
             'customer_phone' => $request->customer_phone ?? '',
             'shipping_address' => $request->shipping_address ?? '',
             'order_type' => $request->order_type,
             'table_number' => $request->table_number,
             'payment_method' => $request->payment_method,
-            'total_amount' => $totalAmount,
+            'total_amount' => $finalAmount,
+            'discount_amount' => $discountAmount,
             'status' => 'pending', // Mặc định là Chờ xác nhận
             'items' => json_encode($cart, JSON_UNESCAPED_UNICODE), // Đóng gói nguyên cái giỏ hàng thành chuỗi JSON
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        // Xóa giỏ hàng sau khi đặt xong
+        // Tăng lượt sử dụng của voucher
+        if ($voucherId) {
+            \DB::table('vouchers')->where('voucher_id', $voucherId)->increment('used_count');
+        }
+
+        // Xóa giỏ hàng và voucher sau khi đặt xong
         session()->forget('cart');
+        session()->forget('voucher');
+
+        // Chuyển hướng nếu là thanh toán QR
+        if ($request->payment_method === 'qr') {
+            return redirect()->route('checkout.payment_qr', $orderId);
+        }
 
         // Chuyển hướng thẳng sang trang Đơn hàng của tôi
         return redirect()->route('user.orders')->with('success', '🎉 Đặt hàng thành công! Vui lòng chờ quán xác nhận nhé.');
+    }
+
+    // 4. Hiển thị trang thanh toán QR
+    public function paymentQr($id)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return redirect()->route('cart.index')->with('login_required', 'Vui lòng đăng nhập tài khoản!');
+        }
+
+        // Lấy thông tin đơn hàng
+        $order = \DB::table('orders')
+            ->where('order_id', $id)
+            ->where('user_id', $user->user_id)
+            ->first();
+
+        if (!$order) {
+            abort(404, 'Không tìm thấy đơn hàng!');
+        }
+
+        return view('checkout.payment_qr', compact('order'));
     }
 }

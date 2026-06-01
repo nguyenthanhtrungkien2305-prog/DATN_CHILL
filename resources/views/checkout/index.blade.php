@@ -123,15 +123,18 @@
                     </div>
                 </div>
 
-                {{-- BLOCK THANH TOÁN --}}
                 <div class="bg-white p-6 md:p-8 rounded-[24px] shadow-sm border border-espresso/5">
                     <h2 class="font-bold text-xl text-espresso mb-4 flex items-center gap-2">
                         <span class="bg-coral text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">💳</span> Phương thức thanh toán
                     </h2>
                     <div class="space-y-3">
-                        <label class="flex items-center gap-3 p-4 border border-coral bg-coral/5 rounded-xl cursor-pointer">
-                            <input type="radio" name="payment_method" value="cash" checked class="text-coral focus:ring-coral">
+                        <label class="flex items-center gap-3 p-4 border border-coral bg-coral/5 rounded-xl cursor-pointer payment-method-label" id="label-cash">
+                            <input type="radio" name="payment_method" value="cash" checked onchange="switchPaymentMethod('cash')" class="text-coral focus:ring-coral">
                             <span class="font-medium text-espresso" id="payment-text-cash">Thanh toán tiền mặt khi nhận hàng</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-4 border border-gray-100 rounded-xl cursor-pointer hover:border-coral/30 payment-method-label" id="label-qr">
+                            <input type="radio" name="payment_method" value="qr" onchange="switchPaymentMethod('qr')" class="text-coral focus:ring-coral">
+                            <span class="font-medium text-espresso">Chuyển khoản qua mã VietQR</span>
                         </label>
                     </div>
                 </div>
@@ -164,13 +167,21 @@
                     </div>
                     <div class="space-y-3 mb-6 pt-6 border-t border-espresso/10">
                         <div class="flex justify-between text-espresso/80 text-sm"><span>Tạm tính</span><span class="font-medium">{{ number_format($subTotal, 0, ',', '.') }}đ</span></div>
+                        <div class="flex justify-between text-espresso/80 text-sm">
+                            <span>Giảm giá (Voucher)</span>
+                            <span class="font-medium text-coral">- {{ number_format(session()->has('voucher') ? session('voucher')['discount_amount'] : 0, 0, ',', '.') }}đ</span>
+                        </div>
                         <div class="flex justify-between text-espresso/80 text-sm" id="shipping-fee-row"><span>Phí vận chuyển</span><span class="font-medium text-green-500">Miễn phí</span></div>
                     </div>
+                    @php
+                        $discount = session()->has('voucher') ? session('voucher')['discount_amount'] : 0;
+                        $finalTotal = max(0, $subTotal - $discount);
+                    @endphp
                     <div class="flex justify-between items-end mb-8 pt-4 border-t border-espresso/10">
                         <span class="font-bold text-espresso">Tổng thanh toán</span>
-                        <span class="font-black text-3xl text-coral">{{ number_format($subTotal, 0, ',', '.') }}đ</span>
+                        <span class="font-black text-3xl text-coral">{{ number_format($finalTotal, 0, ',', '.') }}đ</span>
                     </div>
-                    <button type="submit" onclick="return validateOrder()" class="w-full py-4 bg-coral text-white rounded-full font-bold text-lg hover:bg-[#d5523b] shadow-lg shadow-coral/30 transition-all">
+                    <button type="submit" id="btn-submit-order" onclick="return validateOrder()" class="w-full py-4 bg-coral text-white rounded-full font-bold text-lg hover:bg-[#d5523b] shadow-lg shadow-coral/30 transition-all">
                         Chốt Đơn Ngay
                     </button>
                 </div>
@@ -241,6 +252,28 @@
         } else {
             btnText.innerText = 'Xem thêm địa chỉ';
             icon.classList.remove('rotate-180');
+        }
+    }
+
+    // === PAYMENT METHOD LOGIC ===
+    function switchPaymentMethod(method) {
+        const labels = document.querySelectorAll('.payment-method-label');
+        labels.forEach(l => {
+            l.classList.remove('border-coral', 'bg-coral/5');
+            l.classList.add('border-gray-100');
+        });
+        
+        const selectedLabel = document.getElementById('label-' + method);
+        if (selectedLabel) {
+            selectedLabel.classList.remove('border-gray-100');
+            selectedLabel.classList.add('border-coral', 'bg-coral/5');
+        }
+        
+        const btnSubmit = document.getElementById('btn-submit-order');
+        if (method === 'qr') {
+            btnSubmit.innerText = 'Thanh toán qua mã QR';
+        } else {
+            btnSubmit.innerText = 'Chốt Đơn Ngay';
         }
     }
 

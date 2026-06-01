@@ -100,9 +100,17 @@
                                 </div>
 
                                 {{-- Footer: Tổng tiền --}}
-                                <div class="flex justify-between items-end pt-4 border-t border-gray-100">
-                                    <span class="font-medium text-espresso/80 text-sm">Tổng cộng:</span>
-                                    <span class="font-black text-xl text-coral">{{ number_format($order->total_amount, 0, ',', '.') }}đ</span>
+                                <div class="flex flex-col gap-1 pt-4 border-t border-gray-100">
+                                    @if(isset($order->discount_amount) && $order->discount_amount > 0)
+                                        <div class="flex justify-between text-xs text-espresso/60">
+                                            <span>Giảm giá:</span>
+                                            <span>-{{ number_format($order->discount_amount, 0, ',', '.') }}đ</span>
+                                        </div>
+                                    @endif
+                                    <div class="flex justify-between items-end">
+                                        <span class="font-medium text-espresso/80 text-sm">Tổng thanh toán:</span>
+                                        <span class="font-black text-xl text-coral">{{ number_format($order->total_amount, 0, ',', '.') }}đ</span>
+                                    </div>
                                 </div>
 
                             </div>

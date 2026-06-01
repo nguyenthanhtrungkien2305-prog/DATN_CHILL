@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Controllers\Admin\ToppingController as AdminToppingController;
+use App\Http\Controllers\Admin\VoucherController as AdminVoucherController;
 
 /*
 |--------------------------------------------------------------------------
@@ -65,6 +66,8 @@ Route::prefix('cart')->group(function () {
     // THÊM 2 DÒNG MỚI NÀY:
     Route::post('/get-item', [CartController::class, 'getItem'])->name('cart.getItem');
     Route::post('/update-toppings', [CartController::class, 'updateToppings'])->name('cart.updateToppings');
+    Route::post('/apply-voucher', [CartController::class, 'applyVoucher'])->name('cart.applyVoucher');
+    Route::post('/remove-voucher', [CartController::class, 'removeVoucher'])->name('cart.removeVoucher');
 });
 // ROUTE THANH TOÁN (Yêu cầu đăng nhập - Tuỳ bạn cấu hình middleware auth)
 Route::prefix('checkout')->group(function () {
@@ -72,6 +75,7 @@ Route::prefix('checkout')->group(function () {
     Route::post('/add-address', [CheckoutController::class, 'addAddress'])->name('checkout.addAddress');
     Route::post('/delete-address', [CheckoutController::class, 'deleteAddress'])->name('checkout.deleteAddress'); // THÊM DÒNG NÀY
     Route::post('/process', [CheckoutController::class, 'process'])->name('checkout.process');
+    Route::get('/payment-qr/{id}', [CheckoutController::class, 'paymentQr'])->name('checkout.payment_qr');
 });
 Route::get('/tai-khoan/don-hang', [\App\Http\Controllers\UserController::class, 'orders'])->name('user.orders');
 /*
@@ -103,4 +107,7 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     
     // THÊM DÒNG NÀY CHO TOPPING:
     Route::resource('toppings', AdminToppingController::class);
+
+    // THÊM DÒNG NÀY CHO VOUCHER:
+    Route::resource('vouchers', AdminVoucherController::class);
 });

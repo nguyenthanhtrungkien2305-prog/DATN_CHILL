@@ -35,15 +35,17 @@ class ProductController extends Controller
 
         // ERD hiện tại không có bảng Reviews, ta truyền mảng rỗng để View không bị lỗi
         $reviews = collect([]); 
-       $toppings = DB::table('toppings')
-            // Kết nối vào bảng trung gian
-            ->join('product_topping', 'toppings.topping_id', '=', 'product_topping.topping_id')
-            // Lọc ra đúng ID của sản phẩm đang xem
-            ->where('product_topping.product_id', $product->product_id) 
-            ->select('toppings.*')
-            ->get();
+        $categoryName = DB::table('categories')->where('category_id', $product->category_id)->value('name');
+        $isBanhNgot = $categoryName && (str_contains(mb_strtolower($categoryName), 'bánh') || str_contains(mb_strtolower($categoryName), 'cake'));
+        $isToppingCategory = $categoryName && str_contains(mb_strtolower($categoryName), 'topping');
 
-        return view('product.show', compact('product', 'variants', 'relatedProducts', 'reviews','toppings'));
+        if (!$isBanhNgot && !$isToppingCategory) {
+            $toppings = DB::table('toppings')->where('status', 1)->get();
+        } else {
+            $toppings = collect([]);
+        }
+
+        return view('product.show', compact('product', 'variants', 'relatedProducts', 'reviews', 'toppings'));
     }
     public function index(Request $request)
     {

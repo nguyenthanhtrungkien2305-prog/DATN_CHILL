@@ -91,10 +91,10 @@
                 {{-- Hành động --}}
                 <div class="mt-auto pt-4 flex gap-4">
                     {{-- Bộ đếm số lượng Món chính --}}
-                    <div class="flex items-center border border-espresso/20 rounded-full px-2 h-14 w-32 shrink-0 bg-[#FAF7F2]">
-                        <button type="button" onclick="updateQuantity(-1)" class="w-10 h-10 flex items-center justify-center text-espresso font-bold hover:text-coral">-</button>
-                        <input type="number" id="quantity" value="1" min="1" class="w-full text-center bg-transparent border-none outline-none font-bold text-espresso focus:ring-0 appearance-none pointer-events-none">
-                        <button type="button" onclick="updateQuantity(1)" class="w-10 h-10 flex items-center justify-center text-espresso font-bold hover:text-coral">+</button>
+                    <div class="flex items-center justify-between border border-espresso/20 rounded-full h-14 w-32 shrink-0 bg-[#FAF7F2] overflow-hidden">
+                        <button type="button" onclick="updateQuantity(-1)" class="w-10 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-xl transition-colors">-</button>
+                        <input type="text" id="quantity" value="1" readonly class="w-12 h-full text-center bg-transparent border-none outline-none font-bold text-espresso focus:ring-0 p-0 m-0 leading-none">
+                        <button type="button" onclick="updateQuantity(1)" class="w-10 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-xl transition-colors">+</button>
                     </div>
                     
                     {{-- Nút Thêm vào giỏ (Thêm trực tiếp) --}}
@@ -206,16 +206,14 @@
                 </div>
                 
                 {{-- Nút tăng giảm số lượng cho TỪNG LOẠI Topping --}}
-                <div class="flex items-center border border-espresso/20 rounded-full h-10 w-28 bg-white shrink-0">
-                    <button type="button" onclick="updateToppingQty({{ $top->topping_id }}, -1)" class="w-10 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-lg">-</button>
-                    
-                    <input type="number" id="topping-qty-{{ $top->topping_id }}" 
+                <div class="flex items-center justify-between border border-espresso/20 rounded-full h-10 w-28 bg-white shrink-0 overflow-hidden">
+                    <button type="button" onclick="updateToppingQty({{ $top->topping_id }}, -1)" class="w-8 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-lg transition-colors">-</button>
+                    <input type="text" id="topping-qty-{{ $top->topping_id }}" 
                            data-name="{{ $top->name }}" 
                            data-price="{{ $top->price }}"
-                           value="0" min="0" 
-                           class="topping-input w-full text-center bg-transparent border-none outline-none font-bold text-sm text-espresso focus:ring-0 appearance-none pointer-events-none p-0">
-                    
-                    <button type="button" onclick="updateToppingQty({{ $top->topping_id }}, 1)" class="w-10 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-lg">+</button>
+                           value="0" readonly 
+                           class="topping-input w-12 h-full text-center bg-transparent border-none outline-none font-bold text-sm text-espresso focus:ring-0 p-0 m-0 leading-none">
+                    <button type="button" onclick="updateToppingQty({{ $top->topping_id }}, 1)" class="w-8 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-lg transition-colors">+</button>
                 </div>
             </div>
             @endforeach

@@ -88,7 +88,7 @@
                                 </a>
                                 
                                 {{-- Nút giỏ hàng --}}
-                                <button class="absolute z-10 bottom-4 right-4 bg-white text-espresso w-10 h-10 rounded-full flex items-center justify-center shadow-lg opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:bg-coral hover:text-white">
+                                <button type="button" onclick="quickAddToCart({{ $product->product_id }})" class="absolute z-10 bottom-4 right-4 bg-white text-espresso w-10 h-10 rounded-full flex items-center justify-center shadow-lg opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:bg-coral hover:text-white" title="Thêm nhanh vào giỏ hàng">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                                 </button>
                             </div>

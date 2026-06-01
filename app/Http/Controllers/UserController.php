@@ -58,6 +58,9 @@ class UserController extends Controller
     public function orders()
     {
         $user = auth()->user();
+        if (!$user) {
+            return redirect()->route('cart.index')->with('login_required', 'Vui lòng đăng nhập để xem danh sách đơn hàng!');
+        }
         
         // Lấy danh sách đơn hàng của người này, xếp mới nhất lên đầu
         $orders = \DB::table('orders')
