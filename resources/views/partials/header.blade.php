@@ -72,15 +72,20 @@
             {{-- Nút Giỏ hàng --}}
 <a href="{{ route('cart.index') }}" class="w-10 h-10 shrink-0 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-coral transition-colors relative">
     
-    {{-- ĐẾM SỐ LƯỢNG SẢN PHẨM TRONG GIỎ HÀNG --}}
-    @php $cartCount = session('cart') ? count(session('cart')) : 0; @endphp
+    {{-- ĐẾM TỔNG SỐ LƯỢNG SẢN PHẨM TRONG GIỎ HÀNG --}}
+    @php
+        $cartCount = 0;
+        if (session('cart')) {
+            foreach (session('cart') as $item) {
+                $cartCount += $item['quantity'];
+            }
+        }
+    @endphp
     
-    {{-- CHỈ HIỂN THỊ CHẤM ĐỎ NẾU CÓ ĐỒ TRONG GIỎ --}}
-    @if($cartCount > 0)
-        <span class="absolute -top-1 -right-1 w-5 h-5 bg-coral rounded-full border-2 border-espresso text-[10px] font-bold flex items-center justify-center shadow-sm">
-            {{ $cartCount }}
-        </span>
-    @endif
+    {{-- HIỂN THỊ CHẤM ĐỎ VÀ SỐ LƯỢNG --}}
+    <span id="cart-badge" class="absolute -top-1 -right-1 w-5 h-5 bg-coral rounded-full border-2 border-espresso text-[10px] font-bold flex items-center justify-center shadow-sm {{ $cartCount > 0 ? '' : 'hidden' }}">
+        {{ $cartCount }}
+    </span>
     
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
 </a>           {{-- Nút Tài Khoản (Đã thêm logic kiểm tra đăng nhập) --}}

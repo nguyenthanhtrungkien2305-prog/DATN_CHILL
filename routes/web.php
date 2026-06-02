@@ -68,14 +68,17 @@ Route::prefix('cart')->group(function () {
     Route::post('/update-toppings', [CartController::class, 'updateToppings'])->name('cart.updateToppings');
     Route::post('/apply-voucher', [CartController::class, 'applyVoucher'])->name('cart.applyVoucher');
     Route::post('/remove-voucher', [CartController::class, 'removeVoucher'])->name('cart.removeVoucher');
+    Route::get('/count', [CartController::class, 'getCount'])->name('cart.count');
 });
 // ROUTE THANH TOÁN (Yêu cầu đăng nhập - Tuỳ bạn cấu hình middleware auth)
 Route::prefix('checkout')->group(function () {
     Route::get('/', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/add-address', [CheckoutController::class, 'addAddress'])->name('checkout.addAddress');
-    Route::post('/delete-address', [CheckoutController::class, 'deleteAddress'])->name('checkout.deleteAddress'); // THÊM DÒNG NÀY
+    Route::post('/delete-address', [CheckoutController::class, 'deleteAddress'])->name('checkout.deleteAddress');
     Route::post('/process', [CheckoutController::class, 'process'])->name('checkout.process');
     Route::get('/payment-qr/{id}', [CheckoutController::class, 'paymentQr'])->name('checkout.payment_qr');
+    Route::get('/check-status/{id}', [CheckoutController::class, 'checkStatus'])->name('checkout.check_status');
+    Route::post('/mock-pay/{id}', [CheckoutController::class, 'mockPay'])->name('checkout.mock_pay');
 });
 Route::get('/tai-khoan/don-hang', [\App\Http\Controllers\UserController::class, 'orders'])->name('user.orders');
 /*

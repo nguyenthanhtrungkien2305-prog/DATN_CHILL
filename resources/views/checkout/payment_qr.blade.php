@@ -25,7 +25,7 @@
                 {{-- Mã QR --}}
                 <div class="bg-cream/30 p-4 rounded-3xl border border-espresso/5 shadow-inner shrink-0">
                     @php
-                        $qrUrl = "https://img.vietqr.io/image/mbbank-0385792442-compact2.png?amount=" . $order->total_amount . "&addInfo=CHILLCHILL%20" . $order->order_id . "&accountName=NGUYEN%20THANH%20TRUNG%20KIEN";
+                        $qrUrl = "https://img.vietqr.io/image/mbbank-0385792442-compact2.png?amount=" . (int)$order->total_amount . "&addInfo=CHILLCHILL%20" . $order->order_id . "&accountName=NGUYEN%20THANH%20TRUNG%20KIEN";
                     @endphp
                     <img src="{{ $qrUrl }}" alt="VietQR" class="w-64 h-64 md:w-72 md:h-72 object-contain rounded-xl">
                     <p class="text-center text-[10px] text-espresso/40 mt-2 font-bold tracking-wider uppercase">Quét mã bằng App Ngân hàng</p>
@@ -146,5 +146,38 @@
             console.error('Không thể sao chép: ', err);
         });
     }
+
+    // === POLLING STATUS CHECK ===
+    const checkInterval = setInterval(() => {
+        fetch('{{ route('checkout.check_status', $order->order_id) }}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'processing' || data.status === 'completed') {
+                    clearInterval(checkInterval);
+                    alert('🎉 Thanh toán thành công! Hệ thống đang chuẩn bị đơn hàng cho bạn.');
+                    window.location.href = '{{ route('user.orders') }}';
+                }
+            })
+            .catch(err => console.error('Lỗi kiểm tra trạng thái:', err));
+    }, 3000);
+
+    // === GIẢ LẬP THANH TOÁN SAU 10 GIÂY ===
+    setTimeout(() => {
+        console.log('Đang chạy giả lập thanh toán...');
+        fetch('{{ route('checkout.mock_pay', $order->order_id) }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Giả lập thanh toán thành công!');
+            }
+        })
+        .catch(err => console.error('Lỗi chạy giả lập thanh toán:', err));
+    }, 10000);
 </script>
 @endsection

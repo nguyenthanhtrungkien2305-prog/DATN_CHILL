@@ -393,19 +393,15 @@
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                // Hiển thị thông báo thành công đẹp mắt hơn (Tạm thời dùng alert)
-                alert('🎉 Thành công: ' + data.message);
-                
-                // Cập nhật số lượng trên icon Header (Nếu bạn có thẻ span id="cart-count")
-                // let cartCountEl = document.getElementById('cart-count');
-                // if(cartCountEl) cartCountEl.innerText = data.cart_count;
+                showToast('🎉 ' + data.message, 'success');
+                updateCartBadge(data.cart_count);
             } else {
-                alert('Lỗi: ' + data.message);
+                showToast('Lỗi: ' + data.message, 'error');
             }
         })
         .catch(error => {
             console.error('Lỗi hệ thống:', error);
-            alert('Có lỗi xảy ra, vui lòng thử lại sau!');
+            showToast('Có lỗi xảy ra, vui lòng thử lại sau!', 'error');
         });
     }
 </script>

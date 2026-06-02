@@ -107,6 +107,25 @@
 </head>
 <body class="bg-[#FAF7F2] text-espresso font-sans antialiased overflow-x-hidden">
 
+    {{-- Container chứa thông báo Toast --}}
+    <div id="toast-container" class="fixed bottom-5 right-5 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
+
+    {{-- MODAL XÁC NHẬN CHUNG (CONFIRM) --}}
+    <div id="confirm-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 hidden">
+        <div class="absolute inset-0 bg-espresso/60 backdrop-blur-sm" onclick="closeConfirmModal(false)"></div>
+        <div class="relative bg-white rounded-[32px] shadow-2xl w-full max-w-[380px] p-8 text-center transform transition-all scale-95 opacity-0 duration-300" id="confirm-modal-content">
+            <div class="w-16 h-16 mx-auto mb-4 bg-coral/10 border border-coral/25 rounded-full flex items-center justify-center text-coral text-2xl">
+                ❓
+            </div>
+            <h3 class="font-serif font-black text-2xl text-espresso mb-2">Xác nhận</h3>
+            <p id="confirm-modal-message" class="text-espresso/70 text-sm mb-6 leading-relaxed">Bạn có chắc chắn muốn thực hiện hành động này?</p>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeConfirmModal(false)" class="flex-1 py-3 border border-espresso/20 rounded-full font-bold text-espresso/60 hover:bg-gray-50 transition-colors text-sm">Hủy</button>
+                <button type="button" onclick="closeConfirmModal(true)" class="flex-1 py-3 bg-coral text-white rounded-full font-bold hover:bg-[#d5523b] shadow-lg shadow-coral/25 transition-all text-sm">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+
     
     @include('partials.header')
 
@@ -198,6 +217,125 @@
     @endif
 
     <script>
+        // === HÀM HỎI XÁC NHẬN CHUNG (CONFIRM) ===
+        let confirmCallback = null;
+
+        function showConfirm(message, callback) {
+            document.getElementById('confirm-modal-message').innerText = message;
+            confirmCallback = callback;
+
+            const modal = document.getElementById('confirm-modal');
+            const modalContent = document.getElementById('confirm-modal-content');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeConfirmModal(result) {
+            const modal = document.getElementById('confirm-modal');
+            const modalContent = document.getElementById('confirm-modal-content');
+            
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                if (result && typeof confirmCallback === 'function') {
+                    confirmCallback();
+                }
+                confirmCallback = null;
+            }, 300);
+        }
+
+        // === HÀM HIỂN THỊ TOAST THÔNG BÁO SIÊU ĐẸP ===
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            // Cấu hình css glassmorphism kết hợp màu sắc chủ đạo của dự án
+            toast.className = 'transform transition-all duration-500 ease-out translate-y-8 opacity-0 pointer-events-auto max-w-sm w-full bg-[#2B2623] border border-white/10 rounded-3xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center gap-4';
+            
+            let iconHtml = '';
+            if (type === 'success') {
+                iconHtml = `<div class="w-10 h-10 rounded-full bg-coral/15 border border-coral/30 flex items-center justify-center text-coral shrink-0 text-lg">✨</div>`;
+            } else if (type === 'error' || type === 'danger') {
+                iconHtml = `<div class="w-10 h-10 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0 text-lg">⚠️</div>`;
+            } else {
+                iconHtml = `<div class="w-10 h-10 rounded-full bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center text-yellow-400 shrink-0 text-lg">💡</div>`;
+            }
+
+            toast.innerHTML = `
+                ${iconHtml}
+                <div class="flex-1">
+                    <p class="text-white text-sm font-semibold leading-snug">${message}</p>
+                </div>
+                <button onclick="this.parentElement.style.opacity='0'; setTimeout(() => this.parentElement.remove(), 500)" class="text-white/40 hover:text-white transition-colors duration-200 ml-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            // Hiệu ứng trượt lên
+            setTimeout(() => {
+                toast.classList.remove('translate-y-8', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            }, 50);
+
+            // Tự động đóng sau 3.5 giây
+            setTimeout(() => {
+                if (toast && toast.parentElement) {
+                    toast.classList.remove('translate-y-0', 'opacity-100');
+                    toast.classList.add('translate-y-8', 'opacity-0');
+                    setTimeout(() => {
+                        if (toast && toast.parentElement) toast.remove();
+                    }, 500);
+                }
+            }, 3500);
+        }
+
+        // === HÀM CẬP NHẬT BADGE GIỎ HÀNG DỰA TRÊN SỐ LƯỢNG THỰC TẾ ===
+        function updateCartBadge(count) {
+            const badge = document.getElementById('cart-badge');
+            if (badge) {
+                badge.innerText = count;
+                if (parseInt(count) > 0) {
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        }
+
+        // === TỰ ĐỘNG ĐỒNG BỘ BADGE GIỎ HÀNG KHI LOAD TRANG & KHI DÙNG BFCACHE ===
+        function syncCartBadge() {
+            fetch('{{ route('cart.count') }}')
+                .then(res => res.json())
+                .then(data => {
+                    updateCartBadge(data.cart_count);
+                })
+                .catch(err => console.error('Lỗi đồng bộ giỏ hàng:', err));
+        }
+
+        document.addEventListener('DOMContentLoaded', syncCartBadge);
+        window.addEventListener('pageshow', (event) => {
+            syncCartBadge();
+        });
+
+        // === GHI ĐÈ WINDOW.ALERT ĐỂ TỰ ĐỘNG DÙNG TOAST ĐẸP ===
+        window.alert = function(message) {
+            let type = 'success';
+            if (message.includes('Lỗi') || message.includes('lỗi') || message.includes('không') || message.includes('hết hạn') || message.includes('chưa') || message.includes('đầy đủ')) {
+                type = 'error';
+            }
+            showToast(message, type);
+        };
+
+        // === THÊM NHANH VÀO GIỎ HÀNG KHÔNG RELOAD TRANG ===
         function quickAddToCart(productId) {
             let payload = {
                 _token: '{{ csrf_token() }}',
@@ -217,15 +355,15 @@
             .then(response => response.json())
             .then(data => {
                 if(data.success) {
-                    alert('🎉 ' + data.message);
-                    window.location.reload();
+                    showToast('🎉 ' + data.message, 'success');
+                    updateCartBadge(data.cart_count);
                 } else {
-                    alert('Lỗi: ' + data.message);
+                    showToast('Lỗi: ' + data.message, 'error');
                 }
             })
             .catch(error => {
                 console.error('Lỗi hệ thống:', error);
-                alert('Có lỗi xảy ra, vui lòng thử lại sau!');
+                showToast('Có lỗi xảy ra, vui lòng thử lại sau!', 'error');
             });
         }
     </script>

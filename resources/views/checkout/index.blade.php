@@ -215,7 +215,7 @@
         event.preventDefault(); // Ngăn việc click làm chọn luôn radio button
         event.stopPropagation();
 
-        if(confirm('Bạn có chắc chắn muốn xóa địa chỉ này?')) {
+        showConfirm('Bạn có chắc chắn muốn xóa địa chỉ này?', function() {
             fetch('{{ route("checkout.deleteAddress") }}', {
                 method: 'POST',
                 headers: {
@@ -230,7 +230,7 @@
                 if(data.success) { window.location.reload(); } 
                 else { alert(data.message); }
             });
-        }
+        });
     }
 
     // === XEM THÊM ĐỊA CHỈ ===
