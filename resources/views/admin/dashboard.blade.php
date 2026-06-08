@@ -57,6 +57,18 @@
                class="block px-4 py-3 rounded-lg transition-colors hover:bg-white/10">
                 👥 Quản lý Người dùng
             </a>
+
+            {{-- Quản lý Phản hồi --}}
+            <a href="{{ route('feedbacks.index') }}" 
+               class="block px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('feedbacks.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
+                ✉️ Quản lý Phản hồi
+            </a>
+
+            {{-- Hỗ trợ trực tuyến --}}
+            <a href="{{ route('admin.chats.index') }}" 
+               class="block px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('admin.chats.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
+                💬 Hỗ trợ trực tuyến
+            </a>
         </nav>
         <div class="p-4 border-t border-white/10">
             <a href="/" class="block text-center px-4 py-2 bg-white/10 rounded hover:bg-white/20 transition">← Về trang web</a>

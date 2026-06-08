@@ -18,6 +18,10 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Controllers\Admin\ToppingController as AdminToppingController;
 use App\Http\Controllers\Admin\VoucherController as AdminVoucherController;
+use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\Admin\ChatController as AdminChatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,6 +55,7 @@ Route::get('/tin-tuc', function () {
 Route::get('/lien-he', function () {
     return view('contact'); 
 })->name('contact');
+Route::post('/lien-he', [FeedbackController::class, 'store'])->name('contact.submit');
 // ROUTES NGƯỜI DÙNG (Bắt buộc phải đăng nhập)
 Route::middleware(['auth'])->group(function () {
     Route::get('/tai-khoan', [UserController::class, 'profile'])->name('user.profile');
@@ -81,6 +86,13 @@ Route::prefix('checkout')->group(function () {
     Route::post('/mock-pay/{id}', [CheckoutController::class, 'mockPay'])->name('checkout.mock_pay');
 });
 Route::get('/tai-khoan/don-hang', [\App\Http\Controllers\UserController::class, 'orders'])->name('user.orders');
+
+// ROUTES CHAT BOX TRỰC TUYẾN
+Route::prefix('chat')->group(function () {
+    Route::post('/start', [ChatController::class, 'startSession'])->name('chat.start');
+    Route::get('/messages', [ChatController::class, 'getMessages'])->name('chat.messages');
+    Route::post('/send', [ChatController::class, 'sendMessage'])->name('chat.send');
+});
 /*
 |--------------------------------------------------------------------------
 | ROUTES QUẢN TRỊ (ADMIN)
@@ -113,4 +125,16 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
 
     // THÊM DÒNG NÀY CHO VOUCHER:
     Route::resource('vouchers', AdminVoucherController::class);
+
+    // QUẢN LÝ PHẢN HỒI (FEEDBACK):
+    Route::resource('feedbacks', AdminFeedbackController::class)->only(['index', 'show', 'destroy']);
+    Route::post('feedbacks/{id}/reply', [AdminFeedbackController::class, 'reply'])->name('feedbacks.reply');
+
+    // QUẢN LÝ CHAT BOX (LIVE CHAT):
+    Route::get('chats', [AdminChatController::class, 'index'])->name('admin.chats.index');
+    Route::get('chats/sessions', [AdminChatController::class, 'getSessions'])->name('admin.chats.sessions');
+    Route::get('chats/sessions/{id}/messages', [AdminChatController::class, 'getSessionMessages'])->name('admin.chats.messages');
+    Route::post('chats/sessions/{id}/reply', [AdminChatController::class, 'sendReply'])->name('admin.chats.reply');
+    Route::get('chats/sessions/{id}/bot-status', [AdminChatController::class, 'getBotStatus'])->name('admin.chats.bot_status');
+    Route::post('chats/sessions/{id}/toggle-bot', [AdminChatController::class, 'toggleBot'])->name('admin.chats.toggle_bot');
 });

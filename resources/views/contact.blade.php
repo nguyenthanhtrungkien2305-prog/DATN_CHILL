@@ -82,33 +82,33 @@
                 <h3 class="font-serif font-bold text-3xl text-espresso mb-2">Gửi lời nhắn</h3>
                 <p class="text-espresso/60 mb-8">Hãy để lại thông tin, Chill Chill sẽ liên hệ với bạn trong thời gian sớm nhất.</p>
 
-                <form action="#" method="POST" class="space-y-6">
+                <form action="{{ route('contact.submit') }}" method="POST" class="space-y-6">
                     @csrf
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {{-- Tên --}}
                         <div>
                             <label class="block text-sm font-bold text-espresso mb-2 uppercase tracking-wide">Họ và tên</label>
-                            <input type="text" name="name" placeholder="Ví dụ: Nguyễn Văn A" class="w-full px-4 py-3 bg-[#FAF7F2] border border-transparent rounded-xl focus:outline-none focus:border-coral focus:bg-white transition-all text-espresso placeholder-espresso/30">
+                            <input type="text" name="name" value="{{ old('name') }}" placeholder="Ví dụ: Nguyễn Văn A" class="w-full px-4 py-3 bg-[#FAF7F2] border border-transparent rounded-xl focus:outline-none focus:border-coral focus:bg-white transition-all text-espresso placeholder-espresso/30" required>
                         </div>
                         
                         {{-- Điện thoại --}}
                         <div>
                             <label class="block text-sm font-bold text-espresso mb-2 uppercase tracking-wide">Điện thoại</label>
-                            <input type="tel" name="phone" placeholder="Số điện thoại của bạn" class="w-full px-4 py-3 bg-[#FAF7F2] border border-transparent rounded-xl focus:outline-none focus:border-coral focus:bg-white transition-all text-espresso placeholder-espresso/30">
+                            <input type="tel" name="phone" value="{{ old('phone') }}" placeholder="Số điện thoại của bạn" class="w-full px-4 py-3 bg-[#FAF7F2] border border-transparent rounded-xl focus:outline-none focus:border-coral focus:bg-white transition-all text-espresso placeholder-espresso/30">
                         </div>
                     </div>
 
                     {{-- Email --}}
                     <div>
                         <label class="block text-sm font-bold text-espresso mb-2 uppercase tracking-wide">Email</label>
-                        <input type="email" name="email" placeholder="Email liên hệ" class="w-full px-4 py-3 bg-[#FAF7F2] border border-transparent rounded-xl focus:outline-none focus:border-coral focus:bg-white transition-all text-espresso placeholder-espresso/30">
+                        <input type="email" name="email" value="{{ old('email') }}" placeholder="Email liên hệ" class="w-full px-4 py-3 bg-[#FAF7F2] border border-transparent rounded-xl focus:outline-none focus:border-coral focus:bg-white transition-all text-espresso placeholder-espresso/30" required>
                     </div>
 
                     {{-- Nội dung --}}
                     <div>
                         <label class="block text-sm font-bold text-espresso mb-2 uppercase tracking-wide">Nội dung tin nhắn</label>
-                        <textarea name="message" rows="4" placeholder="Bạn muốn nhắn nhủ điều gì tới Chill Chill?" class="w-full px-4 py-3 bg-[#FAF7F2] border border-transparent rounded-xl focus:outline-none focus:border-coral focus:bg-white transition-all text-espresso placeholder-espresso/30 resize-none"></textarea>
+                        <textarea name="message" rows="4" placeholder="Bạn muốn nhắn nhủ điều gì tới Chill Chill?" class="w-full px-4 py-3 bg-[#FAF7F2] border border-transparent rounded-xl focus:outline-none focus:border-coral focus:bg-white transition-all text-espresso placeholder-espresso/30 resize-none" required>{{ old('message') }}</textarea>
                     </div>
 
                     {{-- Nút Submit --}}

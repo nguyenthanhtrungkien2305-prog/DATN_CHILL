@@ -367,5 +367,30 @@
             });
         }
     </script>
+    
+    @if(session('success'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast("{{ session('success') }}", 'success');
+            });
+        </script>
+    @endif
+    @if(session('error'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast("{{ session('error') }}", 'error');
+            });
+        </script>
+    @endif
+    @if($errors->any())
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast("{{ $errors->first() }}", 'error');
+            });
+        </script>
+    @endif
+
+    {{-- Tích hợp Chat Box nổi --}}
+    @include('partials.chatbox')
 </body>
 </html>
