@@ -117,7 +117,12 @@ class CartController extends Controller
             
             session()->put('cart', $cart);
             self::checkAndRecalculateVoucher();
-            return response()->json(['success' => true]);
+            
+            $totalItems = array_sum(array_column($cart, 'quantity'));
+            return response()->json([
+                'success' => true,
+                'cart_count' => $totalItems
+            ]);
         }
 
         return response()->json(['success' => false, 'message' => 'Không tìm thấy sản phẩm!']);
@@ -133,7 +138,12 @@ class CartController extends Controller
             unset($cart[$cartKey]); // Xóa khỏi mảng
             session()->put('cart', $cart);
             self::checkAndRecalculateVoucher();
-            return response()->json(['success' => true]);
+            
+            $totalItems = array_sum(array_column($cart, 'quantity'));
+            return response()->json([
+                'success' => true,
+                'cart_count' => $totalItems
+            ]);
         }
 
         return response()->json(['success' => false, 'message' => 'Không tìm thấy sản phẩm!']);
@@ -384,5 +394,13 @@ class CartController extends Controller
         // Lưu lại session cập nhật
         $voucherSession['discount_amount'] = $discount;
         session()->put('voucher', $voucherSession);
+    }
+
+    // 10. Lấy số lượng giỏ hàng hiện tại (cho AJAX đồng bộ)
+    public function getCount()
+    {
+        $cart = session()->get('cart', []);
+        $totalItems = array_sum(array_column($cart, 'quantity'));
+        return response()->json(['cart_count' => $totalItems]);
     }
 }

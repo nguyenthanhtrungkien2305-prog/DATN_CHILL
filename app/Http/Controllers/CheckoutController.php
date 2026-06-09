@@ -168,4 +168,44 @@ class CheckoutController extends Controller
 
         return view('checkout.payment_qr', compact('order'));
     }
+
+    // 5. Kiểm tra trạng thái đơn hàng (cho AJAX Polling)
+    public function checkStatus($id)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $order = \DB::table('orders')
+            ->where('order_id', $id)
+            ->where('user_id', $user->user_id)
+            ->first();
+
+        if (!$order) {
+            return response()->json(['error' => 'Order not found'], 404);
+        }
+
+        return response()->json(['status' => $order->status]);
+    }
+
+    // 6. Giả lập thanh toán thành công
+    public function mockPay($id)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $affected = \DB::table('orders')
+            ->where('order_id', $id)
+            ->where('user_id', $user->user_id)
+            ->where('status', 'pending')
+            ->update([
+                'status' => 'processing',
+                'updated_at' => now(),
+            ]);
+
+        return response()->json(['success' => $affected > 0]);
+    }
 }

@@ -236,7 +236,7 @@
 
     // 1. Hàm Xóa sản phẩm khỏi giỏ hàng
     function removeCartItem(cartKey) {
-        if(confirm('Bạn có chắc chắn muốn xóa món này khỏi giỏ hàng?')) {
+        showConfirm('Bạn có chắc chắn muốn xóa món này khỏi giỏ hàng?', function() {
             fetch('{{ route('cart.remove') }}', {
                 method: 'POST',
                 headers: { 
@@ -255,7 +255,7 @@
                 }
             })
             .catch(error => console.error('Lỗi:', error));
-        }
+        });
     }
 
     // 2. Hàm Tăng/Giảm số lượng sản phẩm trong giỏ

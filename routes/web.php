@@ -22,6 +22,10 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Controllers\Admin\ToppingController as AdminToppingController;
 use App\Http\Controllers\Admin\VoucherController as AdminVoucherController;
+use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\Admin\ChatController as AdminChatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +35,7 @@ use App\Http\Controllers\Admin\VoucherController as AdminVoucherController;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/san-pham/{slug}', [PublicProductController::class, 'show'])->name('product.show');
 Route::get('/thuc-don', [PublicProductController::class, 'index'])->name('product.index');
+<<<<<<< HEAD
 Route::get('/chuyen-nha', function () { return view('post.story'); })->name('post.story');
 Route::get('/tin-tuc', function () { return view('post.index'); })->name('post.index');
 Route::get('/lien-he', function () { return view('contact'); })->name('contact');
@@ -54,6 +59,22 @@ Route::get('/dang-xuat', [AuthController::class, 'logout'])->name('logout');
 | ROUTES NGƯỜI DÙNG THÀNH VIÊN (ĐÃ ĐĂNG NHẬP)
 |--------------------------------------------------------------------------
 */
+=======
+// Trang câu chuyện thương hiệu (Bài viết nổi bật)
+Route::get('/chuyen-nha', function () {
+    return view('post.story'); // Trỏ tới file view story.blade.php
+})->name('post.story');
+// Trang Tin tức / Blog
+Route::get('/tin-tuc', function () {
+    return view('post.index'); 
+})->name('post.index');
+// Trang Liên hệ
+Route::get('/lien-he', function () {
+    return view('contact'); 
+})->name('contact');
+Route::post('/lien-he', [FeedbackController::class, 'store'])->name('contact.submit');
+// ROUTES NGƯỜI DÙNG (Bắt buộc phải đăng nhập)
+>>>>>>> 83a9b3e817eb3a83101e6fd80953935ffc53d02d
 Route::middleware(['auth'])->group(function () {
     Route::get('/tai-khoan', [UserController::class, 'profile'])->name('user.profile');
     Route::post('/tai-khoan/cap-nhat', [UserController::class, 'updateProfile'])->name('user.update_profile');
@@ -75,6 +96,7 @@ Route::prefix('cart')->group(function () {
     Route::post('/update-toppings', [CartController::class, 'updateToppings'])->name('cart.updateToppings');
     Route::post('/apply-voucher', [CartController::class, 'applyVoucher'])->name('cart.applyVoucher');
     Route::post('/remove-voucher', [CartController::class, 'removeVoucher'])->name('cart.removeVoucher');
+    Route::get('/count', [CartController::class, 'getCount'])->name('cart.count');
 });
 
 Route::prefix('checkout')->group(function () {
@@ -83,6 +105,8 @@ Route::prefix('checkout')->group(function () {
     Route::post('/delete-address', [CheckoutController::class, 'deleteAddress'])->name('checkout.deleteAddress');
     Route::post('/process', [CheckoutController::class, 'process'])->name('checkout.process');
     Route::get('/payment-qr/{id}', [CheckoutController::class, 'paymentQr'])->name('checkout.payment_qr');
+    Route::get('/check-status/{id}', [CheckoutController::class, 'checkStatus'])->name('checkout.check_status');
+    Route::post('/mock-pay/{id}', [CheckoutController::class, 'mockPay'])->name('checkout.mock_pay');
 });
 
 /*
@@ -110,6 +134,14 @@ Route::post('/staff/attendance/checkin', [AttendanceController::class, 'checkIn'
     Route::post('/staff/api/orders/{id}/complete', [PosController::class, 'completeOrder'])->name('staff.api.complete_order');
 });
 
+Route::get('/tai-khoan/don-hang', [\App\Http\Controllers\UserController::class, 'orders'])->name('user.orders');
+
+// ROUTES CHAT BOX TRỰC TUYẾN
+Route::prefix('chat')->group(function () {
+    Route::post('/start', [ChatController::class, 'startSession'])->name('chat.start');
+    Route::get('/messages', [ChatController::class, 'getMessages'])->name('chat.messages');
+    Route::post('/send', [ChatController::class, 'sendMessage'])->name('chat.send');
+});
 /*
 |--------------------------------------------------------------------------
 | ROUTES QUẢN TRỊ (ADMIN)
@@ -124,4 +156,16 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     Route::resource('toppings', AdminToppingController::class);
     Route::resource('vouchers', AdminVoucherController::class);
     
+
+    // QUẢN LÝ PHẢN HỒI (FEEDBACK):
+    Route::resource('feedbacks', AdminFeedbackController::class)->only(['index', 'show', 'destroy']);
+    Route::post('feedbacks/{id}/reply', [AdminFeedbackController::class, 'reply'])->name('feedbacks.reply');
+
+    // QUẢN LÝ CHAT BOX (LIVE CHAT):
+    Route::get('chats', [AdminChatController::class, 'index'])->name('admin.chats.index');
+    Route::get('chats/sessions', [AdminChatController::class, 'getSessions'])->name('admin.chats.sessions');
+    Route::get('chats/sessions/{id}/messages', [AdminChatController::class, 'getSessionMessages'])->name('admin.chats.messages');
+    Route::post('chats/sessions/{id}/reply', [AdminChatController::class, 'sendReply'])->name('admin.chats.reply');
+    Route::get('chats/sessions/{id}/bot-status', [AdminChatController::class, 'getBotStatus'])->name('admin.chats.bot_status');
+    Route::post('chats/sessions/{id}/toggle-bot', [AdminChatController::class, 'toggleBot'])->name('admin.chats.toggle_bot');
 });

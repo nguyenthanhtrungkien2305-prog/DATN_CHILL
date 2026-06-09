@@ -55,6 +55,18 @@
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
                 <span class="text-xl">👥</span> <span>Quản lý Người dùng</span>
             </a>
+
+            {{-- Quản lý Phản hồi --}}
+            <a href="{{ route('feedbacks.index') }}" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span class="text-xl">✉️</span> <span>Quản lý Phản hồi</span>
+            </a>
+
+            {{-- Hỗ trợ trực tuyến --}}
+            <a href="{{ route('admin.chats.index') }}" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span class="text-xl">💬</span> <span>Hỗ trợ trực tuyến</span>
+            </a>
         </nav>
         <a href="/" class="block px-4 py-3 rounded-lg hover:bg-white/10 transition mt-auto border-t border-white/10">← Về trang web</a>
     </aside>
