@@ -77,20 +77,36 @@ class AuthController extends Controller
     // ==========================================
     public function login(Request $request)
     {
+        // 1. Chỉ yêu cầu nhập identity (có thể là email, sđt hoặc tên) và mật khẩu
         $request->validate([
-            'email' => 'required|email',
+            'login_identity' => 'required|string', // Lưu ý: Sửa trường name trong thẻ <input> HTML của bạn thành 'login_identity'
             'password' => 'required'
+        ], [
+            'login_identity.required' => 'Vui lòng nhập tài khoản, số điện thoại hoặc email.',
+            'password.required' => 'Vui lòng nhập mật khẩu.'
         ]);
 
-        if (\Illuminate\Support\Facades\Auth::attempt(['email' => $request->email, 'password' => $request->password], $request->has('remember'))) {
+        $identity = $request->login_identity;
+        $password = $request->password;
+
+        // 2. Tự động kiểm tra xem người dùng đang nhập cái gì
+        $fieldType = 'name'; // Mặc định là tên tài khoản
+        if (filter_var($identity, FILTER_VALIDATE_EMAIL)) {
+            $fieldType = 'email'; // Nếu giống định dạng a@b.com thì là email
+        } elseif (preg_match('/^[0-9]+$/', $identity)) {
+            $fieldType = 'phone'; // Nếu toàn số thì là số điện thoại
+        }
+
+        // 3. Thực hiện đăng nhập dựa trên loại dữ liệu vừa nhận diện
+        if (\Illuminate\Support\Facades\Auth::attempt([$fieldType => $identity, 'password' => $password], $request->has('remember'))) {
             $user = \Illuminate\Support\Facades\Auth::user();
-            $userId = $user->user_id ?? $user->id; // Hỗ trợ cả 2 kiểu khóa chính
+            $userId = $user->user_id ?? $user->id; 
 
             // NẾU LÀ NHÂN VIÊN -> TỰ ĐỘNG CHECK-IN
             if ($user->role === 'staff') {
                 $now = now('Asia/Ho_Chi_Minh');
                 
-                // 1. Ghi nhận Attendance (Chấm công) nếu hôm nay chưa có
+                // Ghi nhận Attendance (Chấm công)
                 $attendanceExists = \Illuminate\Support\Facades\DB::table('attendances')
                     ->where('user_id', $userId)
                     ->whereDate('date', $now->format('Y-m-d'))
@@ -102,17 +118,17 @@ class AuthController extends Controller
                         'user_id' => $userId,
                         'date' => $now->format('Y-m-d'),
                         'check_in' => $now,
-                        'scheduled_end_time' => $now->copy()->addHours(4), // Tạm mặc định ca 4 tiếng
+                        'scheduled_end_time' => $now->copy()->addHours(4), 
                         'created_at' => $now,
                         'updated_at' => $now
                     ]);
                 }
 
-                // 2. Gắn vào Ca hiện hành (Để chia tiền Hoa hồng)
+                // Gắn vào Ca hiện hành
                 $shiftIndex = floor($now->hour / 4) + 1;
                 $startHour = ($shiftIndex - 1) * 4;
                 $startTime = sprintf('%02d:00:00', $startHour);
-                $endTime = ($startHour + 4 == 24) ? '23:59:59' : sprintf('%02d:00:00', $startHour + 4);
+                $endTime = ($startHour + 4 >= 24) ? '23:59:59' : sprintf('%02d:00:00', $startHour + 4);
 
                 $shift = \App\Models\Shift::firstOrCreate(
                     ['date' => $now->format('Y-m-d'), 'start_time' => $startTime],
@@ -136,7 +152,7 @@ class AuthController extends Controller
             return redirect('/')->with('success', 'Đăng nhập thành công!');
         }
 
-        return back()->withErrors(['email' => 'Email hoặc mật khẩu không chính xác.']);
+        return back()->withErrors(['login_error' => 'Tài khoản hoặc mật khẩu không chính xác.']);
     }
    // ==========================================
     // 3. XỬ LÝ ĐĂNG XUẤT
