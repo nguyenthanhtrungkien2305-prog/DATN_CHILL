@@ -100,6 +100,7 @@
                             <th class="p-4 font-medium">Hình ảnh</th>
                             <th class="p-4 font-medium">Tên sản phẩm</th>
                             <th class="p-4 font-medium">Danh mục</th>
+                            <th class="p-4 font-medium">Giá bán</th>
                             <th class="p-4 font-medium">Trạng thái</th>
                             <th class="p-4 font-medium text-center">Hành động</th>
                         </tr>
@@ -113,6 +114,7 @@
                             </td>
                             <td class="p-4 font-medium text-gray-900">{{ $product->name }}</td>
                             <td class="p-4">{{ $product->category_name }}</td>
+                            <td class="p-4 font-medium text-gray-900">{{ number_format($product->price, 0, ',', '.') }} đ</td>
                             <td class="p-4">
                                 @if($product->status == 1)
                                     <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">Đang bán</span>

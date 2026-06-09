@@ -84,7 +84,7 @@
             {{-- Cột Trái: Danh sách phiên chat active --}}
             <div class="w-80 bg-white border-r border-gray-200 flex flex-col h-full shrink-0">
                 <div class="p-4 border-b border-gray-100 shrink-0">
-                    <input type="text" id="session-search" oninput="renderSessionSidebar()" placeholder="Tìm khách hàng..." class="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-xl text-sm focus:outline-none focus:border-coral focus:bg-white transition-all text-espresso placeholder-gray-400">
+                    <input type="text" id="session-search" oninput="renderSessionSidebar()" placeholder="Tìm khách hàng..." class="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#e8634a] focus:bg-white transition-all text-espresso placeholder-gray-400">
                 </div>
                 {{-- Container danh sách phiên --}}
                 <div id="sessions-list" class="flex-1 overflow-y-auto divide-y divide-gray-50">
@@ -137,8 +137,8 @@
 
                     {{-- Form nhập tin nhắn gửi đi --}}
                     <form id="admin-chat-form" onsubmit="handleAdminSend(event)" class="p-4 bg-white border-t flex items-center gap-3 shrink-0">
-                        <input type="text" id="admin-chat-input" placeholder="Nhập câu trả lời của bạn..." autocomplete="off" class="flex-1 px-4 py-3 bg-gray-50 border border-transparent rounded-xl text-sm focus:outline-none focus:border-coral focus:bg-white transition-all text-espresso placeholder-gray-400">
-                        <button type="submit" class="bg-coral hover:bg-[#d5523b] text-white px-6 py-3 rounded-xl font-bold shadow-md shadow-coral/20 hover:scale-102 active:scale-98 transition-all flex items-center gap-2 text-sm shrink-0">
+                        <input type="text" id="admin-chat-input" placeholder="Nhập câu trả lời của bạn..." autocomplete="off" class="flex-1 px-4 py-3 bg-gray-50 border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#e8634a] focus:bg-white transition-all text-espresso placeholder-gray-400">
+                        <button type="submit" class="bg-[#e8634a] hover:bg-[#d5523b] text-white px-6 py-3 rounded-xl font-bold shadow-md shadow-[#e8634a]/20 hover:scale-102 active:scale-98 transition-all flex items-center gap-2 text-sm shrink-0">
                             🚀 Gửi đi
                         </button>
                     </form>
@@ -318,7 +318,7 @@
                 `;
             } else {
                 wrapper.innerHTML = `
-                    <div class="w-8 h-8 rounded-full bg-coral text-white flex items-center justify-center text-xs shrink-0 font-bold">
+                    <div class="w-8 h-8 rounded-full bg-[#e8634a] text-white flex items-center justify-center text-xs shrink-0 font-bold">
                         KH
                     </div>
                     <div class="flex flex-col items-start max-w-[70%]">
@@ -377,7 +377,7 @@
             if (!text) return '';
             let escaped = escapeHTML(text);
             escaped = escaped.replace(/\n/g, '<br>');
-            return escaped.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, label, url) => {
+            return escaped.replace(/\[([^\]]+)\]\(((?:https?:\/\/|\/)[^\s)]+)\)/g, (match, label, url) => {
                 return `<a href="${url}" target="_blank" class="text-[#e8634a] hover:underline font-bold">${label}</a>`;
             });
         }

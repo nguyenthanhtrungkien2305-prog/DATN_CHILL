@@ -49,9 +49,9 @@
                     @csrf
                     @method('PUT')
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {{-- Tên sản phẩm --}}
-                        <div class="md:col-span-2">
+                        <div class="md:col-span-3">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Tên sản phẩm <span class="text-red-500">*</span></label>
                             <input type="text" name="name" value="{{ old('name', $product->name) }}" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-[#e8634a] focus:ring-1 focus:ring-[#e8634a]">
                         </div>
@@ -68,6 +68,12 @@
                             </select>
                         </div>
 
+                        {{-- Giá tiền sản phẩm --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Giá tiền (đ) <span class="text-red-500">*</span></label>
+                            <input type="number" name="price" value="{{ old('price', $product->price ?? 0) }}" min="0" placeholder="Nhập giá sản phẩm..." required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-[#e8634a] focus:ring-1 focus:ring-[#e8634a]">
+                        </div>
+
                         {{-- Trạng thái --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Trạng thái <span class="text-red-500">*</span></label>
@@ -78,7 +84,7 @@
                         </div>
 
                         {{-- Link Hình ảnh --}}
-                        <div class="md:col-span-2">
+                        <div class="md:col-span-3">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Link Hình ảnh (URL)</label>
                             <div class="flex gap-4 items-center">
                                 <img src="{{ $product->image_url }}" alt="Preview" class="w-16 h-16 rounded object-cover border">
@@ -86,7 +92,7 @@
                             </div>
                         </div>
                         {{-- KHU VỰC CHỌN TOPPING NẰM Ở ĐÂY --}}
-                <div class="mb-6">
+                <div class="md:col-span-3 mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Chọn Topping áp dụng</label>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 border border-gray-200 rounded-lg bg-gray-50/50">
                         @foreach($allToppings as $top)
@@ -104,7 +110,7 @@
                 </div>
                 {{-- KẾT THÚC KHU VỰC CHỌN TOPPING --}}
                         {{-- Mô tả --}}
-                        <div class="md:col-span-2">
+                        <div class="md:col-span-3">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Mô tả sản phẩm</label>
                             <textarea name="description" rows="4" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-[#e8634a] focus:ring-1 focus:ring-[#e8634a]">{{ old('description', $product->description) }}</textarea>
                         </div>

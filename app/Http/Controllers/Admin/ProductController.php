@@ -18,8 +18,34 @@ class ProductController extends Controller
         // Xây dựng câu truy vấn cơ bản (Chưa lấy dữ liệu vội)
         $query = DB::table('products')
             ->join('categories', 'products.category_id', '=', 'categories.category_id')
-            ->select('products.*', 'categories.name as category_name')
-            ->orderBy('product_id', 'desc');
+            ->leftJoin('product_variants', 'products.product_id', '=', 'product_variants.product_id')
+            ->select(
+                'products.product_id', 
+                'products.name', 
+                'products.slug', 
+                'products.description', 
+                'products.status', 
+                'products.image_url', 
+                'products.category_id', 
+                'products.created_at', 
+                'products.updated_at',
+                'categories.name as category_name',
+                DB::raw('COALESCE(MIN(product_variants.price), products.price) as price')
+            )
+            ->groupBy(
+                'products.product_id', 
+                'products.name', 
+                'products.slug', 
+                'products.description', 
+                'products.status', 
+                'products.image_url', 
+                'products.category_id', 
+                'products.created_at', 
+                'products.updated_at',
+                'categories.name',
+                'products.price'
+            )
+            ->orderBy('products.product_id', 'desc');
 
         // Nếu người dùng có nhập từ khóa tìm kiếm
         if ($search) {
@@ -57,12 +83,16 @@ class ProductController extends Controller
         // Kiểm tra dữ liệu đầu vào
         $request->validate([
             'name' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
             'category_id' => 'required|integer',
             'description' => 'nullable|string',
             'status' => 'required|boolean',
             'image_url' => 'nullable|string'
         ], [
             'name.required' => 'Vui lòng nhập tên sản phẩm',
+            'price.required' => 'Vui lòng nhập giá sản phẩm',
+            'price.numeric' => 'Giá sản phẩm phải là số',
+            'price.min' => 'Giá sản phẩm không được nhỏ hơn 0',
             'image_url.url' => 'Link hình ảnh không hợp lệ'
         ]);
 
@@ -73,6 +103,7 @@ class ProductController extends Controller
         // Thay chữ insert thành insertGetId và gán nó vào biến $product_id
         $product_id = DB::table('products')->insertGetId([
             'name' => $request->name,
+            'price' => $request->price,
             'slug' => $slug,
             'category_id' => $request->category_id,
             'description' => $request->description,
@@ -122,26 +153,23 @@ class ProductController extends Controller
         // Kiểm tra dữ liệu đầu vào (Validation)
         $request->validate([
             'name' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
             'category_id' => 'required|integer',
             'description' => 'nullable|string',
             'status' => 'required|boolean',
             'image_url' => 'nullable|string'
         ], [
             'name.required' => 'Vui lòng nhập tên sản phẩm',
+            'price.required' => 'Vui lòng nhập giá sản phẩm',
+            'price.numeric' => 'Giá sản phẩm phải là số',
+            'price.min' => 'Giá sản phẩm không được nhỏ hơn 0',
             'image_url.url' => 'Link hình ảnh không hợp lệ'
         ]);
 
         // Cập nhật vào database
         DB::table('products')->where('product_id', $id)->update([
             'name' => $request->name,
-            'category_id' => $request->category_id,
-            'description' => $request->description,
-            'status' => $request->status,
-            'image_url' => $request->image_url,
-            'updated_at' => now(),
-        ]);
-        DB::table('products')->where('product_id', $id)->update([
-            'name' => $request->name,
+            'price' => $request->price,
             'category_id' => $request->category_id,
             'description' => $request->description,
             'status' => $request->status,

@@ -167,6 +167,40 @@
         }
     }
 
+    // Hiển thị trạng thái đang soạn tin (typing indicator)
+    function showTypingIndicator() {
+        if (document.getElementById('chat-typing-indicator')) return;
+
+        const container = document.getElementById('chat-messages-container');
+        const wrapper = document.createElement('div');
+        wrapper.id = 'chat-typing-indicator';
+        wrapper.className = 'flex items-start gap-2'; // Không sử dụng chat-msg-item để tránh xung đột đếm tin nhắn
+        wrapper.innerHTML = `
+            <div class="w-7 h-7 rounded-full bg-[#FFF0D4] flex items-center justify-center text-xs shrink-0 animate-pulse">
+                ☕
+            </div>
+            <div class="flex flex-col items-start max-w-[80%]">
+                <div class="bg-white text-espresso px-4 py-2.5 rounded-[18px] rounded-tl-none shadow-sm flex items-center gap-1.5 h-8">
+                    <span class="w-1.5 h-1.5 bg-espresso/50 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                    <span class="w-1.5 h-1.5 bg-espresso/50 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                    <span class="w-1.5 h-1.5 bg-espresso/50 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+                </div>
+                <span class="text-[9px] text-espresso/40 mt-1 ml-1">Chill Chill Support đang nhập...</span>
+            </div>
+        `;
+
+        container.appendChild(wrapper);
+        scrollToBottom();
+    }
+
+    // Ẩn trạng thái đang soạn tin
+    function hideTypingIndicator() {
+        const indicator = document.getElementById('chat-typing-indicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
     // Gửi tin nhắn
     async function handleSend(e) {
         e.preventDefault();
@@ -180,6 +214,9 @@
         const tempTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
         appendMessageToDOM('customer', text, tempTime);
         scrollToBottom();
+
+        // Hiển thị hiệu ứng đang soạn tin của trợ lý AI
+        showTypingIndicator();
 
         try {
             const response = await fetch('{{ route('chat.send') }}', {
@@ -199,9 +236,14 @@
                 if (!chatToken) {
                     chatToken = data.message.chat_session_id; // phòng hờ
                 }
+                // Tải tin nhắn mới lập tức để cập nhật phản hồi của Bot và ẩn indicator
+                await fetchMessages();
             }
         } catch (error) {
             console.error('Lỗi gửi tin nhắn:', error);
+        } finally {
+            // Luôn ẩn trạng thái đang soạn tin khi hoàn thành request
+            hideTypingIndicator();
         }
     }
 
@@ -261,7 +303,7 @@
         // Thay thế xuống dòng bằng thẻ <br>
         escaped = escaped.replace(/\n/g, '<br>');
         // Thay thế markdown link [Text](URL) bằng thẻ <a>
-        return escaped.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, label, url) => {
+        return escaped.replace(/\[([^\]]+)\]\(((?:https?:\/\/|\/)[^\s)]+)\)/g, (match, label, url) => {
             return `<a href="${url}" target="_blank" class="text-coral underline font-bold hover:text-[#d5523b] transition-colors">${label}</a>`;
         });
     }

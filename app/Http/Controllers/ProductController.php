@@ -55,7 +55,18 @@ class ProductController extends Controller
         // 2. Khởi tạo câu truy vấn cơ bản (Lấy sản phẩm + Giá nhỏ nhất)
         $query = DB::table('products')
             ->join('product_variants', 'products.product_id', '=', 'product_variants.product_id')
-            ->select('products.*', DB::raw('MIN(product_variants.price) as price'))
+            ->select(
+                'products.product_id', 
+                'products.name', 
+                'products.slug', 
+                'products.description', 
+                'products.status', 
+                'products.image_url', 
+                'products.category_id', 
+                'products.created_at', 
+                'products.updated_at', 
+                DB::raw('MIN(product_variants.price) as price')
+            )
             ->where('products.status', 1)
             ->groupBy(
                 'products.product_id', 'products.name', 'products.slug', 
