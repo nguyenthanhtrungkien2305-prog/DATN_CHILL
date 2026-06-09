@@ -35,7 +35,6 @@ use App\Http\Controllers\Admin\ChatController as AdminChatController;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/san-pham/{slug}', [PublicProductController::class, 'show'])->name('product.show');
 Route::get('/thuc-don', [PublicProductController::class, 'index'])->name('product.index');
-<<<<<<< HEAD
 Route::get('/chuyen-nha', function () { return view('post.story'); })->name('post.story');
 Route::get('/tin-tuc', function () { return view('post.index'); })->name('post.index');
 Route::get('/lien-he', function () { return view('contact'); })->name('contact');
@@ -59,7 +58,6 @@ Route::get('/dang-xuat', [AuthController::class, 'logout'])->name('logout');
 | ROUTES NGƯỜI DÙNG THÀNH VIÊN (ĐÃ ĐĂNG NHẬP)
 |--------------------------------------------------------------------------
 */
-=======
 // Trang câu chuyện thương hiệu (Bài viết nổi bật)
 Route::get('/chuyen-nha', function () {
     return view('post.story'); // Trỏ tới file view story.blade.php
@@ -74,7 +72,6 @@ Route::get('/lien-he', function () {
 })->name('contact');
 Route::post('/lien-he', [FeedbackController::class, 'store'])->name('contact.submit');
 // ROUTES NGƯỜI DÙNG (Bắt buộc phải đăng nhập)
->>>>>>> 83a9b3e817eb3a83101e6fd80953935ffc53d02d
 Route::middleware(['auth'])->group(function () {
     Route::get('/tai-khoan', [UserController::class, 'profile'])->name('user.profile');
     Route::post('/tai-khoan/cap-nhat', [UserController::class, 'updateProfile'])->name('user.update_profile');
