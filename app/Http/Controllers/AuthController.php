@@ -52,16 +52,20 @@ class AuthController extends Controller
 
         // Bước 4: Đăng nhập ngay lập tức cho người dùng
         // Kiểm tra mật khẩu (Dùng Hash::check)
+        // Bên trong hàm login của AuthController.php
         if ($user && Hash::check($request->password, $user->password)) {
             Auth::login($user, $request->has('remember'));
             
-            // KIỂM TRA ROLE ĐỂ CHUYỂN HƯỚNG
+            // Nếu là staff -> Vô POS
+            if ($user->role === 'staff') {
+                return redirect()->route('staff.pos');
+            }
+
+            // NẾU LÀ ADMIN -> BAY THẲNG VÀO TRANG QUẢN TRỊ
             if ($user->role === 'admin') {
-                // Nếu là Admin -> Cho thẳng vào trang Dashboard
                 return redirect()->route('admin.dashboard');
             }
             
-            // Nếu là User thường -> Đưa về trang chủ
             return redirect('/')->with('success', 'Đăng nhập thành công!');
         }
         // Bước 5: Chuyển về trang chủ kèm theo tín hiệu để bật Pop-up Chào mừng
@@ -73,42 +77,80 @@ class AuthController extends Controller
     // ==========================================
     public function login(Request $request)
     {
-        // Kiểm tra dữ liệu nhập vào
-        $validator = Validator::make($request->all(), [
-            'login_identity' => 'required|string',
-            'password' => 'required|string',
-        ], [
-            'login_identity.required' => 'Vui lòng nhập thông tin đăng nhập.',
-            'password.required' => 'Vui lòng nhập mật khẩu.'
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
         ]);
 
-        if ($validator->fails()) {
-            return back()->withErrors(['login_error' => $validator->errors()->first()])->withInput();
-        }
+        if (\Illuminate\Support\Facades\Auth::attempt(['email' => $request->email, 'password' => $request->password], $request->has('remember'))) {
+            $user = \Illuminate\Support\Facades\Auth::user();
+            $userId = $user->user_id ?? $user->id; // Hỗ trợ cả 2 kiểu khóa chính
 
-        $identity = $request->login_identity;
+            // NẾU LÀ NHÂN VIÊN -> TỰ ĐỘNG CHECK-IN
+            if ($user->role === 'staff') {
+                $now = now('Asia/Ho_Chi_Minh');
+                
+                // 1. Ghi nhận Attendance (Chấm công) nếu hôm nay chưa có
+                $attendanceExists = \Illuminate\Support\Facades\DB::table('attendances')
+                    ->where('user_id', $userId)
+                    ->whereDate('date', $now->format('Y-m-d'))
+                    ->whereNull('check_out')
+                    ->exists();
 
-        // Tìm user bằng Tên hoặc SĐT
-        $user = User::where('name', $identity)->orWhere('phone', $identity)->first();
+                if (!$attendanceExists) {
+                    \Illuminate\Support\Facades\DB::table('attendances')->insert([
+                        'user_id' => $userId,
+                        'date' => $now->format('Y-m-d'),
+                        'check_in' => $now,
+                        'scheduled_end_time' => $now->copy()->addHours(4), // Tạm mặc định ca 4 tiếng
+                        'created_at' => $now,
+                        'updated_at' => $now
+                    ]);
+                }
 
-        // Kiểm tra mật khẩu (Dùng Hash::check để so sánh mật khẩu mã hóa)
-        if ($user && Hash::check($request->password, $user->password)) {
-            Auth::login($user, $request->has('remember'));
+                // 2. Gắn vào Ca hiện hành (Để chia tiền Hoa hồng)
+                $shiftIndex = floor($now->hour / 4) + 1;
+                $startHour = ($shiftIndex - 1) * 4;
+                $startTime = sprintf('%02d:00:00', $startHour);
+                $endTime = ($startHour + 4 == 24) ? '23:59:59' : sprintf('%02d:00:00', $startHour + 4);
+
+                $shift = \App\Models\Shift::firstOrCreate(
+                    ['date' => $now->format('Y-m-d'), 'start_time' => $startTime],
+                    [
+                        'name' => "Ca $shiftIndex (" . sprintf('%02d:00', $startHour) . " - " . sprintf('%02d:00', $startHour + 4 > 23 ? 0 : $startHour + 4) . ")",
+                        'end_time' => $endTime
+                    ]
+                );
+
+                if (!$shift->users->contains($userId)) {
+                    $shift->users()->attach($userId);
+                }
+
+                return redirect()->route('staff.pos')->with('success', 'Đăng nhập & Check-in ca làm thành công!');
+            }
+
+            if ($user->role === 'admin') {
+                return redirect()->route('admin.dashboard');
+            }
             
-            // Đăng nhập thành công, chuyển hướng về trang chủ
             return redirect('/')->with('success', 'Đăng nhập thành công!');
         }
 
-        // Nếu sai tài khoản hoặc mật khẩu
-        return back()->withErrors(['login_error' => 'Tài khoản hoặc mật khẩu không chính xác!'])->withInput();
+        return back()->withErrors(['email' => 'Email hoặc mật khẩu không chính xác.']);
     }
-
-    // ==========================================
+   // ==========================================
     // 3. XỬ LÝ ĐĂNG XUẤT
     // ==========================================
-    public function logout()
+    public function logout(\Illuminate\Http\Request $request)
     {
+        // 1. Đăng xuất tài khoản
         Auth::logout();
-        return redirect('/');
+
+        // 2. Xóa sạch mọi rác trong phiên làm việc (Session) để chống kẹt lỗi
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        // 3. Đá về trang đăng nhập
+        return redirect('/dang-nhap')->with('success', 'Bạn đã đăng xuất ca làm việc an toàn!');
     }
 }

@@ -15,13 +15,25 @@ class RedirectIfAuthenticated
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next, string ...$guards): Response
+   public function handle(Request $request, Closure $next, string ...$guards): Response
     {
         $guards = empty($guards) ? [null] : $guards;
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                return redirect(RouteServiceProvider::HOME);
+                
+                // 1. NẾU LÀ NHÂN VIÊN (STAFF) -> GIỮ LẠI Ở QUẦY POS
+                if (Auth::user()->role === 'staff') {
+                    return redirect()->route('staff.pos');
+                }
+                
+                // 2. NẾU LÀ ADMIN -> ĐƯA VỀ TRANG QUẢN TRỊ (Nếu sau này bạn làm)
+                if (Auth::user()->role === 'admin') {
+                    return redirect('/admin/dashboard');
+                }
+
+                // 3. KHÁCH HÀNG BÌNH THƯỜNG -> MỚI ĐÁ VỀ TRANG CHỦ
+                return redirect('/'); // (Hoặc RouteServiceProvider::HOME)
             }
         }
 

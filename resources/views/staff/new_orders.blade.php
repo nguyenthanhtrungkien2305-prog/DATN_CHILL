@@ -45,10 +45,10 @@
             </div>
         </div>
 
-        {{-- DANH SÁCH ĐƠN HÀNG (Dữ liệu thật) --}}
-        <div class="flex-1 p-6 overflow-y-auto custom-scrollbar bg-[#FAF7F2]">
+        {{-- DANH SÁCH ĐƠN HÀNG --}}
+        <div class="flex-1 p-6 flex flex-col bg-[#FAF7F2] overflow-hidden">
             
-            <div class="flex justify-between items-center mb-6">
+            <div class="flex justify-between items-center mb-6 shrink-0">
                 <h2 class="text-xl font-black text-espresso uppercase tracking-widest flex items-center gap-2">
                     <span class="relative flex h-4 w-4">
                       <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -61,14 +61,15 @@
                 </div>
             </div>
 
-            {{-- LƯỚI CARD ĐƠN HÀNG THẬT --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6" id="orders-grid">
+            {{-- ĐÃ SỬA: LƯỚI CARD TRƯỢT NGANG (FLEX-ROW + OVERFLOW-X-AUTO) --}}
+            <div class="flex overflow-x-auto custom-scrollbar gap-6 pb-6 flex-1 snap-x" id="orders-grid">
                 
                 @foreach($pendingOrders as $order)
-                <div id="order-card-{{ $order->order_id }}" class="bg-white rounded-2xl border border-espresso/10 shadow-sm overflow-hidden flex flex-col transition-all duration-300 hover:shadow-lg hover:border-coral/50">
+                {{-- ĐÃ SỬA: Ép kích thước Card (w-[380px] h-[550px] shrink-0) --}}
+                <div id="order-card-{{ $order->order_id }}" class="w-[320px] md:w-[380px] h-[550px] shrink-0 snap-start bg-white rounded-2xl border border-espresso/10 shadow-sm overflow-hidden flex flex-col transition-all duration-300 hover:shadow-lg hover:border-coral/50 relative">
                     
                     {{-- Header Card --}}
-                    <div class="bg-gray-50 border-b border-gray-200 p-4 flex justify-between items-start">
+                    <div class="bg-gray-50 border-b border-gray-200 p-4 flex justify-between items-start shrink-0">
                         <div>
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="bg-red-100 text-red-600 font-black text-xs px-2 py-1 rounded-md uppercase">Đang chờ</span>
@@ -84,21 +85,24 @@
                         </div>
                     </div>
 
-                    {{-- Body Card: Chi tiết khách & Món ăn --}}
-                    <div class="p-4 flex-1">
-                        <div class="mb-3 pb-3 border-b border-dashed border-gray-200">
+                    {{-- Body Card: Flex-col để giới hạn vùng cuộn món ăn --}}
+                    <div class="p-4 flex-1 flex flex-col overflow-hidden">
+                        
+                        {{-- Phần Thông tin khách hàng (Cố định, không cuộn) --}}
+                        <div class="mb-3 pb-3 border-b border-dashed border-gray-200 shrink-0">
                             <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Khách hàng</p>
                             <p class="font-bold text-espresso text-sm flex items-center gap-2">
                                 <svg class="w-4 h-4 text-espresso/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                 {{ $order->customer_name ?? 'Khách Vãng Lai' }}
                             </p>
-                            @if($order->shipping_address) {{-- Ở POS chúng ta dùng cột này lưu Ghi chú đơn hàng --}}
+                            @if($order->shipping_address) 
                                 <p class="text-xs text-coral italic mt-1 bg-coral/5 p-1.5 rounded-lg border border-coral/10">📝 {{ $order->shipping_address }}</p>
                             @endif
                         </div>
 
-                        <div class="space-y-3">
-                            <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Chi tiết món</p>
+                        {{-- ĐÃ SỬA: Danh sách món ăn có thể Scroll (overflow-y-auto) --}}
+                        <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
+                            <p class="text-xs text-gray-500 uppercase font-bold tracking-wider sticky top-0 bg-white z-10 pb-1">Chi tiết món</p>
                             @php 
                                 $items = json_decode($order->items, true); 
                                 if(!is_array($items)) $items = [];
@@ -111,7 +115,6 @@
                                         <span class="font-black text-coral text-sm">x{{ $item['quantity'] }}</span>
                                     </div>
                                     
-                                    {{-- Render Topping nếu có --}}
                                     @if(isset($item['toppings']) && count(array_filter($item['toppings'])) > 0)
                                         <div class="mt-1 flex flex-wrap gap-1">
                                             @foreach($item['toppings'] as $t_id => $t_qty)
@@ -128,8 +131,8 @@
                         </div>
                     </div>
 
-                    {{-- Footer Card: Tổng tiền & Nút Hoàn thành --}}
-                    <div class="p-4 bg-gray-50 border-t border-gray-200 mt-auto">
+                    {{-- Footer Card: Tổng tiền & Nút Hoàn thành (Cố định ở đáy thẻ) --}}
+                    <div class="p-4 bg-gray-50 border-t border-gray-200 shrink-0">
                         <div class="flex justify-between items-center mb-3">
                             <span class="font-bold text-espresso text-xs">TỔNG TIỀN:</span>
                             <span class="font-black text-xl text-coral">{{ number_format($order->total_amount, 0, ',', '.') }}đ</span>
@@ -173,7 +176,7 @@
     </div>
 
     <style>
-       .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+       .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #ff7043; border-radius: 20px; }
     </style>

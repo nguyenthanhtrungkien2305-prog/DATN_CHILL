@@ -9,25 +9,21 @@ class PosController extends Controller
 {
     public function index()
     {
-        // 1. Lấy tất cả danh mục
         $categories = DB::table('categories')->get();
 
-        // 2. Tìm ID của danh mục "Topping"
         $toppingCategory = DB::table('categories')->where('name', 'like', '%Topping%')->first();
         $toppingCatId = $toppingCategory ? $toppingCategory->category_id : null;
 
-        // 3. LẤY DANH SÁCH SẢN PHẨM (Nối với bảng product_variants để lấy giá)
         $productsQuery = DB::table('products')
             ->leftJoin('product_variants', 'products.product_id', '=', 'product_variants.product_id')
             ->select('products.*', DB::raw('MIN(product_variants.price) as price'))
-            ->groupBy('products.product_id'); // Gom nhóm để hàm MIN hoạt động
+            ->groupBy('products.product_id');
 
         if ($toppingCatId) {
             $productsQuery->where('products.category_id', '!=', $toppingCatId);
         }
         $products = $productsQuery->get();
 
-        // 4. LẤY DANH SÁCH TOPPING (Nối với bảng product_variants để lấy giá)
         $toppings = [];
         if ($toppingCatId) {
             $toppings = DB::table('products')
@@ -38,17 +34,14 @@ class PosController extends Controller
                 ->get();
         }
         
-
         return view('staff.pos', compact('products', 'categories', 'toppings'));
     }
-    // Hàm API kiểm tra đơn hàng mới liên tục
+
     public function checkNewOrders(Request $request)
     {
-        // Lấy ID đơn hàng mới nhất mà trình duyệt đang biết (mặc định là 0)
         $lastOrderId = $request->query('last_order_id', 0);
         
-        // Tìm trong bảng orders những đơn có order_id > lastOrderId và trạng thái là 'pending'
-        $newOrders = \Illuminate\Support\Facades\DB::table('orders')
+        $newOrders = DB::table('orders')
             ->where('order_id', '>', $lastOrderId)
             ->where('status', 'pending')
             ->orderBy('order_id', 'asc')
@@ -59,10 +52,9 @@ class PosController extends Controller
             'count' => $newOrders->count()
         ]);
     }
-    // Hàm Lưu đơn hàng từ POS vào Database
+
     public function storeOrder(Request $request)
     {
-        // 1. Nhận dữ liệu JSON gửi lên từ Javascript
         $data = $request->validate([
             'customer_name' => 'nullable|string',
             'order_note'    => 'nullable|string',
@@ -70,38 +62,40 @@ class PosController extends Controller
             'items'         => 'required|array',
         ]);
 
-        // 2. Insert vào bảng orders
+        // 👉 TỰ ĐỘNG TÌM CA LÀM VIỆC CỦA NGÀY HÔM NAY ĐỂ GẮN VÀO ĐƠN HÀNG
+        $today = now()->format('Y-m-d');
+        $shift = \App\Models\Shift::where('date', $today)->first();
+        $shiftId = $shift ? $shift->id : null;
+
         $orderId = DB::table('orders')->insertGetId([
             'customer_name'    => $data['customer_name'] ?? 'Khách Vãng Lai',
             'customer_phone'   => null,
-            'shipping_address' => $data['order_note'], // Tạm dùng cột này lưu ghi chú
-            'order_type'       => 'pos', // Đánh dấu là đơn tạo tại quầy
+            'shift_id'         => $shiftId, // LƯU VÀO CA LÀM VIỆC
+            'shipping_address' => $data['order_note'],
+            'order_type'       => 'pos',
             'payment_method'   => 'cash',
             'total_amount'     => $data['total_amount'],
-            'status'           => 'pending', // Quan trọng: Để pending thì hệ thống báo động mới kêu!
+            'status'           => 'pending',
             'items'            => json_encode($data['items'], JSON_UNESCAPED_UNICODE),
             'created_at'       => now(),
             'updated_at'       => now(),
         ]);
 
-        // 3. Trả về kết quả Thành công
         return response()->json([
             'success' => true, 
             'order_id' => $orderId, 
             'message' => 'Tạo đơn thành công'
         ]);
     }
-    // Hàm hiển thị trang Đơn hàng mới (Lấy dữ liệu thật)
+
     public function newOrders()
     {
-        // Lấy danh sách đơn hàng đang 'pending', cũ nhất xếp lên trên
-        $pendingOrders = \Illuminate\Support\Facades\DB::table('orders')
+        $pendingOrders = DB::table('orders')
             ->where('status', 'pending')
             ->orderBy('created_at', 'asc') 
             ->get();
             
-        // Truyền thêm danh mục Topping để lỡ cần hiển thị tên Topping (nếu có)
-        $toppings = \Illuminate\Support\Facades\DB::table('products')
+        $toppings = DB::table('products')
             ->where('category_id', function($query) {
                 $query->select('category_id')->from('categories')->where('name', 'like', '%Topping%')->limit(1);
             })->get()->keyBy('product_id');
@@ -109,12 +103,33 @@ class PosController extends Controller
         return view('staff.new_orders', compact('pendingOrders', 'toppings'));
     }
 
-    // Hàm cập nhật trạng thái đơn hàng thành "Đã hoàn thành"
+    // Hàm cập nhật trạng thái đơn hàng thành "Đã hoàn thành" và Ghi nhận Hoa Hồng
     public function completeOrder($id)
     {
+        $now = now('Asia/Ho_Chi_Minh');
+        
+        // 1. Lấy giờ thực tế lúc nhân viên bấm nút để xác định Ca
+        $shiftIndex = floor($now->hour / 4) + 1;
+        $startHour = ($shiftIndex - 1) * 4;
+        $endHour = $shiftIndex * 4;
+        
+        $startTime = sprintf('%02d:00:00', $startHour);
+        $endTime = $endHour == 24 ? '23:59:59' : sprintf('%02d:00:00', $endHour);
+        
+        // 2. Tìm Ca làm việc hiện tại (hoặc tạo mới nếu hệ thống chưa có)
+        $shift = \App\Models\Shift::firstOrCreate(
+            ['date' => $now->format('Y-m-d'), 'start_time' => $startTime],
+            [
+                'name' => "Ca $shiftIndex (" . sprintf('%02d:00', $startHour) . " - " . sprintf('%02d:00', $endHour == 24 ? 0 : $endHour) . ")",
+                'end_time' => $endTime
+            ]
+        );
+
+        // 3. Gắn đơn hàng này vào Ca hiện tại & Đánh dấu hoàn thành
         \Illuminate\Support\Facades\DB::table('orders')->where('order_id', $id)->update([
             'status' => 'completed',
-            'updated_at' => now()
+            'shift_id' => $shift->id, // 👉 LƯU DỮ LIỆU THẬT ĐỂ TÍNH HOA HỒNG TẠI ĐÂY
+            'updated_at' => $now
         ]);
         
         return response()->json(['success' => true]);

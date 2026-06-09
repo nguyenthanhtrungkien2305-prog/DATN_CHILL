@@ -11,18 +11,17 @@ class CheckStaff
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // 1. Kiểm tra xem đã đăng nhập chưa
+        // 1. Nếu chưa đăng nhập -> Đẩy ra trang Đăng nhập
         if (!Auth::check()) {
-            return redirect()->route('login')->with('error', 'Vui lòng đăng nhập trước!');
+            return redirect()->route('login')->with('error', 'Vui lòng đăng nhập!');
         }
 
-        // 2. Kiểm tra xem có đúng vai trò là 'staff' không
+        // 2. Nếu đã đăng nhập NHƯNG role KHÔNG PHẢI là 'staff' -> Đẩy về Trang Chủ
         if (Auth::user()->role !== 'staff') {
-            // Nếu là admin thì có thể cho qua hoặc đá về trang admin tùy bạn, ở đây chặn tuyệt đối nếu không phải staff
-            Auth::logout();
-            return redirect()->route('login')->with('error', 'Tài khoản của bạn không có quyền truy cập quầy POS!');
+            return redirect('/')->with('error', 'Bạn không có quyền vào quầy thu ngân!');
         }
 
+        // 3. Đúng là nhân viên -> Cho phép đi tiếp vào trang POS
         return $next($request);
     }
 }
