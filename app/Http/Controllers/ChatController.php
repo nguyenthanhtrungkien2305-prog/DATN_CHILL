@@ -74,9 +74,25 @@ class ChatController extends Controller
             ];
         });
 
+        // Đọc các flag thay đổi từ bot trong session
+        $cartUpdated = session()->pull('cart_updated_by_bot', false);
+        $orderCreated = session()->pull('order_created_by_bot', null);
+        $paymentMethod = session()->pull('order_payment_method_by_bot', null);
+
+        // Đếm lại số lượng sản phẩm trong giỏ hàng để cập nhật badge
+        $cartCount = 0;
+        if ($cartUpdated) {
+            $cart = session()->get('cart', []);
+            $cartCount = array_sum(array_column($cart, 'quantity'));
+        }
+
         return response()->json([
             'success' => true,
-            'messages' => $messages
+            'messages' => $messages,
+            'cart_updated' => $cartUpdated,
+            'cart_count' => $cartCount,
+            'order_created' => $orderCreated,
+            'payment_method' => $paymentMethod
         ]);
     }
 

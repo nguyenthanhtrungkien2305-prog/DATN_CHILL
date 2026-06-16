@@ -36,7 +36,7 @@
             <div class="w-7 h-7 rounded-full bg-[#FFF0D4] flex items-center justify-center text-xs shrink-0">
                 ☕
             </div>
-            <div class="bg-white text-espresso p-3 rounded-[18px] rounded-tl-none shadow-sm text-xs leading-relaxed">
+            <div id="chat-welcome-msg" class="bg-white text-espresso p-3 rounded-[18px] rounded-tl-none shadow-sm text-xs leading-relaxed">
                 Chào bạn! Chill Chill có thể giúp gì cho bạn hôm nay? Hãy gửi lời nhắn nhé!
             </div>
         </div>
@@ -83,8 +83,8 @@
                             <div class="w-7 h-7 rounded-full bg-[#FFF0D4] flex items-center justify-center text-xs shrink-0">
                                 ☕
                             </div>
-                            <div class="bg-white text-espresso p-3 rounded-[18px] rounded-tl-none shadow-sm text-xs leading-relaxed">
-                                Chào bạn! Chill Chill có thể giúp gì cho bạn hôm nay? Hãy gửi lời nhắn nhé!
+                            <div id="chat-welcome-msg" class="bg-white text-espresso p-3 rounded-[18px] rounded-tl-none shadow-sm text-xs leading-relaxed">
+                                ${getRealTimeGreeting()}
                             </div>
                         </div>
                     `;
@@ -105,6 +105,23 @@
         chatOpen = !chatOpen;
 
         if (chatOpen) {
+            // Mỗi lần mở lên sẽ bắt đầu một đoạn chat mới
+            chatToken = null;
+            localStorage.removeItem('chill_chat_token');
+
+            // Reset khung hiển thị tin nhắn về trạng thái ban đầu (chỉ giữ tin nhắn chào mừng)
+            const container = document.getElementById('chat-messages-container');
+            container.innerHTML = `
+                <div class="flex items-start gap-2 max-w-[80%]">
+                    <div class="w-7 h-7 rounded-full bg-[#FFF0D4] flex items-center justify-center text-xs shrink-0">
+                        ☕
+                    </div>
+                    <div id="chat-welcome-msg" class="bg-white text-espresso p-3 rounded-[18px] rounded-tl-none shadow-sm text-xs leading-relaxed">
+                        ${getRealTimeGreeting()}
+                    </div>
+                </div>
+            `;
+
             windowEl.classList.remove('translate-y-10', 'opacity-0', 'pointer-events-none');
             windowEl.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
             
@@ -130,6 +147,19 @@
             if (chatPollInterval) {
                 clearInterval(chatPollInterval);
                 chatPollInterval = null;
+            }
+        }
+    }
+
+    // Cập nhật số lượng giỏ hàng trên Header của Website
+    function updateHeaderCartBadge(count) {
+        const badge = document.getElementById('cart-badge');
+        if (badge) {
+            badge.innerText = count;
+            if (count > 0) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
             }
         }
     }
@@ -160,6 +190,38 @@
                         }
                     });
                     scrollToBottom();
+                }
+
+                // Xử lý cờ cập nhật giỏ hàng từ Bot AI
+                if (data.cart_updated) {
+                    updateHeaderCartBadge(data.cart_count);
+                    
+                    // Nếu đang xem trang giỏ hàng hoặc checkout, reload để thấy thay đổi
+                    if (window.location.pathname.startsWith('/cart') || window.location.pathname.startsWith('/checkout')) {
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    }
+                }
+
+                // Xử lý cờ tạo đơn hàng từ Bot AI
+                if (data.order_created) {
+                    const noticeText = data.payment_method === 'qr'
+                        ? 'Đặt đơn hàng thành công! Đang tự động chuyển hướng bạn tới trang quét mã QR thanh toán...'
+                        : 'Đặt đơn hàng thành công! Đang tự động chuyển hướng bạn tới trang danh sách đơn hàng...';
+
+                    // Thêm thông báo hệ thống vào khung chat
+                    appendMessageToDOM('admin', `✨ ${noticeText}`, new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
+                    scrollToBottom();
+
+                    // Chuyển hướng sau 2 giây
+                    setTimeout(() => {
+                        if (data.payment_method === 'qr') {
+                            window.location.href = `/checkout/payment-qr/${data.order_created}`;
+                        } else {
+                            window.location.href = `/tai-khoan/don-hang`;
+                        }
+                    }, 2000);
                 }
             }
         } catch (error) {
@@ -321,8 +383,46 @@
         );
     }
 
+    function getRealTimeGreeting() {
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = String(now.getMinutes()).padStart(2, '0');
+        const daysOfWeek = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+        const dayName = daysOfWeek[now.getDay()];
+        const timeStr = `${hour}:${minute} (${dayName})`;
+        
+        let period = "";
+        let blessing = "";
+        if (hour >= 5 && hour < 11) {
+            period = "sáng";
+            blessing = "Chúc bạn một buổi sáng tràn đầy năng lượng! ☕";
+        } else if (hour >= 11 && hour < 14) {
+            period = "trưa";
+            blessing = "Chúc bạn một buổi trưa vui vẻ và ngon miệng! 🍹";
+        } else if (hour >= 14 && hour < 18) {
+            period = "chiều";
+            blessing = "Chúc bạn một buổi chiều xế ngọt ngào và thư giãn! 🍰";
+        } else if (hour >= 18 && hour < 23) {
+            period = "tối";
+            blessing = "Chúc bạn một buổi tối ấm áp và thư giãn! ✨";
+        } else {
+            period = "đêm";
+            blessing = "Chúc bạn một đêm ngon giấc! 🌙";
+        }
+        
+        if (hour >= 23 || hour < 5) {
+            return `Dạ, bây giờ là ${timeStr} khuya, Chill Chill chào bạn! ${blessing} Các đơn hàng đặt giờ này sẽ được quán chuẩn bị vào sáng mai khi mở cửa. Bạn cần tư vấn món gì cứ nhắn Chill Chill nhé!`;
+        } else {
+            return `Dạ, bây giờ là ${timeStr} ${period}, Chill Chill chào bạn! ${blessing} Chill Chill có thể giúp gì cho bạn hôm nay?`;
+        }
+    }
+
     // Lắng nghe tải trang để kiểm tra badge chưa đọc ban đầu
     document.addEventListener('DOMContentLoaded', () => {
+        const welcomeEl = document.getElementById('chat-welcome-msg');
+        if (welcomeEl) {
+            welcomeEl.innerText = getRealTimeGreeting();
+        }
         if (chatToken) {
             // Chạy ngầm lấy tin nhắn lần đầu để cập nhật badge nếu có tin nhắn chưa đọc từ admin
             fetchMessages();
