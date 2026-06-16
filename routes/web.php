@@ -113,22 +113,28 @@ Route::prefix('checkout')->group(function () {
 */
 Route::middleware(['auth', 'staff'])->group(function () {
     
-    // Tự động chuyển hướng nếu gõ thiếu đường dẫn
-    Route::redirect('/staff', '/staff/pos');
+    // ==========================================
+    // VÙNG 1: KHÔNG CẦN VÀO CA VẪN TRUY CẬP ĐƯỢC
+    // ==========================================
+    Route::get('/staff/shifts', [\App\Http\Controllers\AttendanceController::class, 'index'])->name('staff.shifts');
+    Route::post('/staff/shifts/register', [\App\Http\Controllers\AttendanceController::class, 'storeRegistration'])->name('staff.shifts.register');
+    Route::get('/staff/salary', [\App\Http\Controllers\SalaryController::class, 'index'])->name('staff.salary');   
 
-    // Các trang Giao diện
-    Route::get('/staff/pos', [PosController::class, 'index'])->name('staff.pos');
-    Route::get('/staff/new-orders', [PosController::class, 'newOrders'])->name('staff.new_orders');
-    Route::get('/staff/commission', [CommissionController::class, 'index'])->name('staff.commission');
-    Route::get('/staff/shifts', [AttendanceController::class, 'index'])->name('staff.shifts');
-Route::post('/staff/shifts/register', [AttendanceController::class, 'storeRegistration'])->name('staff.shifts.register');
-Route::post('/staff/attendance/checkout', [AttendanceController::class, 'checkOut'])->name('staff.checkout');
-Route::post('/staff/attendance/checkin', [AttendanceController::class, 'checkIn'])->name('staff.checkin');
-    
-    // Các đường dẫn API xử lý ngầm
-    Route::get('/staff/api/check-new-orders', [PosController::class, 'checkNewOrders'])->name('staff.api.check_orders');
-    Route::post('/staff/api/orders', [PosController::class, 'storeOrder'])->name('staff.api.store_order');
-    Route::post('/staff/api/orders/{id}/complete', [PosController::class, 'completeOrder'])->name('staff.api.complete_order');
+    // 👉 ĐÃ CỨU: API Check-in và Check-out được đưa ra vùng an toàn để ai cũng bấm được!
+    Route::post('/staff/attendance/checkin', [\App\Http\Controllers\AttendanceController::class, 'checkIn'])->name('staff.checkin');
+    Route::post('/staff/attendance/checkout', [\App\Http\Controllers\AttendanceController::class, 'checkOut'])->name('staff.checkout');
+
+    // ==========================================
+    // VÙNG 2: NHẠY CẢM - BẮT BUỘC PHẢI ĐANG TRONG CA LÀM (MIDDLEWARE CHẶN)
+    // ==========================================
+    Route::middleware([\App\Http\Middleware\CheckActiveShift::class])->group(function () {
+        Route::get('/staff/pos', [\App\Http\Controllers\PosController::class, 'index'])->name('staff.pos');
+        Route::get('/staff/new-orders', [\App\Http\Controllers\PosController::class, 'newOrders'])->name('staff.new_orders');
+        Route::get('/staff/commission', [\App\Http\Controllers\CommissionController::class, 'index'])->name('staff.commission');
+        
+        // API xử lý đơn hàng cũng cần được bảo vệ để người ngoài không chọc vào được
+        Route::post('/staff/api/orders/{id}/complete', [\App\Http\Controllers\PosController::class, 'completeOrder'])->name('staff.api.complete_order');
+    });
 });
 
 Route::get('/tai-khoan/don-hang', [\App\Http\Controllers\UserController::class, 'orders'])->name('user.orders');
@@ -152,8 +158,12 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     Route::resource('products', AdminProductController::class);
     Route::resource('toppings', AdminToppingController::class);
     Route::resource('vouchers', AdminVoucherController::class);
+    Route::get('users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.users.index');
+    Route::post('users/{id}/update-role', [\App\Http\Controllers\Admin\UserController::class, 'updateRole'])->name('admin.users.update_role');
     
-
+    // QUẢN LÝ LỊCH LÀM & LƯƠNG NHÂN VIÊN
+    Route::get('staff-manager', [\App\Http\Controllers\Admin\StaffManagerController::class, 'index'])->name('admin.staff.manager');
+    Route::post('staff-manager/shift/{id}', [\App\Http\Controllers\Admin\StaffManagerController::class, 'updateShiftStatus'])->name('admin.staff.update_shift');
     // QUẢN LÝ PHẢN HỒI (FEEDBACK):
     Route::resource('feedbacks', AdminFeedbackController::class)->only(['index', 'show', 'destroy']);
     Route::post('feedbacks/{id}/reply', [AdminFeedbackController::class, 'reply'])->name('feedbacks.reply');
