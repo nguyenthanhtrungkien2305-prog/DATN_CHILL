@@ -1,8 +1,8 @@
 @php
-    // Kiểm tra xem nhân viên có ca nào đang mở không
+    // Đồng bộ tuyệt đối với Middleware: Chỉ tìm xem có ca nào đang mở (check_out = NULL) hay không!
     $hasActiveShift = \Illuminate\Support\Facades\DB::table('attendances')
         ->where('user_id', auth()->user()->user_id ?? auth()->id())
-        ->whereNull('check_out') // Đã xóa dòng whereDate ở đây
+        ->whereNull('check_out') // -> Đã xóa whereDate ở đây để quét sạch mọi ca bị kẹt
         ->exists();
 @endphp
 
@@ -70,17 +70,28 @@
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                'X-CSRF-TOKEN': "{{ csrf_token() }}" // Nơi hay bị kẹt cache nhất
             }
         })
-        .then(res => res.json())
+        .then(async res => {
+            // Nếu phát hiện kẹt Cache (Lỗi 419) -> Tự động F5 lại trang
+            if (res.status === 419) {
+                alert("Mã bảo mật bị kẹt do Cache máy tính. Hệ thống đang tự động làm mới...");
+                window.location.reload(true); 
+                throw new Error("419 CSRF Token Expired");
+            }
+            if (!res.ok) throw new Error("Lỗi Server: " + res.status);
+            return res.json();
+        })
         .then(data => {
-            alert(data.message); // Hiển thị thông báo (Thành công hoặc Bị từ chối)
+            alert(data.message);
             if (data.success) window.location.reload();
         })
         .catch(err => {
-            console.error(err);
-            alert("Lỗi kết nối ngầm! Vui lòng ấn F12 xem tab Console.");
+            if (err.message !== "419 CSRF Token Expired") {
+                console.error(err);
+                alert("Lỗi kết nối ngầm! Vui lòng ấn F12 xem tab Console.");
+            }
         });
     }
 
@@ -89,21 +100,31 @@
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': "{{ csrf_token() }}" // <-- Đã sửa
+                'X-CSRF-TOKEN': "{{ csrf_token() }}"
             }
         })
-        .then(res => res.json())
+        .then(async res => {
+            if (res.status === 419) {
+                alert("Mã bảo mật bị kẹt do Cache máy tính. Hệ thống đang tự động làm mới...");
+                window.location.reload(true);
+                throw new Error("419 CSRF Token Expired");
+            }
+            if (!res.ok) throw new Error("Lỗi Server: " + res.status);
+            return res.json();
+        })
         .then(data => {
             if (data.success) {
                 alert(data.message);
-                window.location.href = "{{ route('logout') }}"; 
+                window.location.href = "{{ route('staff.shifts') }}"; 
             } else {
                 alert(data.message);
             }
         })
         .catch(err => {
-            console.error(err);
-            alert('Có lỗi xảy ra, không thể kết ca lúc này!');
+            if (err.message !== "419 CSRF Token Expired") {
+                console.error(err);
+                alert("Lỗi kết nối ngầm! Vui lòng ấn F12 xem tab Console.");
+            }
         });
     }
 </script>

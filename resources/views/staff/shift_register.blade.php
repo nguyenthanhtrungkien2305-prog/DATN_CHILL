@@ -40,6 +40,9 @@
                     @php $pendingCount = $registrations->where('status', 'pending')->count(); @endphp
                     @if($pendingCount > 0) <span class="bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px]">{{ $pendingCount }}</span> @endif
                 </button>
+                <button onclick="switchTab('statistics')" id="tab-btn-statistics" class="pb-3 px-2 font-bold text-gray-400 border-b-4 border-transparent hover:text-coral transition-all uppercase tracking-wider text-sm flex items-center gap-2">
+                    📊 Thống Kê Giờ Làm Thực Tế
+                </button>
             </div>
 
             @php
@@ -264,6 +267,62 @@
                     </div>
                 </div>
             </div>
+            {{-- ================================================= --}}
+            {{-- TAB 3: THỐNG KÊ GIỜ LÀM THỰC TẾ --}}
+            {{-- ================================================= --}}
+            <div id="tab-statistics" class="hidden animate-fade-in space-y-6">
+                
+                {{-- 2 THẺ TỔNG QUAN (TUẦN & THÁNG) --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
+                        <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center text-3xl font-black">📅</div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-400 uppercase tracking-wider">Thực làm tuần này</p>
+                            <p class="text-3xl font-black text-espresso mt-1">{{ $realTotalWeek }} <span class="text-base text-gray-500 font-medium">giờ</span></p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
+                        <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-3xl font-black">📆</div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-400 uppercase tracking-wider">Thực làm tháng {{ date('m/Y') }}</p>
+                            <p class="text-3xl font-black text-espresso mt-1">{{ $realTotalMonth }} <span class="text-base text-gray-500 font-medium">giờ</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- BẢNG CHI TIẾT TỪNG CA --}}
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                    <h3 class="font-black text-espresso text-lg mb-4 uppercase tracking-wider border-b pb-2">Lịch Sử Chấm Công Chi Tiết</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-xs uppercase font-bold text-gray-400 bg-gray-50 border-b border-gray-100">
+                                <tr>
+                                    <th class="py-3 px-4 rounded-tl-xl w-32">Ngày làm</th>
+                                    <th class="py-3 px-4 text-center">Giờ Vào Ca (Check-in)</th>
+                                    <th class="py-3 px-4 text-center">Giờ Kết Ca (Check-out)</th>
+                                    <th class="py-3 px-4 rounded-tr-xl text-right">Tổng thời gian</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($historyData as $history)
+                                <tr class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                                    <td class="py-4 px-4 font-black text-espresso">{{ $history['date'] }}</td>
+                                    <td class="py-4 px-4 text-center font-bold text-emerald-500">{{ $history['check_in'] }}</td>
+                                    <td class="py-4 px-4 text-center font-bold text-coral">{{ $history['check_out'] }}</td>
+                                    <td class="py-4 px-4 text-right">
+                                        <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg font-black text-sm">{{ $history['hours'] }} Giờ</span>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="4" class="text-center py-8 text-gray-400 italic font-medium">Bạn chưa có lịch sử làm việc nào được ghi nhận.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
         </div>
     </div>
@@ -294,6 +353,20 @@
             } else {
                 activeBtn.className = "pb-3 px-2 font-black text-coral border-b-4 border-coral transition-all uppercase tracking-wider text-sm flex items-center gap-2";
             }
+        }
+        function switchTab(tabId) {
+            // Danh sách các tab hiện có
+            const tabs = ['schedule', 'register', 'statistics'];
+            
+            // Ẩn tất cả và reset màu nút
+            tabs.forEach(id => {
+                document.getElementById('tab-' + id).classList.add('hidden');
+                document.getElementById('tab-btn-' + id).className = "pb-3 px-2 font-bold text-gray-400 border-b-4 border-transparent hover:text-coral transition-all uppercase tracking-wider text-sm flex items-center gap-2";
+            });
+            
+            // Hiện tab được chọn và tô màu nút
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            document.getElementById('tab-btn-' + tabId).className = "pb-3 px-2 font-black text-coral border-b-4 border-coral transition-all uppercase tracking-wider text-sm flex items-center gap-2";
         }
 
         function fillForm(date, timeVal) {

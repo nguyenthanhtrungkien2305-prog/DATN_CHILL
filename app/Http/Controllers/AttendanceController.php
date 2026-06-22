@@ -14,23 +14,22 @@ class AttendanceController extends Controller
     {
         $userId = auth()->user()->user_id ?? auth()->id();
         
-        $registrations = DB::table('shift_registrations')
+        $registrations = \Illuminate\Support\Facades\DB::table('shift_registrations')
             ->where('user_id', $userId)
             ->orderBy('shift_date', 'desc')
             ->get();
 
-        $totalHours = DB::table('shift_registrations')
+        $totalHours = \Illuminate\Support\Facades\DB::table('shift_registrations')
             ->where('user_id', $userId)
             ->where('status', 'approved')
             ->whereMonth('shift_date', date('m'))
             ->sum('duration');
 
         // THUẬT TOÁN BƯỚC NHẢY THỜI GIAN (XỬ LÝ CUỐI TUẦN)
-        $now = Carbon::now('Asia/Ho_Chi_Minh');
+        $now = \Carbon\Carbon::now('Asia/Ho_Chi_Minh');
         
-        // Nếu qua ngày Thứ 7 (Tức là hôm nay là Chủ Nhật)
-        if ($now->dayOfWeek == Carbon::SUNDAY) {
-            $startOfWeek = $now->copy()->next(Carbon::MONDAY);
+        if ($now->dayOfWeek == \Carbon\Carbon::SUNDAY) {
+            $startOfWeek = $now->copy()->next(\Carbon\Carbon::MONDAY);
             $isNextWeek = true; 
         } else {
             $startOfWeek = $now->copy()->startOfWeek(); 
@@ -39,7 +38,7 @@ class AttendanceController extends Controller
         
         $endOfWeek = $startOfWeek->copy()->addDays(6);
 
-        $allWeekRegs = DB::table('shift_registrations')
+        $allWeekRegs = \Illuminate\Support\Facades\DB::table('shift_registrations')
             ->whereBetween('shift_date', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
             ->whereIn('status', ['approved', 'pending'])
             ->get();
@@ -47,7 +46,7 @@ class AttendanceController extends Controller
         $slotCounts = [];
         foreach($allWeekRegs as $reg) {
             $date = $reg->shift_date;
-            $startH = (int)Carbon::parse($reg->start_time)->format('H');
+            $startH = (int)\Carbon\Carbon::parse($reg->start_time)->format('H');
             $duration = (int)$reg->duration;
             
             $slotsCovered = $duration / 4;
@@ -76,7 +75,52 @@ class AttendanceController extends Controller
             ]
         ];
 
-        return view('staff.shift_register', compact('registrations', 'totalHours', 'availableShifts', 'slotCounts', 'startOfWeek', 'isNextWeek'));
+        // ==========================================
+        // [MỚI] THUẬT TOÁN TÍNH GIỜ LÀM THỰC TẾ
+        // ==========================================
+        $attendances = \Illuminate\Support\Facades\DB::table('attendances')
+            ->where('user_id', $userId)
+            ->whereNotNull('check_out') // Chỉ lấy những ca đã hoàn thành
+            ->orderBy('date', 'desc')
+            ->orderBy('check_in', 'desc')
+            ->get();
+
+        $historyData = [];
+        $realTotalMonth = 0;
+        $realTotalWeek = 0;
+        
+        $startOfThisWeek = \Carbon\Carbon::now('Asia/Ho_Chi_Minh')->startOfWeek()->format('Y-m-d');
+        $endOfThisWeek = \Carbon\Carbon::now('Asia/Ho_Chi_Minh')->endOfWeek()->format('Y-m-d');
+
+        foreach($attendances as $att) {
+            $in = \Carbon\Carbon::parse($att->check_in);
+            $out = \Carbon\Carbon::parse($att->check_out);
+            
+            // Tính số phút / 60 để ra số giờ (Làm tròn 2 chữ số thập phân)
+            $hours = round($in->diffInMinutes($out) / 60, 2);
+
+            // Cộng dồn cho tháng hiện tại
+            if ($in->month == $now->month && $in->year == $now->year) {
+                $realTotalMonth += $hours;
+            }
+            // Cộng dồn cho tuần hiện tại
+            if ($att->date >= $startOfThisWeek && $att->date <= $endOfThisWeek) {
+                $realTotalWeek += $hours;
+            }
+
+            // Đưa vào mảng để hiển thị bảng chi tiết
+            $historyData[] = [
+                'date' => $in->format('d/m/Y'),
+                'check_in' => $in->format('H:i'),
+                'check_out' => $out->format('H:i'),
+                'hours' => $hours
+            ];
+        }
+
+        return view('staff.shift_register', compact(
+            'registrations', 'totalHours', 'availableShifts', 'slotCounts', 'startOfWeek', 'isNextWeek',
+            'historyData', 'realTotalMonth', 'realTotalWeek' // Truyền 3 biến mới ra View
+        ));
     }
 
     // ==========================================
@@ -130,8 +174,8 @@ class AttendanceController extends Controller
         return back()->with('success', 'Đã đăng ký ca làm thành công, đang chờ Quản lý duyệt!')->with('active_tab', 'register');
     }
 
-    // ==========================================
-    // 3. API XỬ LÝ CHECK-IN (Bắt đầu ca) - BẢN KIỂM TRA GIỜ NGHIÊM NGẶT
+   // ==========================================
+    // 3. API XỬ LÝ CHECK-IN (Bắt đầu ca)
     // ==========================================
     public function checkIn(Request $request)
     {
@@ -145,10 +189,7 @@ class AttendanceController extends Controller
             ->first();
 
         if ($activeShift) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'Bạn đang ở trong một ca làm việc rồi. Hãy kết ca cũ trước!'
-            ]);
+            return response()->json(['success' => false, 'message' => 'Bạn đang ở trong một ca làm việc rồi. Hãy kết ca cũ trước!']);
         }
 
         // 2. Lấy danh sách CÁC CA ĐƯỢC DUYỆT trong ngày hôm nay
@@ -158,49 +199,49 @@ class AttendanceController extends Controller
             ->where('shift_date', $now->format('Y-m-d'))
             ->get();
 
-        // Nếu hôm nay không có lịch nào được duyệt
         if ($todayShifts->isEmpty()) {
+            return response()->json(['success' => false, 'message' => 'TỪ CHỐI: Bạn không có lịch làm việc nào được duyệt trong ngày hôm nay!']);
+        }
+
+        // 3. [MỚI CHỐNG LỖI DB] Kiểm tra xem hôm nay đã hoàn thành xong việc chưa?
+        $alreadyWorkedToday = \Illuminate\Support\Facades\DB::table('attendances')
+            ->where('user_id', $userId)
+            ->where('date', $now->format('Y-m-d'))
+            ->whereNotNull('check_out')
+            ->count();
+
+        // Nếu số lần đã Check-out trong ngày >= số ca được duyệt hôm nay -> Chặn lại
+        if ($alreadyWorkedToday >= $todayShifts->count()) {
             return response()->json([
                 'success' => false,
-                'message' => 'TỪ CHỐI: Bạn không có lịch làm việc nào được duyệt trong ngày hôm nay!'
+                'message' => 'Bạn đã hoàn thành toàn bộ (' . $todayShifts->count() . ') ca làm việc của ngày hôm nay. Hãy nghỉ ngơi và quay lại vào ngày mai nhé!'
             ]);
         }
 
-        // 3. KIỂM TRA KHUNG GIỜ THỰC TẾ
+        // 4. KIỂM TRA KHUNG GIỜ THỰC TẾ (Code cũ giữ nguyên)
         $isValidTime = false;
         $currentTime = $now->format('H:i:s');
         $shiftTimeMessage = '';
 
         foreach ($todayShifts as $shift) {
-            // Tính toán giờ bắt đầu và kết thúc của ca này
             $startTime = \Carbon\Carbon::parse($shift->start_time);
             $endTime = $startTime->copy()->addHours($shift->duration);
             
-            // Lấy chuỗi hiển thị để báo lỗi nếu cần (VD: 12:00 - 15:00)
             $shiftTimeMessage .= '[' . $startTime->format('H:i') . ' - ' . $endTime->format('H:i') . '] ';
-
-            // Cho phép check-in SỚM 30 PHÚT trước khi vào ca để chuẩn bị làm việc
             $allowedStartTime = $startTime->copy()->subMinutes(30)->format('H:i:s');
-            
-            // Muộn nhất là được check-in trước khi ca kết thúc
             $allowedEndTime = $endTime->format('H:i:s');
 
-            // Nếu giờ hiện tại (currentTime) nằm lọt thỏm trong khoảng cho phép
             if ($currentTime >= $allowedStartTime && $currentTime <= $allowedEndTime) {
                 $isValidTime = true;
-                break; // Tìm thấy ca hợp lệ thì dừng vòng lặp luôn
+                break; 
             }
         }
 
-        // Nếu duyệt qua hết các ca hôm nay mà không có ca nào khớp giờ
         if (!$isValidTime) {
-            return response()->json([
-                'success' => false,
-                'message' => 'TỪ CHỐI: Chưa đến giờ làm việc hoặc đã hết ca! Ca của bạn hôm nay là: ' . $shiftTimeMessage . ' (Chỉ được phép vào ca sớm tối đa 30 phút)'
-            ]);
+            return response()->json(['success' => false, 'message' => 'TỪ CHỐI: Chưa đến giờ làm việc hoặc đã hết ca! Ca của bạn hôm nay là: ' . $shiftTimeMessage . ' (Được vào ca sớm tối đa 30 phút)']);
         }
 
-        // 4. Hoàn toàn hợp lệ -> Tạo bản ghi Check-in mới
+        // 5. Hoàn toàn hợp lệ -> Tạo bản ghi Check-in mới
         \Illuminate\Support\Facades\DB::table('attendances')->insert([
             'user_id' => $userId,
             'date' => $now->format('Y-m-d'),
@@ -209,10 +250,7 @@ class AttendanceController extends Controller
             'updated_at' => $now
         ]);
 
-        return response()->json([
-            'success' => true, 
-            'message' => 'Vào ca thành công! Hệ thống đã mở khóa các tính năng Bán hàng.'
-        ]);
+        return response()->json(['success' => true, 'message' => 'Vào ca thành công! Hệ thống đã mở khóa các tính năng Bán hàng.']);
     }
     // ==========================================
     // 4. API XỬ LÝ CHECK-OUT (Kết ca) - BẢN QUÉT SẠCH LỖI
