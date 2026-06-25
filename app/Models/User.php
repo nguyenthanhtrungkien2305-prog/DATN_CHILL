@@ -10,7 +10,8 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    protected $primaryKey = 'user_id'; // Khai báo khóa chính theo ERD
+    // Khai báo cho Laravel biết khóa chính của bạn tên là user_id
+protected $primaryKey = 'user_id';
 
     protected $fillable = [
         'name',
@@ -25,4 +26,5 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
 }
