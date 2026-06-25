@@ -161,7 +161,7 @@ class GeminiService
 
             Log::info('Gemini Payload: ' . json_encode($payload, JSON_UNESCAPED_UNICODE));
 
-            $response = Http::timeout(15)
+            $response = Http::withoutVerifying()->timeout(30)
                 ->withOptions([
                     'curl' => [
                         CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4
@@ -201,7 +201,16 @@ class GeminiService
                         Log::info('Gemini Executed Tool ' . $functionName . ' with result: ' . json_encode($result, JSON_UNESCAPED_UNICODE));
                         
                         // Thêm lượt hội thoại chứa yêu cầu gọi hàm của Model vào contents
-                        $payload['contents'][] = $candidate['content'];
+                        $modelContent = $candidate['content'];
+                        if (isset($modelContent['parts'])) {
+                            foreach ($modelContent['parts'] as &$part) {
+                                if (isset($part['functionCall'])) {
+                                    $part['functionCall']['args'] = empty($part['functionCall']['args']) ? (object)[] : (object)$part['functionCall']['args'];
+                                }
+                            }
+                            unset($part);
+                        }
+                        $payload['contents'][] = $modelContent;
                         
                         // Thêm kết quả phản hồi của hàm vào contents
                         $payload['contents'][] = [
@@ -219,7 +228,7 @@ class GeminiService
                         Log::info('Gemini Callback Payload: ' . json_encode($payload, JSON_UNESCAPED_UNICODE));
                         
                         // Gọi lại API lần 2 để Gemini tổng hợp câu trả lời tự nhiên
-                        $response2 = Http::timeout(15)
+                        $response2 = Http::withoutVerifying()->timeout(30)
                             ->withOptions([
                                 'curl' => [
                                     CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4
@@ -796,5 +805,575 @@ Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $me
 
         return $contents;
     }
+
+    /**
+     * Get response from Gemini API for Admin Management.
+     */
+    public function getAdminAiResponse($chatMessages)
+    {
+        if (!$this->apiKey) {
+            Log::warning('Gemini API key is not set.');
+            return 'Dạ, hiện tại kết nối trợ lý AI đang gặp sự cố. Quản lý vui lòng thử lại sau! ☕';
+        }
+
+        // 1. Đọc System Instruction từ file rules
+        $rulesPath = storage_path('app/ai/admin_rules.md');
+        $systemInstruction = "";
+        if (file_exists($rulesPath)) {
+            $systemInstruction = file_get_contents($rulesPath);
+        } else {
+            $systemInstruction = "Bạn là Trợ lý AI Quản lý của Chill Chill.";
+        }
+
+        // 2. Định dạng hội thoại theo chuẩn API Gemini
+        $contents = $this->formatHistory($chatMessages);
+
+        // 3. Khai báo các tools cho Admin
+        $tools = [
+            [
+                'functionDeclarations' => [
+                    [
+                        'name' => 'getProductsList',
+                        'description' => 'Lấy danh sách tất cả các sản phẩm hiện có của quán bao gồm ID, tên, danh mục và giá bán.',
+                        'parameters' => [
+                            'type' => 'OBJECT',
+                            'properties' => (object)[]
+                        ]
+                    ],
+                    [
+                        'name' => 'createVoucher',
+                        'description' => 'Tạo một mã giảm giá (voucher) mới cho cửa hàng.',
+                        'parameters' => [
+                            'type' => 'OBJECT',
+                            'properties' => [
+                                'code' => [
+                                    'type' => 'STRING',
+                                    'description' => 'Mã voucher (Ví dụ: APRIl30, GIAM20k).'
+                                ],
+                                'discount_type' => [
+                                    'type' => 'STRING',
+                                    'enum' => ['percent', 'fixed'],
+                                    'description' => 'Kiểu giảm giá: percent (theo phần trăm) hoặc fixed (số tiền cố định).'
+                                ],
+                                'discount_value' => [
+                                    'type' => 'NUMBER',
+                                    'description' => 'Giá trị giảm (Ví dụ: 10 cho 10%, hoặc 30000 cho 30,000đ).'
+                                ],
+                                'min_order' => [
+                                    'type' => 'NUMBER',
+                                    'description' => 'Giá trị đơn hàng tối thiểu để áp dụng voucher (Mặc định: 0).'
+                                ],
+                                'usage_limit' => [
+                                    'type' => 'INTEGER',
+                                    'description' => 'Tổng số lượt sử dụng tối đa.'
+                                ],
+                                'start_date' => [
+                                    'type' => 'STRING',
+                                    'description' => 'Ngày bắt đầu có hiệu lực (định dạng YYYY-MM-DD).'
+                                ],
+                                'end_date' => [
+                                    'type' => 'STRING',
+                                    'description' => 'Ngày kết thúc hiệu lực (định dạng YYYY-MM-DD).'
+                                ]
+                            ],
+                            'required' => ['code', 'discount_type', 'discount_value']
+                        ]
+                    ],
+                    [
+                        'name' => 'adjustProductPrice',
+                        'description' => 'Điều chỉnh giá bán cơ bản của một sản phẩm bằng ID.',
+                        'parameters' => [
+                            'type' => 'OBJECT',
+                            'properties' => [
+                                'product_id' => [
+                                    'type' => 'INTEGER',
+                                    'description' => 'ID của sản phẩm cần đổi giá.'
+                                ],
+                                'new_price' => [
+                                    'type' => 'NUMBER',
+                                    'description' => 'Mức giá mới cần đặt cho sản phẩm.'
+                                ]
+                            ],
+                            'required' => ['product_id', 'new_price']
+                        ]
+                    ],
+                    [
+                        'name' => 'adjustVariantPrice',
+                        'description' => 'Điều chỉnh giá bán của một biến thể kích cỡ sản phẩm (Size S, M, L...) bằng Variant ID.',
+                        'parameters' => [
+                            'type' => 'OBJECT',
+                            'properties' => [
+                                'variant_id' => [
+                                    'type' => 'INTEGER',
+                                    'description' => 'ID của biến thể sản phẩm cần đổi giá.'
+                                ],
+                                'new_price' => [
+                                    'type' => 'NUMBER',
+                                    'description' => 'Mức giá mới cần đặt cho biến thể sản phẩm.'
+                                ]
+                            ],
+                            'required' => ['variant_id', 'new_price']
+                        ]
+                    ],
+                    [
+                        'name' => 'discountCategoryProducts',
+                        'description' => 'Áp dụng chương trình giảm giá cho toàn bộ sản phẩm thuộc một Danh mục cụ thể (Ví dụ: giảm 10% danh mục Đá Xay).',
+                        'parameters' => [
+                            'type' => 'OBJECT',
+                            'properties' => [
+                                'category_name' => [
+                                    'type' => 'STRING',
+                                    'description' => 'Tên danh mục sản phẩm (ví dụ: Đá Xay, Cà phê Phin, Bánh Ngọt).'
+                                ],
+                                'category_id' => [
+                                    'type' => 'INTEGER',
+                                    'description' => 'ID của danh mục sản phẩm nếu biết.'
+                                ],
+                                'discount_type' => [
+                                    'type' => 'STRING',
+                                    'enum' => ['percent', 'fixed'],
+                                    'description' => 'Kiểu giảm giá: percent (theo %) hoặc fixed (theo số tiền).'
+                                ],
+                                'discount_value' => [
+                                    'type' => 'NUMBER',
+                                    'description' => 'Mức giảm giá áp dụng (Ví dụ: 10 cho 10%, hoặc 5000 cho 5,000đ).'
+                                ]
+                            ],
+                            'required' => ['discount_type', 'discount_value']
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        try {
+            $payload = [
+                'contents' => $contents,
+                'systemInstruction' => [
+                    'parts' => [
+                        ['text' => $systemInstruction]
+                    ]
+                ],
+                'tools' => $tools,
+                'generationConfig' => [
+                    'temperature' => 0.2,
+                    'maxOutputTokens' => 4000,
+                ]
+            ];
+
+            Log::info('Gemini Admin Payload: ' . json_encode($payload, JSON_UNESCAPED_UNICODE));
+
+            $response = Http::withoutVerifying()->timeout(30)
+                ->withOptions([
+                    'curl' => [
+                        CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4
+                    ]
+                ])
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                    'x-goog-api-key' => $this->apiKey,
+                ])
+                ->post($this->endpoint, $payload);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                Log::info('Gemini Admin Response: ' . json_encode($data, JSON_UNESCAPED_UNICODE));
+                
+                $candidate = $data['candidates'][0] ?? null;
+                if ($candidate && isset($candidate['content']['parts'])) {
+                    $parts = $candidate['content']['parts'];
+                    
+                    $hasFunctionCall = false;
+                    $functionCall = null;
+                    foreach ($parts as $part) {
+                        if (isset($part['functionCall'])) {
+                            $hasFunctionCall = true;
+                            $functionCall = $part['functionCall'];
+                            break;
+                        }
+                    }
+                    
+                    if ($hasFunctionCall) {
+                        $functionName = $functionCall['name'];
+                        $args = $functionCall['args'] ?? [];
+                        
+                        // Thực thi hàm PHP tương ứng
+                        $result = $this->executeAdminTool($functionName, $args);
+                        Log::info('Gemini Executed Admin Tool ' . $functionName . ' with result: ' . json_encode($result, JSON_UNESCAPED_UNICODE));
+                        
+                        $modelContent = $candidate['content'];
+                        if (isset($modelContent['parts'])) {
+                            foreach ($modelContent['parts'] as &$part) {
+                                if (isset($part['functionCall'])) {
+                                    $part['functionCall']['args'] = empty($part['functionCall']['args']) ? (object)[] : (object)$part['functionCall']['args'];
+                                }
+                            }
+                            unset($part);
+                        }
+                        $payload['contents'][] = $modelContent;
+                        
+                        $payload['contents'][] = [
+                            'role' => 'tool',
+                            'parts' => [
+                                [
+                                    'functionResponse' => [
+                                        'name' => $functionName,
+                                        'response' => $result
+                                    ]
+                                ]
+                            ]
+                        ];
+
+                        Log::info('Gemini Admin Callback Payload: ' . json_encode($payload, JSON_UNESCAPED_UNICODE));
+                        
+                        $response2 = Http::withoutVerifying()->timeout(30)
+                            ->withOptions([
+                                'curl' => [
+                                    CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4
+                                ]
+                            ])
+                            ->withHeaders([
+                                'Content-Type' => 'application/json',
+                                'x-goog-api-key' => $this->apiKey,
+                            ])
+                            ->post($this->endpoint, $payload);
+                            
+                        if ($response2->successful()) {
+                            $data2 = $response2->json();
+                            Log::info('Gemini Admin Callback Response: ' . json_encode($data2, JSON_UNESCAPED_UNICODE));
+                            
+                            $candidate2 = $data2['candidates'][0] ?? null;
+                            if ($candidate2 && isset($candidate2['content']['parts'])) {
+                                $textParts = [];
+                                foreach ($candidate2['content']['parts'] as $part) {
+                                    if (isset($part['text'])) {
+                                        $textParts[] = $part['text'];
+                                    }
+                                }
+                                return implode('', $textParts);
+                            }
+                            return 'Dạ, em đã thực hiện thao tác quản trị thành công! ☕';
+                        }
+                        
+                        Log::error('Gemini Admin Tool Call Callback Error: ' . $response2->body());
+                        return 'Dạ, em đã xử lý thao tác nhưng gặp sự cố khi phản hồi lại kết quả. Quản lý vui lòng kiểm tra danh sách trong hệ thống ạ!';
+                    }
+
+                    $textParts = [];
+                    foreach ($parts as $part) {
+                        if (isset($part['text'])) {
+                            $textParts[] = $part['text'];
+                        }
+                    }
+                    if (!empty($textParts)) {
+                        return implode('', $textParts);
+                    }
+                }
+
+                return 'Dạ, em chưa hiểu rõ yêu cầu của quản lý. Quản lý có thể cung cấp thêm chi tiết không ạ?';
+            }
+
+            Log::error('Gemini Admin API Error: ' . $response->body());
+            return 'Dạ, hệ thống kết nối AI đang bận. Quản lý vui lòng thử lại sau ạ! ☕';
+
+        } catch (\Exception $e) {
+            Log::error('Gemini Admin Service Exception: ' . $e->getMessage());
+            return 'Dạ, có lỗi kết nối trợ lý AI xảy ra. Quản lý thử lại sau nhé! 🙏';
+        }
+    }
+
+    /**
+     * Execute Admin Tools
+     */
+    protected function executeAdminTool($name, $args)
+    {
+        if ($name === 'getProductsList') {
+            return $this->toolGetProductsList();
+        } elseif ($name === 'createVoucher') {
+            return $this->toolCreateVoucher($args);
+        } elseif ($name === 'adjustProductPrice') {
+            return $this->toolAdjustProductPrice($args);
+        } elseif ($name === 'adjustVariantPrice') {
+            return $this->toolAdjustVariantPrice($args);
+        } elseif ($name === 'discountCategoryProducts') {
+            return $this->toolDiscountCategoryProducts($args);
+        }
+        return ['success' => false, 'error' => 'Unknown admin function'];
+    }
+
+    /**
+     * Tool: Get Products List for Admin
+     */
+    protected function toolGetProductsList()
+    {
+        try {
+            $products = DB::table('products')
+                ->join('categories', 'products.category_id', '=', 'categories.category_id')
+                ->leftJoin('product_variants', 'products.product_id', '=', 'product_variants.product_id')
+                ->leftJoin('sizes', 'product_variants.size_id', '=', 'sizes.size_id')
+                ->select(
+                    'products.product_id',
+                    'products.name',
+                    'categories.name as category_name',
+                    'product_variants.variant_id',
+                    'sizes.name as size_name',
+                    'product_variants.price as variant_price',
+                    'products.price as base_price'
+                )
+                ->orderBy('products.product_id')
+                ->get();
+
+            return [
+                'success' => true,
+                'products' => $products->map(function ($p) {
+                    return [
+                        'product_id' => $p->product_id,
+                        'name' => $p->name,
+                        'category' => $p->category_name,
+                        'variant_id' => $p->variant_id,
+                        'size' => $p->size_name,
+                        'price' => $p->variant_price ?? $p->base_price
+                    ];
+                })
+            ];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Tool: Create Voucher
+     */
+    protected function toolCreateVoucher($args)
+    {
+        $code = strtoupper($args['code'] ?? '');
+        $discountType = $args['discount_type'] ?? 'fixed';
+        $discountValue = (float)($args['discount_value'] ?? 0);
+        $minOrder = (float)($args['min_order'] ?? 0);
+        $usageLimit = isset($args['usage_limit']) ? (int)$args['usage_limit'] : null;
+        $startDate = $args['start_date'] ?? now()->toDateString();
+        $endDate = $args['end_date'] ?? null;
+
+        if (empty($code)) {
+            return ['success' => false, 'error' => 'Mã voucher không được để trống.'];
+        }
+
+        if ($discountValue < 0) {
+            return ['success' => false, 'error' => 'Giá trị giảm giá không được nhỏ hơn 0.'];
+        }
+
+        if ($minOrder < 0) {
+            return ['success' => false, 'error' => 'Yêu cầu đơn hàng tối thiểu không được nhỏ hơn 0.'];
+        }
+
+        // Kiểm tra xem đã tồn tại chưa
+        $exists = DB::table('vouchers')->where('code', $code)->first();
+        if ($exists) {
+            return ['success' => false, 'error' => "Mã voucher '{$code}' đã tồn tại trong hệ thống."];
+        }
+
+        try {
+            $id = DB::table('vouchers')->insertGetId([
+                'code' => $code,
+                'discount_type' => $discountType,
+                'discount_value' => $discountValue,
+                'min_order' => $minOrder,
+                'usage_limit' => $usageLimit,
+                'used_count' => 0,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            return [
+                'success' => true,
+                'voucher_id' => $id,
+                'code' => $code,
+                'message' => "Tạo thành công mã giảm giá {$code}."
+            ];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Tool: Adjust base product price
+     */
+    protected function toolAdjustProductPrice($args)
+    {
+        $productId = $args['product_id'] ?? null;
+        $newPrice = (float)($args['new_price'] ?? 0);
+
+        if (!$productId) {
+            return ['success' => false, 'error' => 'Thiếu ID hoặc tên sản phẩm.'];
+        }
+
+        if ($newPrice < 0) {
+            return ['success' => false, 'error' => 'Mức giá mới của sản phẩm không được nhỏ hơn 0đ.'];
+        }
+
+        try {
+            $product = null;
+            if (is_numeric($productId)) {
+                $product = DB::table('products')->where('product_id', (int)$productId)->first();
+            }
+            
+            if (!$product) {
+                // Thử tìm kiếm gần đúng theo tên sản phẩm nếu ID không phải số hoặc không tìm thấy
+                $product = DB::table('products')
+                    ->where('name', 'like', '%' . trim($productId) . '%')
+                    ->first();
+            }
+
+            if (!$product) {
+                return ['success' => false, 'error' => "Không tìm thấy sản phẩm với thông tin '{$productId}'. Thay đổi giá thất bại."];
+            }
+
+            DB::table('products')->where('product_id', $product->product_id)->update([
+                'price' => $newPrice,
+                'updated_at' => now()
+            ]);
+
+            return [
+                'success' => true,
+                'product_name' => $product->name,
+                'new_price' => $newPrice,
+                'message' => "Cập nhật giá sản phẩm {$product->name} thành " . number_format($newPrice) . "đ."
+            ];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Tool: Adjust variant price
+     */
+    protected function toolAdjustVariantPrice($args)
+    {
+        $variantId = $args['variant_id'] ?? null;
+        $newPrice = (float)($args['new_price'] ?? 0);
+
+        if (!$variantId) {
+            return ['success' => false, 'error' => 'Thiếu ID biến thể.'];
+        }
+
+        if ($newPrice < 0) {
+            return ['success' => false, 'error' => 'Mức giá biến thể mới không được nhỏ hơn 0đ.'];
+        }
+
+        try {
+            $variant = DB::table('product_variants')->where('variant_id', $variantId)->first();
+            if (!$variant) {
+                return ['success' => false, 'error' => 'Không tìm thấy biến thể sản phẩm.'];
+            }
+
+            DB::table('product_variants')->where('variant_id', $variantId)->update([
+                'price' => $newPrice,
+                'updated_at' => now()
+            ]);
+
+            $productName = DB::table('products')->where('product_id', $variant->product_id)->value('name');
+            $sizeName = DB::table('sizes')->where('size_id', $variant->size_id)->value('name');
+
+            return [
+                'success' => true,
+                'product_name' => $productName,
+                'size' => $sizeName,
+                'new_price' => $newPrice,
+                'message' => "Cập nhật giá biến thể {$productName} (size {$sizeName}) thành " . number_format($newPrice) . "đ."
+            ];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Tool: Discount all products in category
+     */
+    protected function toolDiscountCategoryProducts($args)
+    {
+        $categoryId = $args['category_id'] ?? null;
+        $categoryName = $args['category_name'] ?? null;
+        $discountType = $args['discount_type'] ?? 'percent';
+        $discountValue = (float)($args['discount_value'] ?? 0);
+
+        if ($discountValue < 0) {
+            return ['success' => false, 'error' => 'Giá trị chiết khấu không được nhỏ hơn 0.'];
+        }
+
+        try {
+            $category = null;
+            if ($categoryId) {
+                $category = DB::table('categories')->where('category_id', $categoryId)->first();
+            } elseif ($categoryName) {
+                $category = DB::table('categories')->where('name', 'like', '%' . trim($categoryName) . '%')->first();
+            }
+
+            if (!$category) {
+                return ['success' => false, 'error' => 'Không tìm thấy danh mục yêu cầu.'];
+            }
+
+            $catId = $category->category_id;
+            $products = DB::table('products')->where('category_id', $catId)->get();
+
+            if ($products->isEmpty()) {
+                return [
+                    'success' => true,
+                    'category_name' => $category->name,
+                    'updated_products' => 0,
+                    'updated_variants' => 0,
+                    'message' => "Danh mục '{$category->name}' hiện không có sản phẩm nào để áp dụng giảm giá."
+                ];
+            }
+
+            $updatedProductsCount = 0;
+            $updatedVariantsCount = 0;
+
+            foreach ($products as $product) {
+                // 1. Cập nhật giá cơ bản
+                $newBasePrice = $product->price;
+                if ($discountType === 'percent') {
+                    $newBasePrice = max(0, $product->price * (1 - $discountValue / 100));
+                } else {
+                    $newBasePrice = max(0, $product->price - $discountValue);
+                }
+
+                DB::table('products')->where('product_id', $product->product_id)->update([
+                    'price' => $newBasePrice,
+                    'updated_at' => now()
+                ]);
+                $updatedProductsCount++;
+
+                // 2. Cập nhật giá các biến thể
+                $variants = DB::table('product_variants')->where('product_id', $product->product_id)->get();
+                foreach ($variants as $variant) {
+                    $newVariantPrice = $variant->price;
+                    if ($discountType === 'percent') {
+                        $newVariantPrice = max(0, $variant->price * (1 - $discountValue / 100));
+                    } else {
+                        $newVariantPrice = max(0, $variant->price - $discountValue);
+                    }
+
+                    DB::table('product_variants')->where('variant_id', $variant->variant_id)->update([
+                        'price' => $newVariantPrice,
+                        'updated_at' => now()
+                    ]);
+                    $updatedVariantsCount++;
+                }
+            }
+
+            return [
+                'success' => true,
+                'category_name' => $category->name,
+                'updated_products' => $updatedProductsCount,
+                'updated_variants' => $updatedVariantsCount,
+                'message' => "Đã giảm giá thành công toàn bộ sản phẩm danh mục {$category->name}."
+            ];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
 }
+
 

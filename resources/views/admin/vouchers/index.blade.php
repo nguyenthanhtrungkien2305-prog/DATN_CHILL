@@ -67,6 +67,12 @@
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
                 <span class="text-xl">💬</span> <span>Hỗ trợ trực tuyến</span>
             </a>
+
+            {{-- Trợ lý AI Admin --}}
+            <a href="{{ route('admin.ai.index') }}" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span class="text-xl">🤖</span> <span>Trợ lý AI Admin</span>
+            </a>
         </nav>
         <a href="/" class="block px-4 py-3 rounded-lg hover:bg-white/10 transition mt-auto border-t border-white/10">← Về trang web</a>
     </aside>
