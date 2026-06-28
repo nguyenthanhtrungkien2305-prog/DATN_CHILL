@@ -941,6 +941,28 @@ Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $me
                             ],
                             'required' => ['discount_type', 'discount_value']
                         ]
+                    ],
+                    [
+                        'name' => 'setCategoryPrice',
+                        'description' => 'Đặt một mức giá bán cố định mới cho toàn bộ sản phẩm (và tất cả biến thể) thuộc một Danh mục cụ thể (Ví dụ: đồng bộ giá mục Cà phê Phin là 300000, đặt giá danh mục Bánh Ngọt thành 50000).',
+                        'parameters' => [
+                            'type' => 'OBJECT',
+                            'properties' => [
+                                'category_name' => [
+                                    'type' => 'STRING',
+                                    'description' => 'Tên danh mục sản phẩm (ví dụ: Cà phê Phin, Đá Xay, Bánh Ngọt).'
+                                ],
+                                'category_id' => [
+                                    'type' => 'INTEGER',
+                                    'description' => 'ID của danh mục sản phẩm nếu biết.'
+                                ],
+                                'new_price' => [
+                                    'type' => 'NUMBER',
+                                    'description' => 'Mức giá cố định mới áp dụng cho toàn bộ sản phẩm thuộc danh mục đó (Ví dụ: 300000).'
+                                ]
+                            ],
+                            'required' => ['new_price']
+                        ]
                     ]
                 ]
             ]
@@ -1097,6 +1119,8 @@ Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $me
             return $this->toolAdjustVariantPrice($args);
         } elseif ($name === 'discountCategoryProducts') {
             return $this->toolDiscountCategoryProducts($args);
+        } elseif ($name === 'setCategoryPrice') {
+            return $this->toolSetCategoryPrice($args);
         }
         return ['success' => false, 'error' => 'Unknown admin function'];
     }
@@ -1369,6 +1393,76 @@ Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $me
                 'updated_products' => $updatedProductsCount,
                 'updated_variants' => $updatedVariantsCount,
                 'message' => "Đã giảm giá thành công toàn bộ sản phẩm danh mục {$category->name}."
+            ];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Tool: Set all products in category to a fixed price
+     */
+    protected function toolSetCategoryPrice($args)
+    {
+        $categoryId = $args['category_id'] ?? null;
+        $categoryName = $args['category_name'] ?? null;
+        $newPrice = (float)($args['new_price'] ?? 0);
+
+        if ($newPrice < 0) {
+            return ['success' => false, 'error' => 'Mức giá mới không được nhỏ hơn 0đ.'];
+        }
+
+        try {
+            $category = null;
+            if ($categoryId) {
+                $category = DB::table('categories')->where('category_id', $categoryId)->first();
+            } elseif ($categoryName) {
+                $category = DB::table('categories')->where('name', 'like', '%' . trim($categoryName) . '%')->first();
+            }
+
+            if (!$category) {
+                return ['success' => false, 'error' => 'Không tìm thấy danh mục yêu cầu.'];
+            }
+
+            $catId = $category->category_id;
+            $products = DB::table('products')->where('category_id', $catId)->get();
+
+            if ($products->isEmpty()) {
+                return [
+                    'success' => true,
+                    'category_name' => $category->name,
+                    'updated_products' => 0,
+                    'updated_variants' => 0,
+                    'message' => "Danh mục '{$category->name}' hiện không có sản phẩm nào để thay đổi giá."
+                ];
+            }
+
+            $updatedProductsCount = 0;
+            $updatedVariantsCount = 0;
+
+            foreach ($products as $product) {
+                // 1. Cập nhật giá cơ bản của sản phẩm
+                DB::table('products')->where('product_id', $product->product_id)->update([
+                    'price' => $newPrice,
+                    'updated_at' => now()
+                ]);
+                $updatedProductsCount++;
+
+                // 2. Cập nhật giá các biến thể
+                DB::table('product_variants')->where('product_id', $product->product_id)->update([
+                    'price' => $newPrice,
+                    'updated_at' => now()
+                ]);
+                $updatedVariantsCount += DB::table('product_variants')->where('product_id', $product->product_id)->count();
+            }
+
+            return [
+                'success' => true,
+                'category_name' => $category->name,
+                'new_price' => $newPrice,
+                'updated_products' => $updatedProductsCount,
+                'updated_variants' => $updatedVariantsCount,
+                'message' => "Đã điều chỉnh giá thành công toàn bộ sản phẩm thuộc danh mục {$category->name} thành " . number_format($newPrice) . "đ."
             ];
         } catch (\Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];

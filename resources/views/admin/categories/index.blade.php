@@ -10,55 +10,7 @@
 <body class="bg-gray-100 flex h-screen overflow-hidden">
 
     {{-- SIDEBAR --}}
-    <aside class="w-64 bg-[#2B2623] text-white flex flex-col shrink-0">
-        <div class="h-16 flex items-center justify-center border-b border-white/10">
-            <h1 class="text-xl font-bold tracking-widest text-[#e8634a]">ADMIN CHILL</h1>
-        </div>
-        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          <a href="#" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->is('admin') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">📊</span> <span>Tổng quan</span>
-            </a>
-            
-            {{-- Quản lý Sản phẩm --}}
-            <a href="{{ route('products.index') }}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('products.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">☕</span> <span>Quản lý Sản phẩm</span>
-            </a>
-            
-            {{-- Quản lý Danh mục --}}
-            <a href="{{ route('categories.index') }}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('categories.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">📁</span> <span>Quản lý Danh mục</span>
-            </a>
-
-            {{-- Quản lý Topping --}}
-            <a href="{{ route('toppings.index') }}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('toppings.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">🍡</span> <span>Quản lý Topping</span>
-            </a>
-
-            {{-- Quản lý Voucher --}}
-            <a href="{{ route('vouchers.index') }}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('vouchers.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">🎟️</span> <span>Quản lý Voucher</span>
-            </a>
-            
-            {{-- Quản lý Đơn hàng --}}
-            <a href="#" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
-                <span class="text-xl">🛒</span> <span>Quản lý Đơn hàng</span>
-            </a>
-            
-            {{-- Quản lý Người dùng --}}
-            <a href="#" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
-                <span class="text-xl">👥</span> <span>Quản lý Người dùng</span>
-            </a>
-        </nav>
-            <a href="/" class="block px-4 py-3 rounded-lg hover:bg-white/10 transition mt-auto border-t border-white/10">← Về trang web</a>
-        </nav>
-    </aside>
+    @include('admin.partials.sidebar')
 
     {{-- NỘI DUNG CHÍNH --}}
     <main class="flex-1 flex flex-col h-screen overflow-y-auto">

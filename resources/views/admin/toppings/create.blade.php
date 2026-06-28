@@ -8,8 +8,9 @@
     <style> body { font-family: 'Poppins', sans-serif; } </style>
 </head>
 <body class="bg-gray-100 flex h-screen overflow-hidden">
-    {{-- Copy phần Sidebar <aside>...</aside> từ file index qua đây --}}
-    
+    {{-- SIDEBAR --}}
+    @include('admin.partials.sidebar')
+
     <main class="flex-1 flex flex-col h-screen overflow-y-auto">
         <header class="h-16 bg-white shadow-sm flex items-center gap-4 px-8">
             <a href="{{ route('toppings.index') }}" class="text-gray-500 hover:text-[#e8634a]">← Quay lại</a>

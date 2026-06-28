@@ -10,16 +10,7 @@
 <body class="bg-gray-100 flex h-screen overflow-hidden">
 
     {{-- SIDEBAR --}}
-    <aside class="w-64 bg-[#2B2623] text-white flex flex-col">
-        <div class="h-16 flex items-center justify-center border-b border-white/10">
-            <h1 class="text-xl font-bold tracking-widest text-[#e8634a]">ADMIN CHILL</h1>
-        </div>
-        <nav class="flex-1 px-4 py-6 space-y-2">
-            <a href="{{ route('admin.dashboard') }}" class="block px-4 py-3 rounded-lg hover:bg-white/10 transition">📊 Tổng quan</a>
-            <a href="{{ route('products.index') }}" class="block px-4 py-3 rounded-lg bg-[#e8634a] text-white font-medium">☕ Quản lý Sản phẩm</a>
-            <a href="/" class="block px-4 py-3 rounded-lg hover:bg-white/10 transition mt-auto border-t border-white/10">← Về trang web</a>
-        </nav>
-    </aside>
+    @include('admin.partials.sidebar')
 
     {{-- NỘI DUNG CHÍNH --}}
     <main class="flex-1 flex flex-col h-screen overflow-y-auto">
