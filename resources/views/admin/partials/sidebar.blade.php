@@ -28,8 +28,8 @@
             <span class="text-xl">🎟️</span> <span>Quản lý Voucher</span>
         </a>
 
-        <a href="#"
-           class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10 opacity-50 cursor-not-allowed">
+        <a href="{{ route('orders.index') }}"
+           class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('orders.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
             <span class="text-xl">🛒</span> <span>Quản lý Đơn hàng</span>
         </a>
 

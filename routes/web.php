@@ -155,6 +155,10 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     Route::resource('toppings', AdminToppingController::class);
     Route::resource('vouchers', AdminVoucherController::class);
     
+    // QUẢN LÝ ĐƠN HÀNG (ORDERS):
+    Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->only(['index', 'show']);
+    Route::put('orders/{id}/status', [\App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('orders.update_status');
+    
 
     // QUẢN LÝ PHẢN HỒI (FEEDBACK):
     Route::resource('feedbacks', AdminFeedbackController::class)->only(['index', 'show', 'destroy']);
