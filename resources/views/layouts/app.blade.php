@@ -10,47 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
 
     
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Poppins", "sans-serif"],
-              serif: ["Playfair Display", "serif"],
-            },
-            colors: {
-              espresso: {
-                DEFAULT: "hsl(16, 23%, 19%)",
-                light: "hsl(16, 20%, 29%)",
-              },
-              cream: {
-                DEFAULT: "hsl(45, 100%, 94%)",
-                light: "hsl(45, 100%, 96%)",
-              },
-              coral: {
-                DEFAULT: "hsl(14, 82%, 65%)",
-                hover: "hsl(14, 82%, 72%)",
-              },
-            },
-            borderRadius: {
-              card: "20px",
-            },
-            animation: {
-              "bounce-slow": "bounce 3s infinite",
-              float: "float 6s ease-in-out infinite",
-            },
-            keyframes: {
-              float: {
-                "0%, 100%": { transform: "translateY(0)" },
-                "50%": { transform: "translateY(-20px)" },
-              },
-            },
-          },
-        },
-      };
-    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
       /* Tùy chỉnh thanh cuộn */

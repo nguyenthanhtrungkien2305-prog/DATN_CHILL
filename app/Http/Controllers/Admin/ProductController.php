@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 class ProductController extends Controller
 {
@@ -128,6 +129,8 @@ class ProductController extends Controller
         }
 
         // Chuyển hướng về trang danh sách
+        Cache::forget('home_products');
+
         return redirect()->route('products.index')->with('success', 'Thêm sản phẩm mới thành công!');
     }
 
@@ -199,6 +202,8 @@ class ProductController extends Controller
         // ==========================================
 
         // Cuối cùng là chuyển hướng về trang danh sách
+        Cache::forget('home_products');
+
         return redirect()->route('products.index')->with('success', 'Cập nhật sản phẩm thành công!');
     }
     // 6. Xử lý XÓA sản phẩm
@@ -207,6 +212,8 @@ class ProductController extends Controller
         // Nhờ lúc làm ERD có 'onDelete cascade', xóa Product sẽ tự động xóa luôn Biến thể (Variants)
         DB::table('products')->where('product_id', $id)->delete();
         
+        Cache::forget('home_products');
+
         return redirect()->route('products.index')->with('success', 'Đã xóa sản phẩm thành công!');
     }
 }

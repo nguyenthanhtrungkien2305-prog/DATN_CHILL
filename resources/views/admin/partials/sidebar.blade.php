@@ -33,8 +33,8 @@
             <span class="text-xl">🛒</span> <span>Quản lý Đơn hàng</span>
         </a>
 
-        <a href="#"
-           class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10 opacity-50 cursor-not-allowed">
+        <a href="{{ route('users.index') }}"
+           class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('users.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
             <span class="text-xl">👥</span> <span>Quản lý Người dùng</span>
         </a>
 

@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\Admin\ChatController as AdminChatController;
 use App\Http\Controllers\Admin\AiAssistantController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 
 
 /*
@@ -154,6 +155,9 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     Route::resource('products', AdminProductController::class);
     Route::resource('toppings', AdminToppingController::class);
     Route::resource('vouchers', AdminVoucherController::class);
+    Route::resource('users', AdminUserController::class);
+    Route::post('users/{id}/toggle-lock', [AdminUserController::class, 'toggleLock'])->name('users.toggle_lock');
+
     
     // QUẢN LÝ ĐƠN HÀNG (ORDERS):
     Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->only(['index', 'show']);

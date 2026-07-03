@@ -18,7 +18,12 @@ class User extends Authenticatable
         'password',
         'phone',
         'role',
-        'point'
+        'point',
+        'is_locked'
+    ];
+
+    protected $casts = [
+        'is_locked' => 'boolean',
     ];
 
     protected $hidden = [

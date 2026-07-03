@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 class CategoryController extends Controller
 {
@@ -43,6 +44,9 @@ class CategoryController extends Controller
             'image' => $request->image,
         ]);
 
+        Cache::forget('home_categories');
+        Cache::forget('public_categories');
+
         // Điều hướng về trang danh sách kèm thông báo
         return redirect()->route('categories.index')->with('success', 'Thêm danh mục mới thành công!');
     }
@@ -74,6 +78,9 @@ class CategoryController extends Controller
             'image' => $request->image,
         ]);
 
+        Cache::forget('home_categories');
+        Cache::forget('public_categories');
+
         // Điều hướng về trang danh sách
         return redirect()->route('categories.index')->with('success', 'Cập nhật danh mục thành công!');
     }
@@ -91,6 +98,9 @@ class CategoryController extends Controller
         // Nếu trống thì cho phép xóa
         DB::table('categories')->where('category_id', $id)->delete();
         
+        Cache::forget('home_categories');
+        Cache::forget('public_categories');
+
         return redirect()->route('categories.index')->with('success', 'Đã xóa danh mục thành công!');
     }
 }

@@ -100,6 +100,12 @@ class AuthController extends Controller
         // 3. Thực hiện đăng nhập dựa trên loại dữ liệu vừa nhận diện
         if (\Illuminate\Support\Facades\Auth::attempt([$fieldType => $identity, 'password' => $password], $request->has('remember'))) {
             $user = \Illuminate\Support\Facades\Auth::user();
+
+            if ($user->is_locked) {
+                \Illuminate\Support\Facades\Auth::logout();
+                return back()->withErrors(['login_error' => 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.']);
+            }
+
             $userId = $user->user_id ?? $user->id; 
 
             // NẾU LÀ NHÂN VIÊN -> TỰ ĐỘNG CHECK-IN

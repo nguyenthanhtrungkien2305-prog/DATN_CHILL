@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class ProductController extends Controller
 {
@@ -40,7 +41,9 @@ class ProductController extends Controller
         $isToppingCategory = $categoryName && str_contains(mb_strtolower($categoryName), 'topping');
 
         if (!$isBanhNgot && !$isToppingCategory) {
-            $toppings = DB::table('toppings')->where('status', 1)->get();
+            $toppings = Cache::remember('active_toppings', 3600, function() {
+                return DB::table('toppings')->where('status', 1)->get();
+            });
         } else {
             $toppings = collect([]);
         }
@@ -49,8 +52,10 @@ class ProductController extends Controller
     }
     public function index(Request $request)
     {
-        // 1. Lấy danh sách danh mục để hiển thị ở Sidebar
-        $categories = DB::table('categories')->get();
+        // 1. Lấy danh sách danh mục để hiển thị ở Sidebar (Cache 60 phút)
+        $categories = Cache::remember('public_categories', 3600, function() {
+            return DB::table('categories')->get();
+        });
 
         // 2. Khởi tạo câu truy vấn cơ bản (Lấy sản phẩm + Giá nhỏ nhất)
         $query = DB::table('products')
