@@ -61,18 +61,6 @@ Route::get('/dang-xuat', [AuthController::class, 'logout'])->name('logout');
 | ROUTES NGƯỜI DÙNG THÀNH VIÊN (ĐÃ ĐĂNG NHẬP)
 |--------------------------------------------------------------------------
 */
-// Trang câu chuyện thương hiệu (Bài viết nổi bật)
-Route::get('/chuyen-nha', function () {
-    return view('post.story'); // Trỏ tới file view story.blade.php
-})->name('post.story');
-// Trang Tin tức / Blog
-Route::get('/tin-tuc', function () {
-    return view('post.index'); 
-})->name('post.index');
-// Trang Liên hệ
-Route::get('/lien-he', function () {
-    return view('contact'); 
-})->name('contact');
 Route::post('/lien-he', [FeedbackController::class, 'store'])->name('contact.submit');
 // ROUTES NGƯỜI DÙNG (Bắt buộc phải đăng nhập)
 Route::middleware(['auth'])->group(function () {
@@ -133,8 +121,6 @@ Route::post('/staff/attendance/checkin', [AttendanceController::class, 'checkIn'
     Route::post('/staff/api/orders', [PosController::class, 'storeOrder'])->name('staff.api.store_order');
     Route::post('/staff/api/orders/{id}/complete', [PosController::class, 'completeOrder'])->name('staff.api.complete_order');
 });
-
-Route::get('/tai-khoan/don-hang', [\App\Http\Controllers\UserController::class, 'orders'])->name('user.orders');
 
 // ROUTES CHAT BOX TRỰC TUYẾN
 Route::prefix('chat')->group(function () {

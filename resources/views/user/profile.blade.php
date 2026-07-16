@@ -12,7 +12,7 @@
             <div class="w-full md:w-1/3 bg-espresso text-cream p-8 md:p-10 flex flex-col">
                 <h2 class="font-serif font-bold text-2xl text-white mb-8">Tài khoản</h2>
                 <nav class="space-y-2 flex-1">
-                    <a href="#" class="block px-4 py-3 rounded-xl bg-white/10 text-white font-medium transition-colors">Thông tin cá nhân</a>
+                    <a href="{{ route('user.profile') }}" class="block px-4 py-3 rounded-xl bg-white/10 text-white font-medium transition-colors">Thông tin cá nhân</a>
                     <a href="{{ route('user.orders') }}" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white transition-colors">Đơn hàng của tôi</a>
                     <a href="#" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white transition-colors">Đổi mật khẩu</a>
                 </nav>

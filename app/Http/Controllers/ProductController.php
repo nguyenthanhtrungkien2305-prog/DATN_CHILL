@@ -79,7 +79,12 @@ class ProductController extends Controller
                 'products.category_id', 'products.created_at', 'products.updated_at'
             );
 
-        // 3. Xử lý Lọc theo Danh mục
+        // 3. Xử lý Tìm kiếm theo tên sản phẩm
+        if ($request->filled('q')) {
+            $query->where('products.name', 'LIKE', '%' . $request->q . '%');
+        }
+
+        // 4. Xử lý Lọc theo Danh mục
         if ($request->filled('category')) {
             $query->where('products.category_id', $request->category);
         }

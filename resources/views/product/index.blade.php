@@ -49,6 +49,10 @@
                         Áp dụng lọc giá
                     </button>
                     
+                    {{-- Giữ lại từ khóa tìm kiếm nếu có --}}
+                    @if(request('q'))
+                        <input type="hidden" name="q" value="{{ request('q') }}">
+                    @endif
                     {{-- Giữ lại trạng thái sắp xếp nếu có --}}
                     @if(request('sort'))
                         <input type="hidden" name="sort" value="{{ request('sort') }}">
@@ -62,6 +66,14 @@
         {{-- ========================================= --}}
         <main class="w-full md:w-3/4">
             
+            {{-- Thông báo kết quả tìm kiếm --}}
+            @if(request('q'))
+                <div class="mb-4 px-5 py-3 bg-coral/10 border border-coral/20 rounded-2xl flex items-center justify-between gap-4">
+                    <p class="text-espresso text-sm">Kết quả tìm kiếm cho: <strong class="text-coral">"{{ request('q') }}"</strong></p>
+                    <a href="{{ route('product.index') }}" class="text-xs text-espresso/60 hover:text-coral transition-colors shrink-0">✕ Xóa tìm kiếm</a>
+                </div>
+            @endif
+
             {{-- Header của danh sách --}}
             <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 bg-white p-4 rounded-[20px] shadow-sm border border-espresso/5">
                 <p class="text-espresso/70 font-medium">Hiển thị <strong class="text-espresso">{{ $products->count() }}</strong> trên tổng <strong class="text-espresso">{{ $products->total() }}</strong> sản phẩm</p>

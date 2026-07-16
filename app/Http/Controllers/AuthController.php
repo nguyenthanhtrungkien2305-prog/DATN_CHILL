@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator; // Thêm thư viện này
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -66,7 +69,7 @@ class AuthController extends Controller
                 return redirect()->route('admin.dashboard');
             }
             
-            return redirect('/')->with('success', 'Đăng nhập thành công!');
+            return redirect()->intended('/')->with('success', 'Đăng nhập thành công!');
         }
         // Bước 5: Chuyển về trang chủ kèm theo tín hiệu để bật Pop-up Chào mừng
         return redirect('/')->with('show_welcome_modal', 'Đăng ký thành công!');
@@ -106,7 +109,27 @@ class AuthController extends Controller
                 return back()->withErrors(['login_error' => 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.']);
             }
 
-            $userId = $user->user_id ?? $user->id; 
+            $userId = $user->user_id ?? $user->id;
+
+            // Merge giỏ hàng khách vãng lai vào giỏ hàng tài khoản (Cache-based, 24h TTL)
+            $guestToken = $request->cookie('cart_token');
+            if ($guestToken) {
+                $guestCartKey = 'cart:g:' . $guestToken;
+                $guestCart    = Cache::get($guestCartKey, []);
+                if (!empty($guestCart)) {
+                    $userCartKey = 'cart:u:' . $userId;
+                    $userCart    = Cache::get($userCartKey, []);
+                    foreach ($guestCart as $key => $item) {
+                        if (isset($userCart[$key])) {
+                            $userCart[$key]['quantity'] += $item['quantity'];
+                        } else {
+                            $userCart[$key] = $item;
+                        }
+                    }
+                    Cache::put($userCartKey, $userCart, now()->addHours(24));
+                    Cache::forget($guestCartKey);
+                }
+            }
 
             // NẾU LÀ NHÂN VIÊN -> TỰ ĐỘNG CHECK-IN
             if ($user->role === 'staff') {
@@ -155,7 +178,7 @@ class AuthController extends Controller
                 return redirect()->route('admin.dashboard');
             }
             
-            return redirect('/')->with('success', 'Đăng nhập thành công!');
+            return redirect()->intended('/')->with('success', 'Đăng nhập thành công!');
         }
 
         return back()->withErrors(['login_error' => 'Tài khoản hoặc mật khẩu không chính xác.']);
@@ -165,14 +188,22 @@ class AuthController extends Controller
     // ==========================================
     public function logout(\Illuminate\Http\Request $request)
     {
-        // 1. Đăng xuất tài khoản
-        Auth::logout();
+        // 1. Đọc giỏ hàng tài khoản từ Cache trước khi đăng xuất
+        $userId   = Auth::id();
+        $userCart = $userId ? Cache::get('cart:u:' . $userId, []) : [];
 
-        // 2. Xóa sạch mọi rác trong phiên làm việc (Session) để chống kẹt lỗi
+        // 2. Đăng xuất & invalidate session (chống session fixation)
+        Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        // 3. Đá về trang đăng nhập
-        return redirect('/dang-nhap')->with('success', 'Bạn đã đăng xuất ca làm việc an toàn!');
+        // 3. Chuyển giỏ hàng sang guest cart với cookie mới 24h
+        if (!empty($userCart)) {
+            $guestToken = $request->cookie('cart_token') ?: Str::uuid()->toString();
+            Cache::put('cart:g:' . $guestToken, $userCart, now()->addHours(24));
+            Cookie::queue('cart_token', $guestToken, 60 * 24); // 24 giờ
+        }
+
+        return redirect('/dang-nhap')->with('success', 'Bạn đã đăng xuất an toàn!');
     }
 }

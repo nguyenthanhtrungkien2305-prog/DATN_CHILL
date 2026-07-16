@@ -6,15 +6,13 @@
 <div class="bg-[#FAF7F2] py-12 min-h-screen">
     <div class="max-w-7xl mx-auto px-6">
         
-        {{-- TÍNH TOÁN TỔNG SỐ LƯỢNG VÀ TỔNG TIỀN TỪ SESSION --}}
+        {{-- TÍNH TOÁN TỔNG SỐ LƯỢNG VÀ TỔNG TIỀN TỪ CACHE --}}
         @php
             $totalItems = 0;
             $subTotal = 0;
-            if(session()->has('cart')) {
-                foreach(session('cart') as $item) {
-                    $totalItems += $item['quantity'];
-                    $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
-                }
+            foreach($cart as $item) {
+                $totalItems += $item['quantity'];
+                $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
             }
         @endphp
 
@@ -24,7 +22,7 @@
         </div>
 
         {{-- KIỂM TRA NẾU GIỎ HÀNG CÓ SẢN PHẨM --}}
-        @if(session('cart') && count(session('cart')) > 0)
+        @if(!empty($cart))
         
         <div class="flex flex-col lg:flex-row gap-8 items-start">
             
@@ -33,7 +31,7 @@
             {{-- ========================================= --}}
             <div class="w-full lg:w-2/3 space-y-4">
                 
-                @foreach(session('cart') as $cartKey => $item)
+                @foreach($cart as $cartKey => $item)
                 @php
                     // CÁCH MỚI: Kiểm tra trực tiếp xem sản phẩm có thuộc Danh mục Topping không
                     $categoryName = \DB::table('products')

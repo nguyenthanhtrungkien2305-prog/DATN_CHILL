@@ -132,12 +132,18 @@ class AttendanceController extends Controller
         $shiftIndex = floor($now->hour / 4) + 1;
         $startHour = ($shiftIndex - 1) * 4;
         $startTime = sprintf('%02d:00:00', $startHour);
+        $endTime = ($startHour + 4 == 24) ? '23:59:59' : sprintf('%02d:00:00', $startHour + 4);
         
-        $shift = \App\Models\Shift::where('date', $now->format('Y-m-d'))->where('start_time', $startTime)->first();
-        if($shift) {
-            if (!$shift->users->contains($userId)) {
-                $shift->users()->attach($userId);
-            }
+        $shift = \App\Models\Shift::firstOrCreate(
+            ['date' => $now->format('Y-m-d'), 'start_time' => $startTime],
+            [
+                'name' => "Ca $shiftIndex (" . sprintf('%02d:00', $startHour) . " - " . sprintf('%02d:00', $startHour + 4 > 23 ? 0 : $startHour + 4) . ")",
+                'end_time' => $endTime
+            ]
+        );
+
+        if (!$shift->users->contains($userId)) {
+            $shift->users()->attach($userId);
         }
 
         return response()->json(['success' => true, 'message' => 'Check-in thành công! Bắt đầu tính giờ làm.']);

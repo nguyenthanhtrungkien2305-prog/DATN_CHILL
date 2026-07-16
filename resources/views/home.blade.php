@@ -20,10 +20,10 @@
             <p class="font-sans text-espresso/80 text-lg mb-8 leading-relaxed font-medium">
                 Tận hưởng sự kết hợp hoàn hảo giữa những hạt cà phê rang xay thượng hạng và bánh ngọt mềm mịn, được chuẩn bị bằng cả trái tim.
             </p>
-            <button class="bg-white text-espresso font-bold text-lg px-8 py-4 rounded-full hover:bg-espresso hover:text-white transition-all duration-300 shadow-xl flex items-center gap-3 w-max group">
+            <a href="{{ route('product.index') }}" class="bg-white text-espresso font-bold text-lg px-8 py-4 rounded-full hover:bg-espresso hover:text-white transition-all duration-300 shadow-xl flex items-center gap-3 w-max group">
                 Đặt món ngay
                 <svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-            </button>
+            </a>
         </div>
     </div>
 </section>
@@ -115,7 +115,7 @@
             <span class="text-coral font-bold tracking-widest uppercase text-sm mb-2 block">Mua nhiều nhất</span>
             <h2 class="reveal font-serif font-bold text-espresso text-4xl">Gợi ý cho bạn</h2>
         </div>
-        <a href="#" class="hidden md:block text-coral font-medium border-b border-coral pb-1 hover:text-espresso hover:border-espresso transition-colors">Xem tất cả</a>
+        <a href="{{ route('product.index') }}" class="hidden md:block text-coral font-medium border-b border-coral pb-1 hover:text-espresso hover:border-espresso transition-colors">Xem tất cả</a>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -194,7 +194,7 @@
                 <h3 class="font-serif font-bold text-4xl md:text-5xl mb-4">Giảm 20% toàn bộ đơn hàng!</h3>
                 <p class="font-sans text-white/80 text-lg">Nhập mã <strong class="text-coral bg-white px-2 py-1 rounded-md mx-1">CHILL20</strong> khi thanh toán online.</p>
             </div>
-            <button class="shrink-0 bg-coral text-white font-bold text-lg px-10 py-4 rounded-full hover:bg-white hover:text-espresso transition-colors duration-300 shadow-lg">Đổi mã ngay</button>
+            <a href="{{ route('cart.index') }}" class="shrink-0 bg-coral text-white font-bold text-lg px-10 py-4 rounded-full hover:bg-white hover:text-espresso transition-colors duration-300 shadow-lg">Đổi mã ngay</a>
         </div>
     </div>
 </section>

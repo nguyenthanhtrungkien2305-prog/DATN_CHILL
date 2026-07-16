@@ -12,10 +12,10 @@
 
             <div class="flex flex-col gap-4">
                 <h3 class="font-serif font-bold text-xl mb-2 text-white">Khám phá</h3>
-                <a href="#" class="font-light text-cream/80 hover:text-coral transition-colors">Trang chủ</a>
-                <a href="#menu" class="font-light text-cream/80 hover:text-coral transition-colors">Thực đơn</a>
-                <a href="#promotions" class="font-light text-cream/80 hover:text-coral transition-colors">Khuyến mãi</a>
-                <a href="#store" class="font-light text-cream/80 hover:text-coral transition-colors">Hệ thống cửa hàng</a>
+                <a href="{{ url('/') }}" class="font-light text-cream/80 hover:text-coral transition-colors">Trang chủ</a>
+                <a href="{{ route('product.index') }}" class="font-light text-cream/80 hover:text-coral transition-colors">Thực đơn</a>
+                <a href="{{ route('post.index') }}" class="font-light text-cream/80 hover:text-coral transition-colors">Bài viết</a>
+                <a href="{{ route('contact') }}" class="font-light text-cream/80 hover:text-coral transition-colors">Liên hệ</a>
             </div>
 
             <div class="flex flex-col gap-4">
