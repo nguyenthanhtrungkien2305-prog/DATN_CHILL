@@ -14,6 +14,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\CommissionController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\Staff\OrderController;
 
 // Khai báo Controller Admin
 use App\Http\Controllers\Admin\DashboardController;
@@ -77,6 +78,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/tai-khoan/cap-nhat', [UserController::class, 'updateProfile'])->name('user.update_profile');
     Route::get('/tai-khoan/don-hang', [UserController::class, 'orders'])->name('user.orders');
 });
+Route::get('/user/orders/{order_id}', [UserController::class, 'show'])->name('user.orders.show');
 
 /*
 |--------------------------------------------------------------------------
@@ -119,7 +121,7 @@ Route::middleware(['auth', 'staff'])->group(function () {
     Route::get('/staff/shifts', [\App\Http\Controllers\AttendanceController::class, 'index'])->name('staff.shifts');
     Route::post('/staff/shifts/register', [\App\Http\Controllers\AttendanceController::class, 'storeRegistration'])->name('staff.shifts.register');
     Route::get('/staff/salary', [\App\Http\Controllers\SalaryController::class, 'index'])->name('staff.salary');   
-
+    Route::post('/staff/api/orders', [OrderController::class, 'storeApi']);
     // 👉 ĐÃ CỨU: API Check-in và Check-out được đưa ra vùng an toàn để ai cũng bấm được!
     Route::post('/staff/attendance/checkin', [\App\Http\Controllers\AttendanceController::class, 'checkIn'])->name('staff.checkin');
     Route::post('/staff/attendance/checkout', [\App\Http\Controllers\AttendanceController::class, 'checkOut'])->name('staff.checkout');
@@ -135,10 +137,21 @@ Route::middleware(['auth', 'staff'])->group(function () {
         // API xử lý đơn hàng cũng cần được bảo vệ để người ngoài không chọc vào được
         Route::post('/staff/api/orders/{id}/complete', [\App\Http\Controllers\PosController::class, 'completeOrder'])->name('staff.api.complete_order');
     });
+    Route::prefix('staff')->group(function () {
+    // Thêm chữ Route:: vào trước get
+    Route::get('/orders', [OrderController::class, 'index'])->name('staff.orders.new');
+    
+    // API nhận tạo đơn từ trang POS
+    Route::post('/api/orders', [OrderController::class, 'storeApi']);
+    
+    // API bấm hoàn thành đơn hàng
+    Route::post('/api/orders/{id}/complete', [OrderController::class, 'complete']);
+});
 });
 
 Route::get('/tai-khoan/don-hang', [\App\Http\Controllers\UserController::class, 'orders'])->name('user.orders');
-
+Route::post('/tai-khoan/don-hang/{id}/huy', [UserController::class, 'cancelOrder'])->name('user.orders.cancel');
+Route::post('/tai-khoan/don-hang/danh-gia', [\App\Http\Controllers\UserController::class, 'submitReview'])->name('user.orders.review');
 // ROUTES CHAT BOX TRỰC TUYẾN
 Route::prefix('chat')->group(function () {
     Route::post('/start', [ChatController::class, 'startSession'])->name('chat.start');

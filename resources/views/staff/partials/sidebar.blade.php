@@ -23,7 +23,9 @@
 
             <a href="{{ route('staff.new_orders') }}" class="flex items-center justify-between px-6 py-4 whitespace-nowrap transition-colors {{ request()->routeIs('staff.new_orders') ? 'bg-coral/10 text-coral border-r-4 border-coral font-bold' : 'hover:bg-coral/10 hover:text-coral text-espresso border-b border-gray-50 font-bold' }}">
                 <div class="flex items-center gap-4"><span class="text-xl">📥</span><span>Đơn hàng mới</span></div>
-                <span id="new-order-badge" class="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white shadow-md">0</span>
+                <span id="new-order-badge" class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+        {{ $pendingOrders->count() }}
+    </span>
             </a>
             
             <a href="{{ route('staff.pos') }}" class="flex items-center gap-4 px-6 py-4 whitespace-nowrap transition-colors {{ request()->routeIs('staff.pos') ? 'bg-coral/10 text-coral border-r-4 border-coral font-bold' : 'hover:bg-coral/10 hover:text-coral text-espresso/80 border-b border-gray-50 font-medium' }}">

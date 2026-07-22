@@ -15,7 +15,7 @@
 </head>
 <body class="bg-[#FAF7F2] font-sans antialiased overflow-hidden h-screen flex relative">
 
-    {{-- TOAST THÔNG BÁO HOÀN THÀNH --}}
+    {{-- TOAST THÔNG BÁO HOÀN THÀNH (Đã sửa lại class chống lỗi Tailwind CDN) --}}
     <div id="toast-notification" class="fixed top-6 right-6 z-[200] transform transition-transform duration-500 translate-x-[150%] bg-white border-l-4 border-emerald-500 shadow-2xl rounded-xl p-4 flex items-center gap-4 min-w-[280px]">
         <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
@@ -26,13 +26,10 @@
         </div>
     </div>
 
-    {{-- Gọi Sidebar chung (isOpen = true) --}}
     @include('staff.partials.sidebar', ['isOpen' => true])
 
-    {{-- CONTAINER CHÍNH --}}
     <div class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300">
         
-        {{-- TOP BAR --}}
         <div class="bg-espresso text-white px-4 lg:px-6 py-3 flex justify-between items-center shadow-md shrink-0 h-[64px]">
             <div class="font-bold text-lg flex items-center gap-3">
                 <button onclick="toggleSidebar()" class="p-2 bg-white/10 hover:bg-coral rounded-lg transition-colors flex items-center justify-center focus:outline-none group">
@@ -45,7 +42,6 @@
             </div>
         </div>
 
-        {{-- DANH SÁCH ĐƠN HÀNG --}}
         <div class="flex-1 p-6 flex flex-col bg-[#FAF7F2] overflow-hidden">
             
             <div class="flex justify-between items-center mb-6 shrink-0">
@@ -61,14 +57,15 @@
                 </div>
             </div>
 
-            {{-- ĐÃ SỬA: LƯỚI CARD TRƯỢT NGANG (FLEX-ROW + OVERFLOW-X-AUTO) --}}
             <div class="flex overflow-x-auto custom-scrollbar gap-6 pb-6 flex-1 snap-x" id="orders-grid">
-                
+                @php
+                    $iceTexts = ['100' => '100% Đá', '70' => '70% Đá', '50' => '50% Đá', '20' => '20% Đá', '0' => 'Không đá', '0_full' => 'Không đá (Đầy ly)'];
+                    $sugarTexts = ['100' => '100% Đường', '70' => '70% Đường', '50' => '50% Đường', '20' => '20% Đường'];
+                @endphp
+
                 @foreach($pendingOrders as $order)
-                {{-- ĐÃ SỬA: Ép kích thước Card (w-[380px] h-[550px] shrink-0) --}}
                 <div id="order-card-{{ $order->order_id }}" class="w-[320px] md:w-[380px] h-[550px] shrink-0 snap-start bg-white rounded-2xl border border-espresso/10 shadow-sm overflow-hidden flex flex-col transition-all duration-300 hover:shadow-lg hover:border-coral/50 relative">
                     
-                    {{-- Header Card --}}
                     <div class="bg-gray-50 border-b border-gray-200 p-4 flex justify-between items-start shrink-0">
                         <div>
                             <div class="flex items-center gap-2 mb-1">
@@ -85,10 +82,8 @@
                         </div>
                     </div>
 
-                    {{-- Body Card: Flex-col để giới hạn vùng cuộn món ăn --}}
                     <div class="p-4 flex-1 flex flex-col overflow-hidden">
                         
-                        {{-- Phần Thông tin khách hàng (Cố định, không cuộn) --}}
                         <div class="mb-3 pb-3 border-b border-dashed border-gray-200 shrink-0">
                             <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Khách hàng</p>
                             <p class="font-bold text-espresso text-sm flex items-center gap-2">
@@ -100,7 +95,6 @@
                             @endif
                         </div>
 
-                        {{-- ĐÃ SỬA: Danh sách món ăn có thể Scroll (overflow-y-auto) --}}
                         <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
                             <p class="text-xs text-gray-500 uppercase font-bold tracking-wider sticky top-0 bg-white z-10 pb-1">Chi tiết món</p>
                             @php 
@@ -115,15 +109,33 @@
                                         <span class="font-black text-coral text-sm">x{{ $item['quantity'] }}</span>
                                     </div>
                                     
-                                    @if(isset($item['toppings']) && count(array_filter($item['toppings'])) > 0)
+                                    @if((isset($item['toppings']) && count(array_filter($item['toppings'])) > 0) || (isset($item['ice_level']) && $item['ice_level'] !== '100') || (isset($item['sugar_level']) && $item['sugar_level'] !== '100'))
                                         <div class="mt-1 flex flex-wrap gap-1">
-                                            @foreach($item['toppings'] as $t_id => $t_qty)
-                                                @if($t_qty > 0 && isset($toppings[$t_id]))
-                                                    <span class="text-[10px] text-espresso/60 italic bg-white inline-block px-1.5 py-0.5 rounded border border-gray-200">
-                                                        + {{ $toppings[$t_id]->name }} (x{{ $t_qty }})
-                                                    </span>
-                                                @endif
-                                            @endforeach
+                                            @if(isset($item['ice_level']) && $item['ice_level'] !== '100')
+                                                <span class="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 font-medium">
+                                                    🧊 {{ $iceTexts[$item['ice_level']] ?? $item['ice_level'] }}
+                                                </span>
+                                            @endif
+
+                                            @if(isset($item['sugar_level']) && $item['sugar_level'] !== '100')
+                                                <span class="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 font-medium">
+                                                    🍯 {{ $sugarTexts[$item['sugar_level']] ?? $item['sugar_level'] }}
+                                                </span>
+                                            @endif
+
+                                            @if(isset($item['toppings']))
+                                                @foreach($item['toppings'] as $t_id => $t_data)
+                                                    @php
+                                                        $qty = is_array($t_data) ? ($t_data['qty'] ?? 0) : $t_data;
+                                                        $name = is_array($t_data) ? ($t_data['name'] ?? 'Topping') : ($toppings[$t_id]->name ?? 'Topping');
+                                                    @endphp
+                                                    @if($qty > 0)
+                                                        <span class="text-[10px] text-espresso/60 italic bg-white inline-block px-1.5 py-0.5 rounded border border-gray-200 shadow-sm">
+                                                            + {{ $name }} <span class="font-bold text-coral">x{{ $qty }}</span>
+                                                        </span>
+                                                    @endif
+                                                @endforeach
+                                            @endif
                                         </div>
                                     @endif
                                 </div>
@@ -131,15 +143,13 @@
                         </div>
                     </div>
 
-                    {{-- Footer Card: Tổng tiền & Nút Hoàn thành (Cố định ở đáy thẻ) --}}
                     <div class="p-4 bg-gray-50 border-t border-gray-200 shrink-0">
                         <div class="flex justify-between items-center mb-3">
                             <span class="font-bold text-espresso text-xs">TỔNG TIỀN:</span>
                             <span class="font-black text-xl text-coral">{{ number_format($order->total_amount, 0, ',', '.') }}đ</span>
                         </div>
-                        <button onclick="openConfirmModal('{{ $order->order_id }}')" class="w-full py-3 bg-emerald-500 text-white font-black rounded-xl uppercase tracking-widest shadow-md shadow-emerald-500/20 hover:bg-emerald-600 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                            Hoàn Thành Đơn
+                        <button type="button" onclick="openConfirmModal('{{ $order->order_id }}')" class="w-full mt-4 bg-[#00b873] hover:bg-emerald-600 text-white font-bold py-3 rounded-lg text-lg flex items-center justify-center gap-2 transition-colors uppercase tracking-wider shadow-sm">
+                            Hoàn thành đơn
                         </button>
                     </div>
                 </div>
@@ -147,7 +157,6 @@
                 
             </div>
             
-            {{-- Màn hình trống (Hiện khi không có đơn nào) --}}
             <div id="empty-state" class="{{ $pendingOrders->count() > 0 ? 'hidden' : 'flex' }} flex-col items-center justify-center h-full text-gray-400">
                 <svg class="w-20 h-20 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                 <h3 class="text-xl font-bold text-espresso/40">Tuyệt vời!</h3>
@@ -157,7 +166,7 @@
         </div>
     </div>
 
-    {{-- POPUP XÁC NHẬN --}}
+    {{-- MODAL XÁC NHẬN --}}
     <div id="confirm-modal" class="fixed inset-0 bg-black/60 z-[100] hidden flex items-center justify-center backdrop-blur-sm transition-opacity opacity-0" style="transition: opacity 0.2s;">
         <div class="bg-white rounded-[24px] shadow-2xl w-full max-w-sm mx-4 overflow-hidden flex flex-col scale-95 transition-transform duration-200 text-center" id="confirm-modal-content">
             <div class="p-8">
@@ -181,90 +190,90 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #ff7043; border-radius: 20px; }
     </style>
 
-    {{-- LOGIC JAVASCRIPT GỌI API --}}
     <script>
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('w-64'); sidebar.classList.toggle('w-0');
+        function toggleSidebar() { 
+            const sidebar = document.getElementById('sidebar'); 
+            sidebar.classList.toggle('w-64'); sidebar.classList.toggle('w-0'); 
         }
-
+        
         let currentProcessingOrderId = null;
 
         function openConfirmModal(orderId) {
-            currentProcessingOrderId = orderId;
+            currentProcessingOrderId = orderId; 
             document.getElementById('modal-order-id-text').innerText = "#" + orderId;
-            const modal = document.getElementById('confirm-modal');
+            const modal = document.getElementById('confirm-modal'); 
             const content = document.getElementById('confirm-modal-content');
-            modal.classList.remove('hidden');
+            modal.classList.remove('hidden'); 
             setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
         }
 
         function closeConfirmModal() {
-            const modal = document.getElementById('confirm-modal');
+            const modal = document.getElementById('confirm-modal'); 
             const content = document.getElementById('confirm-modal-content');
-            modal.classList.add('opacity-0'); content.classList.add('scale-95');
-            setTimeout(() => { modal.classList.add('hidden'); }, 200);
+            modal.classList.add('opacity-0'); content.classList.add('scale-95'); 
+            setTimeout(() => { modal.classList.add('hidden'); }, 200); 
             currentProcessingOrderId = null;
         }
 
         function processCompleteOrder() {
-            const orderId = currentProcessingOrderId;
-            closeConfirmModal();
-
+            const orderId = currentProcessingOrderId; 
+            closeConfirmModal(); 
             if (!orderId) return;
 
-            // 1. GỌI API LÊN BACKEND ĐỂ CHUYỂN TRẠNG THÁI DB THÀNH 'completed'
             fetch(`/staff/api/orders/${orderId}/complete`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                method: 'POST', 
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Accept': 'application/json', 
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') 
                 }
             })
             .then(res => res.json())
             .then(data => {
                 if(data.success) {
-                    // 2. TẠO HIỆU ỨNG THU NHỎ VÀ BIẾN MẤT THẺ CARD
+                    
+                    // 1. Thu nhỏ và Xóa thẻ Đơn hàng
                     const card = document.getElementById('order-card-' + orderId);
                     if(card) {
-                        card.style.transform = 'scale(0.8)'; card.style.opacity = '0';
-                        
+                        card.style.transform = 'scale(0.8)'; 
+                        card.style.opacity = '0';
                         setTimeout(() => {
                             card.remove(); 
                             
-                            // 3. TỰ ĐỘNG GIẢM SỐ TRÊN THANH ĐIỀU HƯỚNG (NAV)
-                            const badge = document.getElementById('new-order-badge');
-                            if(badge) {
-                                let currentCount = parseInt(badge.textContent) || 0;
-                                if(currentCount > 0) badge.textContent = currentCount - 1;
-                            }
+                            // 2. Trừ số đếm (Đã được khôi phục cập nhật cả Sidebar)
+                            ['new-order-badge', 'total-orders-count'].forEach(id => {
+                                const el = document.getElementById(id); 
+                                if(el) { 
+                                    let c = parseInt(el.textContent.trim()) || 0; 
+                                    if(c > 0) el.textContent = c - 1; 
+                                }
+                            });
                             
-                            // Cập nhật text số lượng ở tiêu đề
-                            const titleBadge = document.getElementById('total-orders-count');
-                            if(titleBadge) {
-                                let titleCount = parseInt(titleBadge.textContent) || 0;
-                                if(titleCount > 0) titleBadge.textContent = titleCount - 1;
-                            }
-
-                            // 4. KIỂM TRA NẾU XÓA HẾT THÌ HIỆN BẢNG "TUYỆT VỜI"
+                            // 3. Hiện trạng thái trống nếu hết sạch đơn
                             const grid = document.getElementById('orders-grid');
-                            if(grid.children.length === 0) {
-                                grid.classList.add('hidden');
-                                document.getElementById('empty-state').classList.remove('hidden');
-                                document.getElementById('empty-state').classList.add('flex');
+                            if(grid && grid.querySelectorAll('[id^="order-card-"]').length === 0) { 
+                                grid.classList.add('hidden'); 
+                                document.getElementById('empty-state').classList.remove('hidden'); 
+                                document.getElementById('empty-state').classList.add('flex'); 
                             }
                         }, 300);
                     }
-
-                    // Hiện Toast Thành Công Trượt ngang
-                    const toast = document.getElementById('toast-notification');
-                    toast.classList.remove('translate-x-[150%]');
-                    setTimeout(() => { toast.classList.add('translate-x-[150%]'); }, 3000);
+                    
+                    // 4. Hiện Popup Toast (Thông báo thành công)
+                    const toast = document.getElementById('toast-notification'); 
+                    toast.classList.remove('translate-x-[150%]'); 
+                    setTimeout(() => { 
+                        toast.classList.add('translate-x-[150%]'); 
+                    }, 3000);
+                    
+                } else {
+                    alert("Lỗi máy chủ: " + data.message);
                 }
             })
-            .catch(err => {
-                alert("Lỗi mạng! Không thể hoàn thành đơn.");
+            .catch(err => { 
                 console.error(err);
+                alert("Lỗi kết nối hoặc mất mạng! Vui lòng thử lại."); 
             });
         }
     </script>
