@@ -17,28 +17,29 @@
     @include('staff.partials.sidebar', ['isOpen' => true])
 
     <div class="flex-1 flex flex-col h-screen overflow-hidden">
-        {{-- TOP BAR --}}
-        <div class="bg-espresso text-white px-6 py-4 flex justify-between items-center shadow-md shrink-0">
-            <h1 class="font-serif font-bold tracking-widest uppercase text-lg">Báo Cáo Ca & Hoa Hồng</h1>
+        
+        {{-- THANH HEADER (ĐÃ ĐƯỢC ĐƯA RA NGOÀI ĐỂ TRÀN VIỀN) --}}
+        <div class="h-[64px] bg-espresso text-white px-6 flex justify-between items-center shadow-md shrink-0 z-10">
+            <h1 class="font-serif font-bold tracking-widest uppercase text-lg">BÁO CÁO CA & HOA HỒNG</h1>
             <div class="text-sm">Xin chào, <span class="font-bold text-coral">{{ auth()->user()->name ?? 'Nhân viên' }}</span></div>
         </div>
 
-        {{-- NỘI DUNG CHÍNH --}}
+        {{-- NỘI DUNG CHÍNH (CÓ THANH CUỘN BÊN DƯỚI) --}}
         <div class="p-6 flex-1 overflow-y-auto custom-scrollbar">
             
-            {{-- THỂ TỔNG QUAN CA LÀM VIỆC --}}
+            {{-- THẺ TỔNG QUAN CA LÀM VIỆC --}}
             <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
                 <div class="absolute right-0 top-0 w-64 h-64 bg-coral/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
                 
                 <div class="flex items-center gap-5 z-10">
                     <div class="w-16 h-16 bg-espresso text-white rounded-2xl flex flex-col items-center justify-center font-black shadow-lg">
                         <span class="text-xs uppercase opacity-70 font-medium">ID</span>
-                        <span class="text-xl">{{ sprintf('%02d', $shift->id) }}</span>
+                        <span class="text-xl">{{ sprintf('%02d', $shift->id ?? 0) }}</span>
                     </div>
                     <div>
-                        <h2 class="text-xl font-black text-espresso">{{ $shift->name }}</h2>
+                        <h2 class="text-xl font-black text-espresso">{{ $shift->name ?? 'Đang tải...' }}</h2>
                         <p class="text-sm text-gray-500 font-medium mt-1">
-                            🕒 Thời gian: <strong class="text-emerald-600">{{ \Carbon\Carbon::parse($shift->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($shift->end_time)->format('H:i') }}</strong>
+                            🕒 Thời gian: <strong class="text-emerald-600">{{ isset($shift->start_time) ? \Carbon\Carbon::parse($shift->start_time)->format('H:i') : '--:--' }} - {{ isset($shift->end_time) ? \Carbon\Carbon::parse($shift->end_time)->format('H:i') : '--:--' }}</strong>
                         </p>
                     </div>
                 </div>
@@ -46,7 +47,7 @@
                 <div class="flex items-center gap-3 z-10">
                     <span class="text-sm font-bold text-espresso/60 uppercase">Đồng đội trong ca:</span>
                     <span class="text-sm font-bold bg-gray-100 px-3 py-1.5 rounded-lg text-gray-600 shadow-inner">
-                        <span class="text-coral">{{ $staffCount }}</span> nhân sự
+                        <span class="text-coral">{{ $staffCount ?? 1 }}</span> nhân sự
                     </span>
                 </div>
             </div>
@@ -56,8 +57,8 @@
                 {{-- Tổng doanh thu Ca --}}
                 <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
                     <p class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Doanh thu toàn ca</p>
-                    <h3 class="text-3xl font-black text-espresso">{{ number_format($totalRevenue, 0, ',', '.') }}đ</h3>
-                    <p class="text-xs text-gray-400 mt-2">Đã hoàn thành <strong>{{ $totalOrders }} đơn hàng</strong></p>
+                    <h3 class="text-3xl font-black text-espresso">{{ number_format($totalRevenue ?? 0, 0, ',', '.') }}đ</h3>
+                    <p class="text-xs text-gray-400 mt-2">Đã hoàn thành <strong>{{ $totalOrders ?? 0 }} đơn hàng</strong></p>
                 </div>
                 
                 {{-- Quỹ hoa hồng Ca --}}
@@ -65,15 +66,15 @@
                     <p class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 flex justify-between">
                         <span>Quỹ hoa hồng (Ca)</span> <span class="bg-gray-200 text-gray-600 px-2 py-0.5 rounded text-[10px]">2.0% DT</span>
                     </p>
-                    <h3 class="text-3xl font-black text-gray-700">{{ number_format($shiftCommissionPool, 0, ',', '.') }}đ</h3>
-                    <p class="text-xs text-gray-500 mt-2">Chia đều cho <strong class="text-coral">{{ $staffCount }}</strong> người</p>
+                    <h3 class="text-3xl font-black text-gray-700">{{ number_format($shiftCommissionPool ?? 0, 0, ',', '.') }}đ</h3>
+                    <p class="text-xs text-gray-500 mt-2">Chia đều cho <strong class="text-coral">{{ $staffCount ?? 1 }}</strong> người</p>
                 </div>
 
                 {{-- Tiền thực nhận của User --}}
                 <div class="bg-gradient-to-br from-coral to-[#e05b42] p-6 rounded-3xl shadow-lg shadow-coral/30 text-white relative overflow-hidden">
                     <div class="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3"></div>
                     <p class="text-sm font-bold text-white/80 uppercase tracking-wider mb-1">Hoa hồng của bạn</p>
-                    <h3 class="text-4xl font-black mb-1">+{{ number_format($myCommission, 0, ',', '.') }}đ</h3>
+                    <h3 class="text-4xl font-black mb-1">+{{ number_format($myCommission ?? 0, 0, ',', '.') }}đ</h3>
                     <p class="text-xs text-white/90 mt-2 bg-white/20 inline-block px-2 py-1 rounded-md">
                         Tự động cộng vào lương cuối tháng
                     </p>
@@ -97,7 +98,7 @@
                         </thead>
                         <tbody class="divide-y divide-gray-50">
                             
-                            @forelse($productsSold as $product)
+                            @forelse($productsSold ?? [] as $product)
                             <tr class="hover:bg-gray-50 transition-colors">
                                 <td class="py-4 flex items-center gap-3">
                                     <div class="w-10 h-10 rounded-lg bg-cream flex items-center justify-center text-xl">☕</div>

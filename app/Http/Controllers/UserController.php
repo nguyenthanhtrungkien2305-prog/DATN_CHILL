@@ -55,19 +55,120 @@ class UserController extends Controller
 
         return back()->with('success', 'Đã cập nhật hồ sơ thành công!');
     }
-    public function orders()
+    // ==========================================
+    // HIỂN THỊ LỊCH SỬ ĐƠN HÀNG (CÓ BỘ LỌC)
+    // ==========================================
+    public function orders(\Illuminate\Http\Request $request)
     {
-        $user = auth()->user();
-        if (!$user) {
-            return redirect()->route('cart.index')->with('login_required', 'Vui lòng đăng nhập để xem danh sách đơn hàng!');
+        $userId = auth()->user()->user_id ?? auth()->id();
+        if (!$userId) {
+            return redirect()->route('login')->with('error', 'Vui lòng đăng nhập để xem đơn hàng.');
         }
-        
-        // Lấy danh sách đơn hàng của người này, xếp mới nhất lên đầu
-        $orders = \DB::table('orders')
-            ->where('user_id', $user->user_id) // Thay user_id bằng tên cột ID khóa chính của bạn nếu khác
-            ->orderBy('created_at', 'desc')
-            ->get();
 
-        return view('user.orders', compact('user', 'orders'));
-    }   
+        // 1. Khởi tạo câu query cơ bản (chỉ lấy đơn của user này)
+        $query = \Illuminate\Support\Facades\DB::table('orders')
+                    ->where('user_id', $userId);
+
+        // 2. Nếu khách hàng có chọn Ngày -> Lọc theo ngày
+        if ($request->filled('filter_date')) {
+            $query->whereDate('created_at', $request->filter_date);
+        }
+
+        // 3. Nếu khách hàng có chọn Trạng thái -> Lọc theo trạng thái
+        if ($request->filled('filter_status')) {
+            $query->where('status', $request->filter_status);
+        }
+
+        // 4. Thực thi câu lệnh và lấy dữ liệu
+        $orders = $query->orderBy('created_at', 'desc')->get();
+
+        return view('user.orders', compact('orders'));
+    }  
+    public function cancelOrder($id)
+    {
+        $userId = auth()->user()->user_id ?? auth()->id();
+
+        // Dùng DB::table thay vì App\Models\Order để đồng bộ với code của bạn
+        $order = \Illuminate\Support\Facades\DB::table('orders')
+                    ->where('order_id', $id)
+                    ->where('user_id', $userId)
+                    ->first();
+
+        // Nếu không tìm thấy đơn hàng của người này
+        if (!$order) {
+            return back()->with('error', 'Không tìm thấy đơn hàng!');
+        }
+
+        // Chỉ cho phép hủy khi đơn hàng đang ở trạng thái chờ xác nhận
+        if ($order->status == 'pending') {
+            \Illuminate\Support\Facades\DB::table('orders')
+                ->where('order_id', $id)
+                ->update([
+                    'status' => 'canceled', 
+                    'updated_at' => now('Asia/Ho_Chi_Minh')
+                ]);
+                
+            return back()->with('success', 'Đã hủy đơn hàng #' . $id . ' thành công.');
+        }
+
+        return back()->with('error', 'Không thể hủy đơn hàng này do quán đã bắt đầu chuẩn bị đồ uống!');
+    }
+    // ==========================================
+    // XỬ LÝ GỬI ĐÁNH GIÁ (REVIEW)
+    // ==========================================
+    public function submitReview(\Illuminate\Http\Request $request)
+    {
+        $request->validate([
+            'order_id' => 'required',
+            'product_id' => 'required',
+            'rating' => 'required|integer|min:1|max:5',
+            'image' => 'nullable|image|max:5120' // Tối đa 5MB
+        ]);
+
+        $userId = auth()->user()->user_id ?? auth()->id();
+
+        // Kiểm tra xem khách đã đánh giá món này trong đơn này chưa
+        $exists = \Illuminate\Support\Facades\DB::table('reviews')
+            ->where('order_id', $request->order_id)
+            ->where('product_id', $request->product_id)
+            ->exists();
+
+        if ($exists) {
+            return back()->with('error', 'Bạn đã đánh giá sản phẩm này trong đơn hàng rồi!');
+        }
+
+        // Xử lý upload ảnh (Lưu vào storage/app/public/reviews)
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('reviews', 'public');
+        }
+
+        // Lưu vào Database
+        \Illuminate\Support\Facades\DB::table('reviews')->insert([
+            'user_id' => $userId,
+            'product_id' => $request->product_id,
+            'order_id' => $request->order_id,
+            'rating' => $request->rating,
+            'comment' => $request->comment,
+            'image' => $imagePath ? '/storage/' . $imagePath : null,
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
+        return back()->with('success', 'Tuyệt vời! Đánh giá của bạn đã được ghi nhận.');
+    }
+    // Hàm hiển thị trang chi tiết đơn hàng
+    public function show($order_id)
+    {
+        // Lấy thông tin đơn hàng
+        $order = \Illuminate\Support\Facades\DB::table('orders')
+            ->where('order_id', $order_id)
+            ->first();
+
+        if (!$order) {
+            abort(404, 'Không tìm thấy đơn hàng');
+        }
+
+        return view('user.order_detail', compact('order'));
+    }
 }

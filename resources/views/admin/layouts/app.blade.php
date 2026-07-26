@@ -15,6 +15,7 @@
     @include('admin.partials.sidebar')
 
     {{-- MAIN CONTENT (Nội dung chính) --}}
+<<<<<<< HEAD
     <main class="flex-1 flex flex-col h-screen @yield('main_class', 'overflow-y-auto')">
         {{-- Header của Main Content --}}
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 shrink-0">
@@ -33,5 +34,12 @@
     </main>
 
     @stack('scripts')
+=======
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto w-full">
+    <div class="p-6 md:p-8 w-full flex-1">
+        @yield('content')
+    </div>
+</main>
+>>>>>>> main
 </body>
 </html>

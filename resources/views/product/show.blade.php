@@ -5,14 +5,23 @@
 @section('content')
 <div class="bg-[#FAF7F2] py-12 min-h-screen">
     
-    {{-- KIỂM TRA XEM SẢN PHẨM NÀY CÓ PHẢI LÀ TOPPING KHÔNG --}}
     @php
         $categoryName = \DB::table('categories')->where('category_id', $product->category_id)->value('name');
         $isToppingCategory = $categoryName && str_contains(mb_strtolower($categoryName), 'topping');
+        
+        $reviewCount = $reviews->count();
+        $avgRating = $reviewCount > 0 ? round($reviews->avg('rating'), 1) : 0;
+        $roundedAvg = round($avgRating);
+
+        $count5 = $reviews->where('rating', 5)->count();
+        $count4 = $reviews->where('rating', 4)->count();
+        $count3 = $reviews->where('rating', 3)->count();
+        $count2 = $reviews->where('rating', 2)->count();
+        $count1 = $reviews->where('rating', 1)->count();
     @endphp
+
     <div class="max-w-7xl mx-auto px-6">
         
-        {{-- Breadcrumb --}}
         <nav class="flex text-sm text-espresso/60 mb-8">
             <a href="/" class="hover:text-coral transition-colors">Trang chủ</a>
             <span class="mx-2">/</span>
@@ -21,31 +30,36 @@
             <span class="text-espresso font-medium">{{ $product->name }}</span>
         </nav>
 
-        {{-- ========================================= --}}
-        {{-- PHẦN 1: THÔNG TIN SẢN PHẨM CHÍNH --}}
-        {{-- ========================================= --}}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-start bg-white p-8 md:p-12 rounded-[40px] shadow-xl mb-16">
             
-            {{-- Cột Trái: Ảnh sản phẩm --}}
-            <div class="order-1 md:order-1">
+            <div class="order-1 md:order-1 flex flex-col gap-4">
                 <div class="bg-cream rounded-[32px] overflow-hidden aspect-square relative shadow-inner group">
-                    <img id="main-image" src="{{ $product->image_url ?? 'https://via.placeholder.com/600' }}" alt="{{ $product->name }}" class="w-full h-full object-cover mix-blend-multiply transition-transform duration-700 group-hover:scale-105" />
+                    <img id="main-image" src="{{ $gallery[0] ?? 'https://via.placeholder.com/600' }}" alt="{{ $product->name }}" class="w-full h-full object-cover mix-blend-multiply transition-transform duration-700 group-hover:scale-105" />
                 </div>
+
+                @if(count($gallery) > 1)
+                <div class="grid grid-cols-4 gap-4">
+                    @foreach($gallery as $index => $img)
+                        <div class="bg-cream rounded-2xl overflow-hidden aspect-square cursor-pointer border-2 {{ $index === 0 ? 'border-coral' : 'border-transparent' }} hover:border-coral transition-colors" onclick="changeMainImage(this, '{{ $img }}')">
+                            <img src="{{ $img }}" class="w-full h-full object-cover mix-blend-multiply" />
+                        </div>
+                    @endforeach
+                </div>
+                @endif
             </div>
 
-            {{-- Cột Phải: Thông tin & Nút mua --}}
             <div class="order-2 md:order-2 flex flex-col h-full">
                 <span class="inline-block bg-coral/10 text-coral text-xs font-bold px-3 py-1 rounded-full w-max mb-4 uppercase tracking-widest">Đặc trưng</span>
                 
                 <h1 class="font-serif font-bold text-4xl md:text-5xl text-espresso mb-4">{{ $product->name }}</h1>
                 
-                {{-- Đánh giá nhanh --}}
                 <div class="flex items-center gap-2 mb-6">
-                    <div class="flex text-coral text-sm">★★★★★</div>
-                    <span class="text-espresso/60 text-sm">(0 đánh giá)</span>
+                    <div class="flex text-yellow-400 text-sm">
+                        {{ str_repeat('★', $roundedAvg) }}{{ str_repeat('☆', 5 - $roundedAvg) }}
+                    </div>
+                    <span class="text-espresso/60 text-sm">({{ $avgRating }}/5 sao - {{ $reviewCount }} đánh giá)</span>
                 </div>
 
-                {{-- Giá tiền --}}
                 <div class="mb-6 flex items-end gap-4">
                     <span id="product-price" class="text-4xl font-black text-espresso">
                         {{ $variants->count() > 0 ? number_format($variants[0]->price, 0, ',', '.') : 0 }} đ
@@ -54,7 +68,6 @@
 
                 <p class="text-espresso/80 leading-relaxed mb-8 line-clamp-3">{{ $product->description }}</p>
 
-                {{-- Chọn Kích cỡ (Size) --}}
                 @if($variants->count() > 0)
                 <div class="mb-8">
                     <h3 class="text-sm font-bold text-espresso uppercase tracking-wider mb-3">Chọn Kích Cỡ</h3>
@@ -74,30 +87,24 @@
                 </div>
                 @endif
 
-                {{-- NÚT GỌI POPUP TOPPING (Chỉ hiện nếu sản phẩm có topping) --}}
-                @if($toppings->count() > 0 && !$isToppingCategory)
+                @if(!$isToppingCategory)
                 <div class="mb-6 pt-6 border-t border-espresso/10">
                     <button type="button" onclick="openToppingModal()" class="w-full py-4 rounded-xl border-2 border-dashed border-coral text-coral font-bold flex items-center justify-center gap-2 hover:bg-coral/5 transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                        Thêm Topping bạn nhé!
+                        Tùy chỉnh Đồ uống & Topping
                     </button>
                     
-                    {{-- KHU VỰC HIỂN THỊ TOPPING ĐÃ CHỌN (Ban đầu ẩn) --}}
-                    <div id="selected-toppings-container" class="flex flex-wrap gap-2 mt-4 hidden">
-                        </div>
+                    <div id="selected-toppings-container" class="flex flex-wrap gap-2 mt-4 hidden"></div>
                 </div>
                 @endif
 
-                {{-- Hành động --}}
                 <div class="mt-auto pt-4 flex gap-4">
-                    {{-- Bộ đếm số lượng Món chính --}}
                     <div class="flex items-center justify-between border border-espresso/20 rounded-full h-14 w-32 shrink-0 bg-[#FAF7F2] overflow-hidden">
                         <button type="button" onclick="updateQuantity(-1)" class="w-10 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-xl transition-colors">-</button>
                         <input type="text" id="quantity" value="1" readonly class="w-12 h-full text-center bg-transparent border-none outline-none font-bold text-espresso focus:ring-0 p-0 m-0 leading-none">
                         <button type="button" onclick="updateQuantity(1)" class="w-10 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-xl transition-colors">+</button>
                     </div>
                     
-                    {{-- Nút Thêm vào giỏ (Thêm trực tiếp) --}}
                     <button type="button" onclick="submitAddToCart()" class="flex-1 bg-coral text-white h-14 rounded-full font-bold text-lg hover:bg-[#d5523b] shadow-lg shadow-coral/30 transition-all flex items-center justify-center gap-2 group">
                         <svg class="w-5 h-5 group-hover:-translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
                         Thêm vào giỏ
@@ -106,51 +113,78 @@
             </div>
         </div>
 
-        {{-- ========================================= --}}
-        {{-- PHẦN 2: HỆ THỐNG TABS (MÔ TẢ, TOPPING, ĐÁNH GIÁ) --}}
-        {{-- ========================================= --}}
         <div class="bg-white rounded-[40px] shadow-sm p-8 md:p-12 mb-16 border border-espresso/5">
-            {{-- Thanh điều hướng Tabs --}}
             <div class="flex flex-wrap gap-8 border-b border-espresso/10 mb-8">
                 <button onclick="switchTab('desc')" id="btn-tab-desc" class="pb-4 font-bold text-lg text-coral border-b-2 border-coral transition-colors">Chi tiết sản phẩm</button>
-                
-                @if($toppings->count() > 0 && !$isToppingCategory)
-                <button onclick="switchTab('topping')" id="btn-tab-topping" class="pb-4 font-bold text-lg text-espresso/50 border-b-2 border-transparent hover:text-coral transition-colors">Topping ăn kèm</button>
-                @endif
-                
-                <button onclick="switchTab('review')" id="btn-tab-review" class="pb-4 font-bold text-lg text-espresso/50 border-b-2 border-transparent hover:text-coral transition-colors">Đánh giá (0)</button>
+                <button onclick="switchTab('review')" id="btn-tab-review" class="pb-4 font-bold text-lg text-espresso/50 border-b-2 border-transparent hover:text-coral transition-colors">Đánh giá ({{ $reviewCount }})</button>
             </div>
 
-            {{-- Nội dung Tab 1: Chi tiết --}}
             <div id="tab-desc" class="tab-content text-espresso/80 leading-relaxed space-y-4">
                 <p>{{ $product->description }}</p>
                 <p>Thành phần 100% tự nhiên, được lựa chọn kỹ lưỡng. Thích hợp để thưởng thức vào mọi thời điểm trong ngày.</p>
             </div>
 
-            {{-- Nội dung Tab 2: Topping (Các sản phẩm mua kèm) --}}
-            @if($toppings->count() > 0 && !$isToppingCategory)
-            <div id="tab-topping" class="tab-content hidden">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    @foreach($toppings as $top)
-                    <div class="border border-espresso/10 rounded-2xl p-4 text-center hover:border-coral transition-colors cursor-pointer group">
-                        <img src="{{ $top->image ?? 'https://via.placeholder.com/200' }}" class="w-16 h-16 rounded-full mx-auto object-cover mb-3 group-hover:scale-110 transition-transform">
-                        <h4 class="font-bold text-espresso mb-1 text-sm">{{ $top->name }}</h4>
-                        <p class="text-coral font-bold text-sm">+{{ number_format($top->price, 0, ',', '.') }}đ</p>
+            <div id="tab-review" class="tab-content hidden">
+                <div class="bg-white p-8 rounded-[32px] border border-espresso/5 shadow-sm">
+                    <h3 class="font-serif font-bold text-xl text-espresso mb-6 uppercase tracking-widest">Đánh giá sản phẩm</h3>
+                    
+                    <div class="bg-[#fffbf8] border border-[#f9ede5] p-6 mb-8 flex flex-col md:flex-row items-center gap-8 rounded-sm">
+                        <div class="text-center md:w-1/4 shrink-0">
+                            <div class="text-[#ee4d2d] mb-1">
+                                <span class="text-4xl font-black">{{ number_format($avgRating, 1) }}</span>
+                                <span class="text-xl font-medium"> trên 5</span>
+                            </div>
+                            <div class="text-[#ee4d2d] text-2xl tracking-widest">
+                                {{ str_repeat('★', $roundedAvg) }}{{ str_repeat('☆', 5 - $roundedAvg) }}
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-3 md:w-3/4">
+                            <button type="button" onclick="filterReviews('all', this)" class="filter-btn px-6 py-1.5 border border-[#ee4d2d] text-[#ee4d2d] bg-white rounded-sm text-sm transition-colors">Tất Cả</button>
+                            <button type="button" onclick="filterReviews(5, this)" class="filter-btn px-6 py-1.5 border border-gray-200 text-gray-700 bg-white rounded-sm text-sm hover:border-[#ee4d2d] hover:text-[#ee4d2d] transition-colors">5 Sao ({{ $count5 }})</button>
+                            <button type="button" onclick="filterReviews(4, this)" class="filter-btn px-6 py-1.5 border border-gray-200 text-gray-700 bg-white rounded-sm text-sm hover:border-[#ee4d2d] hover:text-[#ee4d2d] transition-colors">4 Sao ({{ $count4 }})</button>
+                            <button type="button" onclick="filterReviews(3, this)" class="filter-btn px-6 py-1.5 border border-gray-200 text-gray-700 bg-white rounded-sm text-sm hover:border-[#ee4d2d] hover:text-[#ee4d2d] transition-colors">3 Sao ({{ $count3 }})</button>
+                            <button type="button" onclick="filterReviews(2, this)" class="filter-btn px-6 py-1.5 border border-gray-200 text-gray-700 bg-white rounded-sm text-sm hover:border-[#ee4d2d] hover:text-[#ee4d2d] transition-colors">2 Sao ({{ $count2 }})</button>
+                            <button type="button" onclick="filterReviews(1, this)" class="filter-btn px-6 py-1.5 border border-gray-200 text-gray-700 bg-white rounded-sm text-sm hover:border-[#ee4d2d] hover:text-[#ee4d2d] transition-colors">1 Sao ({{ $count1 }})</button>
+                        </div>
                     </div>
-                    @endforeach
+
+                    <div class="max-h-[500px] overflow-y-auto custom-scrollbar pr-4 space-y-6" id="review-list-container">
+                        @forelse($reviews as $review)
+                            <div class="review-item border-b border-gray-100 pb-6 last:border-0 last:pb-0" data-rating="{{ $review->rating }}">
+                                <div class="flex items-start gap-4">
+                                    <div class="w-12 h-12 rounded-full overflow-hidden bg-gray-100 shadow-sm shrink-0">
+                                        <img src="{{ $review->user->avatar ? asset($review->user->avatar) : 'https://i.pravatar.cc/150?u='.$review->user_id }}" class="w-full h-full object-cover">
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <h4 class="font-bold text-espresso">{{ $review->user->name ?? 'Khách hàng ẩn danh' }}</h4>
+                                            <span class="text-xs text-gray-400 font-medium">{{ \Carbon\Carbon::parse($review->created_at)->format('d/m/Y H:i') }}</span>
+                                        </div>
+                                        <div class="text-[#ee4d2d] text-sm mt-0.5 mb-2">
+                                            {{ str_repeat('★', $review->rating) }}{{ str_repeat('☆', 5 - $review->rating) }}
+                                        </div>
+                                        @if($review->comment)
+                                            <p class="text-espresso/80 text-sm mb-3 leading-relaxed">{{ $review->comment }}</p>
+                                        @endif
+                                        @if($review->image)
+                                            <img src="{{ asset($review->image) }}" class="w-32 h-32 object-cover rounded-xl border border-gray-200 cursor-pointer hover:opacity-90">
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-12" id="empty-state-default">
+                                <p class="text-gray-400 italic mb-2">Chưa có đánh giá nào cho sản phẩm này.</p>
+                                <p class="text-espresso/50 text-sm font-medium">Hãy là người đầu tiên thưởng thức và đánh giá nhé!</p>
+                            </div>
+                        @endforelse
+                    </div>
                 </div>
             </div>
-            @endif
 
-            {{-- Nội dung Tab 3: Đánh giá --}}
-            <div id="tab-review" class="tab-content hidden text-center py-8">
-                <p class="text-espresso/60 italic">Chưa có đánh giá nào cho sản phẩm này. Hãy là người đầu tiên trải nghiệm!</p>
-            </div>
         </div>
 
-        {{-- ========================================= --}}
-        {{-- PHẦN 3: SẢN PHẨM LIÊN QUAN --}}
-        {{-- ========================================= --}}
         <div>
             <h2 class="font-serif font-bold text-3xl text-espresso mb-8">Có thể bạn sẽ thích</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -177,98 +211,156 @@
 </div>
 
 {{-- ========================================= --}}
-{{-- MODAL (POP-UP) CHỌN TOPPING KHI MUA --}}
+{{-- MODAL (POP-UP) TÙY CHỈNH ĐỒ UỐNG & TOPPING --}}
 {{-- ========================================= --}}
-@if($toppings->count() > 0 && !$isToppingCategory)
+@if(!$isToppingCategory)
 <div id="topping-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 hidden">
-    {{-- Nền đen mờ (Click vào nền sẽ đóng pop-up) --}}
     <div class="absolute inset-0 bg-espresso/60 backdrop-blur-sm" onclick="closeToppingModal()"></div>
     
-    <div class="relative bg-white rounded-[32px] shadow-2xl w-full max-w-lg p-8 transform transition-all scale-95 opacity-0" id="topping-modal-content">
+    {{-- MỞ RỘNG MODAL: max-w-lg đổi thành max-w-2xl --}}
+    <div class="relative bg-white rounded-[32px] shadow-2xl w-full max-w-2xl p-8 transform transition-all scale-95 opacity-0 flex flex-col max-h-[90vh]" id="topping-modal-content">
         
-        <button onclick="closeToppingModal()" class="absolute top-6 right-6 text-espresso/40 hover:text-coral">
+        <button onclick="closeToppingModal()" class="absolute top-6 right-6 text-espresso/40 hover:text-coral z-10">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
 
-        <h2 class="font-serif font-black text-2xl text-espresso mb-2">Thêm chút Topping nhé?</h2>
-        <p class="text-espresso/60 text-sm mb-6">Món nước của bạn sẽ ngon hơn rất nhiều nếu có thêm nhai nhai giòn giòn đấy!</p>
+        <h2 class="font-serif font-black text-2xl text-espresso mb-2">Tùy chỉnh đồ uống</h2>
+        <p class="text-espresso/60 text-sm mb-6">Thêm topping và điều chỉnh lượng đường, đá theo ý thích của bạn!</p>
 
-        {{-- Danh sách Topping (Có nút Cộng Trừ) --}}
-        <div class="space-y-3 mb-8 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
-            @foreach($toppings as $top)
-            <div class="flex items-center justify-between p-3 border border-espresso/10 rounded-xl hover:bg-[#FAF7F2] transition-colors group">
-                <div class="flex items-center gap-3">
-                    <img src="{{ $top->image ?? 'https://via.placeholder.com/200' }}" class="w-12 h-12 rounded-full object-cover">
-                    <div>
-                        <span class="block font-medium text-espresso">{{ $top->name }}</span>
-                        <span class="font-bold text-coral">+{{ number_format($top->price, 0, ',', '.') }}đ</span>
-                    </div>
-                </div>
-                
-                {{-- Nút tăng giảm số lượng cho TỪNG LOẠI Topping --}}
-                <div class="flex items-center justify-between border border-espresso/20 rounded-full h-10 w-28 bg-white shrink-0 overflow-hidden">
-                    <button type="button" onclick="updateToppingQty({{ $top->topping_id }}, -1)" class="w-8 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-lg transition-colors">-</button>
-                    <input type="text" id="topping-qty-{{ $top->topping_id }}" 
-                           data-name="{{ $top->name }}" 
-                           data-price="{{ $top->price }}"
-                           value="0" readonly 
-                           class="topping-input w-12 h-full text-center bg-transparent border-none outline-none font-bold text-sm text-espresso focus:ring-0 p-0 m-0 leading-none">
-                    <button type="button" onclick="updateToppingQty({{ $top->topping_id }}, 1)" class="w-8 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-lg transition-colors">+</button>
-                </div>
-            </div>
-            @endforeach
+        {{-- Thanh Tabs trong Modal --}}
+        <div class="flex gap-6 border-b border-gray-200 mb-6 shrink-0">
+            <button onclick="switchModalTab('modal-topping')" id="btn-modal-topping" class="pb-3 text-sm font-bold border-b-2 border-coral text-coral transition-colors">Topping ăn kèm</button>
+            <button onclick="switchModalTab('modal-ice')" id="btn-modal-ice" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-400 hover:text-coral transition-colors">Lượng Đá</button>
+            <button onclick="switchModalTab('modal-sugar')" id="btn-modal-sugar" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-400 hover:text-coral transition-colors">Lượng Đường</button>
         </div>
 
-        {{-- Nút Xác nhận đóng Pop-up và tính tiền --}}
-        <button onclick="applyToppings()" class="w-full py-4 bg-coral text-white rounded-full font-bold hover:bg-[#d5523b] shadow-lg transition-all">
+        {{-- Nội dung Tab 1: Topping --}}
+        <div id="modal-topping" class="modal-tab-content space-y-3 mb-6 overflow-y-auto pr-2 custom-scrollbar flex-1">
+            @if($toppings->count() > 0)
+                @foreach($toppings as $top)
+                <div class="flex items-center justify-between p-3 border border-espresso/10 rounded-xl hover:bg-[#FAF7F2] transition-colors group">
+                    <div class="flex items-center gap-3">
+                        <img src="{{ $top->image ?? 'https://via.placeholder.com/200' }}" class="w-12 h-12 rounded-full object-cover">
+                        <div>
+                            <span class="block font-medium text-espresso">{{ $top->name }}</span>
+                            <span class="font-bold text-coral">+{{ number_format($top->price, 0, ',', '.') }}đ</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between border border-espresso/20 rounded-full h-10 w-28 bg-white shrink-0 overflow-hidden">
+                        <button type="button" onclick="updateToppingQty({{ $top->topping_id }}, -1)" class="w-8 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-lg transition-colors">-</button>
+                        <input type="text" id="topping-qty-{{ $top->topping_id }}" data-name="{{ $top->name }}" data-price="{{ $top->price }}" value="0" readonly class="topping-input w-12 h-full text-center bg-transparent border-none outline-none font-bold text-sm text-espresso focus:ring-0 p-0 m-0 leading-none">
+                        <button type="button" onclick="updateToppingQty({{ $top->topping_id }}, 1)" class="w-8 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-lg transition-colors">+</button>
+                    </div>
+                </div>
+                @endforeach
+            @else
+                <p class="text-center text-gray-400 italic py-8">Không có topping đi kèm cho sản phẩm này.</p>
+            @endif
+        </div>
+
+        {{-- Nội dung Tab 2: Lượng Đá --}}
+        <div id="modal-ice" class="modal-tab-content hidden space-y-4 mb-6 overflow-y-auto pr-2 custom-scrollbar flex-1">
+            <div class="grid grid-cols-2 gap-4">
+                <label class="cursor-pointer">
+                    <input type="radio" name="ice_level" value="100" class="peer sr-only" data-extra-price="0" checked>
+                    <div class="px-4 py-4 rounded-xl border border-gray-200 text-center peer-checked:border-coral peer-checked:bg-coral/5 peer-checked:text-coral font-bold transition-all hover:bg-gray-50">100% Đá (Mặc định)</div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="ice_level" value="70" class="peer sr-only" data-extra-price="0">
+                    <div class="px-4 py-4 rounded-xl border border-gray-200 text-center peer-checked:border-coral peer-checked:bg-coral/5 peer-checked:text-coral font-bold transition-all hover:bg-gray-50">70% Đá</div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="ice_level" value="50" class="peer sr-only" data-extra-price="0">
+                    <div class="px-4 py-4 rounded-xl border border-gray-200 text-center peer-checked:border-coral peer-checked:bg-coral/5 peer-checked:text-coral font-bold transition-all hover:bg-gray-50">50% Đá</div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="ice_level" value="20" class="peer sr-only" data-extra-price="0">
+                    <div class="px-4 py-4 rounded-xl border border-gray-200 text-center peer-checked:border-coral peer-checked:bg-coral/5 peer-checked:text-coral font-bold transition-all hover:bg-gray-50">20% Đá</div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="ice_level" value="0" class="peer sr-only" data-extra-price="0">
+                    <div class="px-4 py-4 rounded-xl border border-gray-200 text-center peer-checked:border-coral peer-checked:bg-coral/5 peer-checked:text-coral font-bold transition-all hover:bg-gray-50">0% Đá (Không đá)</div>
+                </label>
+                <label class="cursor-pointer col-span-2">
+                    <input type="radio" name="ice_level" value="0_full" class="peer sr-only" data-extra-price="3000">
+                    <div class="px-4 py-4 rounded-xl border border-gray-200 peer-checked:border-coral peer-checked:bg-coral/5 peer-checked:text-coral font-bold transition-all hover:bg-gray-50 flex justify-between items-center px-6">
+                        <span>0% Đá (Nước đầy ly)</span>
+                        <span class="text-coral bg-white px-3 py-1 rounded-lg border border-coral/20">+3.000đ</span>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        {{-- Nội dung Tab 3: Lượng Đường --}}
+        <div id="modal-sugar" class="modal-tab-content hidden space-y-4 mb-6 overflow-y-auto pr-2 custom-scrollbar flex-1">
+            <div class="grid grid-cols-2 gap-4">
+                <label class="cursor-pointer">
+                    <input type="radio" name="sugar_level" value="100" class="peer sr-only" checked>
+                    <div class="px-4 py-4 rounded-xl border border-gray-200 text-center peer-checked:border-coral peer-checked:bg-coral/5 peer-checked:text-coral font-bold transition-all hover:bg-gray-50">100% Đường (Mặc định)</div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="sugar_level" value="70" class="peer sr-only">
+                    <div class="px-4 py-4 rounded-xl border border-gray-200 text-center peer-checked:border-coral peer-checked:bg-coral/5 peer-checked:text-coral font-bold transition-all hover:bg-gray-50">70% Đường</div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="sugar_level" value="50" class="peer sr-only">
+                    <div class="px-4 py-4 rounded-xl border border-gray-200 text-center peer-checked:border-coral peer-checked:bg-coral/5 peer-checked:text-coral font-bold transition-all hover:bg-gray-50">50% Đường</div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="sugar_level" value="20" class="peer sr-only">
+                    <div class="px-4 py-4 rounded-xl border border-gray-200 text-center peer-checked:border-coral peer-checked:bg-coral/5 peer-checked:text-coral font-bold transition-all hover:bg-gray-50">20% Đường</div>
+                </label>
+            </div>
+        </div>
+
+        <button onclick="applyToppings()" class="w-full py-4 bg-coral text-white rounded-full font-bold hover:bg-[#d5523b] shadow-lg transition-all shrink-0">
             Xong & Đóng
         </button>
     </div>
 </div>
 @endif
 
-{{-- ========================================= --}}
-{{-- JAVASCRIPT XỬ LÝ GIAO DIỆN --}}
-{{-- ========================================= --}}
 <style>
-    /* Làm đẹp thanh cuộn cho danh sách topping */
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #e8634a; border-radius: 10px; }
 </style>
 
 <script>
-    // BIẾN TOÀN CỤC LƯU GIÁ
     let currentVariantPrice = 0;
     let currentToppingPrice = 0;
+    let currentOptionsPrice = 0; // Thêm biến lưu giá trị phụ thu (như Không đá đầy ly)
 
-    // 1. Hàm tính lại Tổng tiền (Size + Topping)
     function calculateTotalPrice() {
         let variantRadio = document.querySelector('input[name="size"]:checked');
         if(variantRadio) {
             currentVariantPrice = parseFloat(variantRadio.getAttribute('data-price'));
         }
 
-        let total = currentVariantPrice + currentToppingPrice;
+        let total = currentVariantPrice + currentToppingPrice + currentOptionsPrice;
         document.getElementById('product-price').innerText = new Intl.NumberFormat('vi-VN').format(total) + ' đ';
     }
 
-    // Gắn sự kiện thay đổi Size
     document.querySelectorAll('input[name="size"]').forEach(radio => {
         radio.addEventListener('change', calculateTotalPrice);
     });
     
-    // Gọi tính giá lần đầu khi load trang
+    // Gắn sự kiện khi khách chọn Lượng Đá để tự động update giá phụ thu
+    document.querySelectorAll('input[name="ice_level"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            currentOptionsPrice = parseFloat(radio.getAttribute('data-extra-price')) || 0;
+            calculateTotalPrice();
+        });
+    });
+
     window.addEventListener('DOMContentLoaded', calculateTotalPrice);
 
-    // 2. Tăng giảm số lượng Món chính
     function updateQuantity(change) {
         let input = document.getElementById('quantity');
         let newVal = parseInt(input.value) + change;
         if(newVal >= 1) input.value = newVal;
     }
 
-    // 3. Hệ thống chuyển Tabs
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
         document.querySelectorAll('[id^="btn-tab-"]').forEach(el => {
@@ -282,7 +374,20 @@
         activeBtn.classList.add('text-coral', 'border-coral');
     }
 
-    // 4. Xử lý Modal (Pop-up) Topping
+    // Logic chuyển Tab riêng cho trong Modal
+    function switchModalTab(tabId) {
+        document.querySelectorAll('.modal-tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('[id^="btn-modal-"]').forEach(el => {
+            el.classList.remove('text-coral', 'border-coral');
+            el.classList.add('text-gray-400', 'border-transparent');
+        });
+
+        document.getElementById(tabId).classList.remove('hidden');
+        let activeBtn = document.getElementById('btn-' + tabId);
+        activeBtn.classList.remove('text-gray-400', 'border-transparent');
+        activeBtn.classList.add('text-coral', 'border-coral');
+    }
+
     const modal = document.getElementById('topping-modal');
     const modalContent = document.getElementById('topping-modal-content');
 
@@ -306,31 +411,26 @@
         }
     }
 
-    // 5. Tăng/Giảm số lượng cho từng loại Topping trong Pop-up
     function updateToppingQty(toppingId, change) {
         let input = document.getElementById('topping-qty-' + toppingId);
         let currentVal = parseInt(input.value) || 0;
         let newVal = currentVal + change;
-        
         if (newVal >= 0) {
             input.value = newVal;
         }
     }
 
-    // 6. Áp dụng Topping (Được gọi khi bấm "Xong & Đóng" ở Modal)
     function applyToppings() {
         let container = document.getElementById('selected-toppings-container');
         let html = '';
         currentToppingPrice = 0; 
-        let hasToppings = false;
-
+        
+        // 1. Hiển thị Topping đã chọn
         document.querySelectorAll('.topping-input').forEach(input => {
             let qty = parseInt(input.value);
             if (qty > 0) {
-                hasToppings = true;
                 let name = input.getAttribute('data-name');
                 let price = parseFloat(input.getAttribute('data-price'));
-                
                 currentToppingPrice += (price * qty);
                 
                 html += `
@@ -341,7 +441,24 @@
             }
         });
 
-        if (hasToppings) {
+        // 2. Lấy Text của Lượng Đá và Đường để hiển thị ra ngoài
+        let iceRadio = document.querySelector('input[name="ice_level"]:checked');
+        let sugarRadio = document.querySelector('input[name="sugar_level"]:checked');
+        
+        currentOptionsPrice = iceRadio ? (parseFloat(iceRadio.getAttribute('data-extra-price')) || 0) : 0;
+        
+        let iceText = iceRadio ? iceRadio.nextElementSibling.innerText.split('\n')[0].trim() : '100% Đá';
+        let sugarText = sugarRadio ? sugarRadio.nextElementSibling.innerText.trim() : '100% Đường';
+
+        // Chỉ hiển thị tag nếu khách có thay đổi so với Mặc định
+        if(iceRadio && iceRadio.value !== '100') {
+            html += `<div class="px-4 py-1.5 bg-blue-50 text-blue-500 border border-blue-200 rounded-full text-sm font-medium shadow-sm">🧊 ${iceText}</div>`;
+        }
+        if(sugarRadio && sugarRadio.value !== '100') {
+            html += `<div class="px-4 py-1.5 bg-amber-50 text-amber-500 border border-amber-200 rounded-full text-sm font-medium shadow-sm">🍯 ${sugarText}</div>`;
+        }
+
+        if (html !== '') {
             container.innerHTML = html;
             container.classList.remove('hidden');
         } else {
@@ -353,7 +470,6 @@
         closeToppingModal();
     }
 
-    // 7. Chốt đơn Thêm vào giỏ hàng (GỬI DỮ LIỆU LÊN SERVER)
     function submitAddToCart() {
         let productId = '{{ $product->product_id }}';
         let mainQty = parseInt(document.getElementById('quantity').value);
@@ -365,6 +481,7 @@
         }
         variantId = variantId.value;
 
+        // Lấy Topping
         let toppingsData = {};
         document.querySelectorAll('.topping-input').forEach(input => {
             let qty = parseInt(input.value);
@@ -374,12 +491,18 @@
             }
         });
 
+        // Lấy lựa chọn Đá và Đường
+        let iceLevel = document.querySelector('input[name="ice_level"]:checked')?.value || '100';
+        let sugarLevel = document.querySelector('input[name="sugar_level"]:checked')?.value || '100';
+
         let payload = {
             _token: '{{ csrf_token() }}',
             product_id: productId,
             variant_id: variantId,
             quantity: mainQty,
-            toppings: toppingsData
+            toppings: toppingsData,
+            ice_level: iceLevel,      // Dữ liệu mới gửi lên server
+            sugar_level: sugarLevel   // Dữ liệu mới gửi lên server
         };
 
         fetch('{{ route('cart.add') }}', {
@@ -403,6 +526,54 @@
             console.error('Lỗi hệ thống:', error);
             showToast('Có lỗi xảy ra, vui lòng thử lại sau!', 'error');
         });
+    }
+
+    function changeMainImage(element, imageUrl) {
+        document.getElementById('main-image').src = imageUrl;
+        let thumbs = element.parentElement.children;
+        for(let i = 0; i < thumbs.length; i++) {
+            thumbs[i].classList.remove('border-coral');
+            thumbs[i].classList.add('border-transparent');
+        }
+        element.classList.remove('border-transparent');
+        element.classList.add('border-coral');
+    }
+
+    function filterReviews(rating, btnElement) {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('border-[#ee4d2d]', 'text-[#ee4d2d]');
+            btn.classList.add('border-gray-200', 'text-gray-700');
+        });
+        btnElement.classList.remove('border-gray-200', 'text-gray-700');
+        btnElement.classList.add('border-[#ee4d2d]', 'text-[#ee4d2d]');
+
+        let items = document.querySelectorAll('.review-item');
+        let visibleCount = 0;
+
+        items.forEach(item => {
+            let itemRating = item.getAttribute('data-rating');
+            if (rating === 'all' || itemRating == rating) {
+                item.style.display = 'block';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        let noResultMsg = document.getElementById('no-filter-result');
+        if (visibleCount === 0 && items.length > 0) {
+            if (!noResultMsg) {
+                let msg = document.createElement('div');
+                msg.id = 'no-filter-result';
+                msg.className = 'text-center py-12 text-gray-400 italic font-medium';
+                msg.innerText = 'Không có đánh giá nào ở mức sao này.';
+                document.getElementById('review-list-container').appendChild(msg);
+            } else {
+                noResultMsg.style.display = 'block';
+            }
+        } else {
+            if (noResultMsg) noResultMsg.style.display = 'none';
+        }
     }
 </script>
 @endsection

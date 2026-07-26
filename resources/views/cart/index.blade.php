@@ -6,7 +6,10 @@
 <div class="bg-[#FAF7F2] py-12 min-h-screen">
     <div class="max-w-7xl mx-auto px-6">
         
+<<<<<<< HEAD
         {{-- TÍNH TOÁN TỔNG SỐ LƯỢNG VÀ TỔNG TIỀN TỪ CACHE --}}
+=======
+>>>>>>> main
         @php
             $totalItems = 0;
             $subTotal = 0;
@@ -21,61 +24,71 @@
             <span class="bg-coral text-white text-sm font-bold px-3 py-1 rounded-full">{{ $totalItems }} món</span>
         </div>
 
+<<<<<<< HEAD
         {{-- KIỂM TRA NẾU GIỎ HÀNG CÓ SẢN PHẨM --}}
         @if(!empty($cart))
+=======
+        @if(session('cart') && count(session('cart')) > 0)
+>>>>>>> main
         
         <div class="flex flex-col lg:flex-row gap-8 items-start">
             
-            {{-- ========================================= --}}
-            {{-- CỘT TRÁI: DANH SÁCH SẢN PHẨM TRONG GIỎ --}}
-            {{-- ========================================= --}}
             <div class="w-full lg:w-2/3 space-y-4">
                 
                 @foreach($cart as $cartKey => $item)
                 @php
-                    // CÁCH MỚI: Kiểm tra trực tiếp xem sản phẩm có thuộc Danh mục Topping không
                     $categoryName = \DB::table('products')
                         ->join('categories', 'products.category_id', '=', 'categories.category_id')
                         ->where('products.product_id', $item['product_id'])
                         ->value('categories.name');
 
-                    // Nếu tên danh mục có chứa chữ "topping" (không phân biệt hoa thường)
-                    // (Hoặc nếu bạn biết chính xác ID danh mục topping, ví dụ ID = 5, bạn có thể dùng: $isStandaloneTopping = ($categoryId == 5); )
                     $isStandaloneTopping = $categoryName && str_contains(mb_strtolower($categoryName), 'topping');
                 @endphp
 
                 <div class="{{ $isStandaloneTopping ? 'bg-coral/5 border-coral/20 p-4 rounded-[20px]' : 'bg-white border-espresso/5 p-4 md:p-6 rounded-[24px]' }} shadow-sm border flex flex-col sm:flex-row gap-6 relative group transition-all">
                     
-                    {{-- Nút Xóa Sản Phẩm --}}
                     <button type="button" onclick="removeCartItem('{{ $cartKey }}')" class="absolute top-4 right-4 text-espresso/40 hover:text-red-500 transition-colors p-2" title="Xóa món này">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
 
-                    {{-- Ảnh Sản Phẩm (Nhỏ hơn nếu là Topping rời) --}}
                     <div class="{{ $isStandaloneTopping ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-24 h-24 sm:w-32 sm:h-32' }} rounded-2xl overflow-hidden bg-cream shrink-0">
                         <img src="{{ $item['image'] ?? 'https://via.placeholder.com/200' }}" class="w-full h-full object-cover">
                     </div>
 
-                    {{-- Thông tin --}}
                     <div class="flex-1 flex flex-col justify-center">
-                        {{-- Badge phân loại nếu là Topping rời --}}
                         @if($isStandaloneTopping)
                             <span class="text-[10px] font-bold uppercase tracking-wider text-coral mb-1 w-max">Topping Mua Rời</span>
                         @endif
 
                         <h3 class="font-serif font-bold {{ $isStandaloneTopping ? 'text-lg' : 'text-xl' }} text-espresso mb-1 pr-8">{{ $item['name'] }}</h3>
                         
-                        {{-- Kích cỡ --}}
-                        <p class="text-sm text-espresso/60 mb-2">Kích cỡ: <span class="font-medium text-espresso">{{ $item['size_name'] }}</span></p>
+                        <p class="text-sm text-espresso/60 mb-1">Kích cỡ: <span class="font-medium text-espresso">{{ $item['size_name'] }}</span></p>
                         
-                        {{-- =============================================== --}}
-                        {{-- KHU VỰC TOPPING ĐI KÈM HIỂN THỊ DƯỚI DẠNG TAG --}}
-                        {{-- =============================================== --}}
+                        @php
+                            $iceTexts = ['70' => '70% Đá', '50' => '50% Đá', '20' => '20% Đá', '0' => 'Không đá', '0_full' => 'Không đá (Nước đầy ly)'];
+                            $sugarTexts = ['70' => '70% Đường', '50' => '50% Đường', '20' => '20% Đường', '0' => 'Không đường'];
+                        @endphp
+
+                        @if((isset($item['ice_level']) && $item['ice_level'] !== '100') || (isset($item['sugar_level']) && $item['sugar_level'] !== '100'))
+                            <div class="flex flex-wrap gap-1.5 mb-2">
+                                @if(isset($item['ice_level']) && $item['ice_level'] !== '100')
+                                    <span class="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 font-medium">
+                                        🧊 {{ $iceTexts[$item['ice_level']] ?? $item['ice_level'] }}
+                                    </span>
+                                @endif
+                                @if(isset($item['sugar_level']) && $item['sugar_level'] !== '100')
+                                    <span class="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100 font-medium">
+                                        🍯 {{ $sugarTexts[$item['sugar_level']] ?? $item['sugar_level'] }}
+                                    </span>
+                                @endif
+                            </div>
+                        @endif
+
                         @if(!empty($item['toppings']))
                             <div class="bg-[#FAF7F2] p-3 rounded-xl mb-3 border border-espresso/5 w-full md:w-max">
                                 <p class="text-xs font-bold text-espresso/50 uppercase tracking-wider mb-2 flex items-center gap-2">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                                    Topping đi kèm (+{{ number_format($item['topping_total'], 0, ',', '.') }}đ)
+                                    Topping đi kèm
                                 </p>
                                 <div class="flex flex-wrap gap-2">
                                     @foreach($item['toppings'] as $top)
@@ -88,15 +101,13 @@
                             </div>
                         @endif
 
-                        {{-- NÚT THÊM/SỬA TOPPING --}}
                         @if(!$isStandaloneTopping)
                         <button onclick="openEditToppingModal('{{ $cartKey }}')" class="text-xs font-medium text-coral hover:text-[#d5523b] hover:underline text-left w-max mb-4 flex items-center gap-1 mt-1">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                            {{ !empty($item['toppings']) ? 'Thay đổi Topping' : 'Thêm Topping (+)' }}
+                            Tùy chỉnh Đồ uống & Topping
                         </button>
                         @endif
 
-                        {{-- Khu vực Giá x Số lượng --}}
                         <div class="flex items-end justify-between mt-auto pt-2">
                             <div class="font-black {{ $isStandaloneTopping ? 'text-base' : 'text-lg' }} text-espresso">
                                 {{ number_format(($item['price'] + $item['topping_total']) * $item['quantity'], 0, ',', '.') }} đ
@@ -114,14 +125,10 @@
 
             </div>
 
-            {{-- ========================================= --}}
-            {{-- CỘT PHẢI: TỔNG QUAN ĐƠN HÀNG & VOUCHER --}}
-            {{-- ========================================= --}}
             <div class="w-full lg:w-1/3">
                 <div class="bg-white p-6 md:p-8 rounded-[32px] shadow-lg border border-espresso/5 sticky top-24">
                     <h2 class="font-serif font-bold text-2xl text-espresso mb-6">Tổng đơn hàng</h2>
                     
-                    {{-- Khu vực nhập VOUCHER --}}
                     <div class="mb-6 pb-6 border-b border-espresso/10">
                         <label class="block text-sm font-medium text-espresso/80 mb-2">Mã ưu đãi (Voucher)</label>
                         @if(session()->has('voucher'))
@@ -143,7 +150,6 @@
                         @endif
                     </div>
 
-                    {{-- Chi tiết thanh toán --}}
                     <div class="space-y-4 mb-6">
                         <div class="flex justify-between text-espresso/80">
                             <span>Tạm tính ({{ $totalItems }} món)</span>
@@ -155,7 +161,6 @@
                         </div>
                     </div>
 
-                    {{-- Tổng cộng --}}
                     @php
                         $discount = session()->has('voucher') ? session('voucher')['discount_amount'] : 0;
                         $finalTotal = max(0, $subTotal - $discount);
@@ -177,9 +182,6 @@
         </div>
 
         @else
-        {{-- ========================================= --}}
-        {{-- GIAO DIỆN KHI GIỎ HÀNG RỖNG --}}
-        {{-- ========================================= --}}
         <div class="bg-white rounded-[32px] p-12 text-center shadow-sm border border-espresso/5 max-w-2xl mx-auto mt-8">
             <svg class="w-32 h-32 mx-auto mb-6 text-espresso/20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
             <h2 class="text-2xl font-serif font-bold text-espresso mb-3">Giỏ hàng đang trống!</h2>
@@ -195,35 +197,85 @@
         {{-- ========================================= --}}
         <div id="edit-topping-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 hidden">
             <div class="absolute inset-0 bg-espresso/60 backdrop-blur-sm" onclick="closeEditToppingModal()"></div>
-            <div class="relative bg-white rounded-[32px] shadow-2xl w-full max-w-lg p-8 transform transition-all scale-95 opacity-0" id="edit-topping-modal-content">
+            
+            <div class="relative bg-white rounded-[32px] shadow-2xl w-full max-w-2xl flex flex-col scale-95 opacity-0 transition-all max-h-[90vh]" id="edit-topping-modal-content">
                 
-                <button onclick="closeEditToppingModal()" class="absolute top-6 right-6 text-espresso/40 hover:text-coral">
+                {{-- Nút X tắt --}}
+                <button onclick="closeEditToppingModal()" class="absolute top-6 right-6 text-espresso/40 hover:text-coral z-10">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
 
-                <h2 class="font-serif font-black text-2xl text-espresso mb-1">Tùy chỉnh Topping</h2>
-                <p id="modal-product-name" class="text-espresso/60 text-sm mb-6 font-medium">Đang tải...</p>
+                {{-- Header Modal --}}
+                <div class="p-8 pb-0 shrink-0">
+                    <h2 class="font-serif font-black text-2xl text-espresso mb-1">Tùy chỉnh Đồ uống</h2>
+                    <p id="modal-product-name" class="text-espresso/60 text-sm mb-6 font-medium">Đang tải...</p>
+                    
+                    <div class="flex gap-6 border-b border-gray-200 shrink-0">
+                        <button onclick="switchCartModalTab('modal-topping')" id="btn-modal-topping" class="pb-3 text-sm font-bold border-b-2 border-coral text-coral transition-colors">Topping ăn kèm</button>
+                        <button onclick="switchCartModalTab('modal-ice')" id="btn-modal-ice" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-400 hover:text-coral transition-colors">Lượng Đá</button>
+                        <button onclick="switchCartModalTab('modal-sugar')" id="btn-modal-sugar" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-400 hover:text-coral transition-colors">Lượng Đường</button>
+                    </div>
+                </div>
                 
-                {{-- Nơi Javascript sẽ tự động đổ danh sách Topping vào --}}
-                <div id="modal-topping-list" class="space-y-3 mb-8 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar"></div>
+                {{-- Khu vực nội dung Tab có thể Scroll --}}
+                <div class="flex-1 overflow-y-auto p-8 pt-6 custom-scrollbar">
+                    
+                    {{-- Tab 1: Topping --}}
+                    <div id="modal-topping" class="cart-modal-tab-content space-y-3">
+                        <div id="modal-topping-list"></div>
+                    </div>
 
-                {{-- Lưu trữ CartKey ngầm --}}
-                <input type="hidden" id="current-cart-key">
+                    {{-- Tab 2: Lượng Đá --}}
+                    <div id="modal-ice" class="cart-modal-tab-content hidden">
+                        <div class="grid grid-cols-2 gap-4">
+                            @foreach(['100' => '100% Đá (Mặc định)', '70' => '70% Đá', '50' => '50% Đá', '20' => '20% Đá', '0' => '0% Đá (Không đá)'] as $val => $label)
+                            <label class="cursor-pointer">
+                                <input type="radio" name="modal_ice_level" value="{{ $val }}" class="peer sr-only" onchange="calculateModalPrice()">
+                                <div class="px-4 py-4 rounded-xl border border-gray-200 text-center peer-checked:border-coral peer-checked:bg-coral/5 peer-checked:text-coral font-bold transition-all hover:bg-gray-50">{{ $label }}</div>
+                            </label>
+                            @endforeach
+                            <label class="cursor-pointer col-span-2">
+                                <input type="radio" name="modal_ice_level" value="0_full" class="peer sr-only" onchange="calculateModalPrice()">
+                                <div class="px-4 py-4 rounded-xl border border-gray-200 peer-checked:border-coral peer-checked:bg-coral/5 peer-checked:text-coral font-bold transition-all hover:bg-gray-50 flex justify-between items-center px-6">
+                                    <span>0% Đá (Nước đầy ly)</span>
+                                    <span class="text-coral bg-white px-3 py-1 rounded-lg border border-coral/20">+3.000đ</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
 
-                <button onclick="submitToppingChanges()" class="w-full py-4 bg-coral text-white rounded-full font-bold hover:bg-[#d5523b] shadow-lg transition-all">
-                    Lưu thay đổi
-                </button>
+                    {{-- Tab 3: Lượng Đường --}}
+                    <div id="modal-sugar" class="cart-modal-tab-content hidden">
+                        <div class="grid grid-cols-2 gap-4">
+                            @foreach(['100' => '100% Đường (Mặc định)', '70' => '70% Đường', '50' => '50% Đường', '20' => '20% Đường', '0' => '0% Đường'] as $val => $label)
+                            <label class="cursor-pointer">
+                                <input type="radio" name="modal_sugar_level" value="{{ $val }}" class="peer sr-only">
+                                <div class="px-4 py-4 rounded-xl border border-gray-200 text-center peer-checked:border-coral peer-checked:bg-coral/5 peer-checked:text-coral font-bold transition-all hover:bg-gray-50">{{ $label }}</div>
+                            </label>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Nút Xác Nhận Cố định Dưới Đáy --}}
+                <div class="bg-gray-50 px-8 py-5 border-t border-gray-200 flex justify-between items-center shrink-0 rounded-b-[32px]">
+                    <input type="hidden" id="current-cart-key">
+                    <div>
+                        <span class="text-xs text-espresso/60 font-medium">Tạm tính (1 ly):</span>
+                        <div id="modal-total-price" class="text-coral font-black text-2xl">0đ</div>
+                    </div>
+                    <button onclick="submitToppingChanges()" class="bg-coral text-white px-8 py-3.5 rounded-xl font-bold hover:bg-[#d5523b] shadow-md transition-all">
+                        Lưu thay đổi
+                    </button>
+                </div>
+
             </div>
         </div>
 
     </div>
 </div>
 
-{{-- ========================================= --}}
-{{-- JAVASCRIPT XỬ LÝ AJAX GIỎ HÀNG --}}
-{{-- ========================================= --}}
 <style>
-    /* Làm đẹp thanh cuộn cho danh sách topping trong Modal */
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #e8634a; border-radius: 10px; }
@@ -232,61 +284,45 @@
 <script>
     const csrfToken = '{{ csrf_token() }}';
 
-    // 1. Hàm Xóa sản phẩm khỏi giỏ hàng
     function removeCartItem(cartKey) {
-        showConfirm('Bạn có chắc chắn muốn xóa món này khỏi giỏ hàng?', function() {
+        if(confirm('Bạn có chắc chắn muốn xóa món này khỏi giỏ hàng?')) {
             fetch('{{ route('cart.remove') }}', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 body: JSON.stringify({ _token: csrfToken, cart_key: cartKey })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.success) {
-                    window.location.reload(); 
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => console.error('Lỗi:', error));
+            }).then(res => res.json()).then(data => {
+                if(data.success) { window.location.reload(); } else { alert(data.message); }
+            });
+        }
+    }
+
+    function updateCartItemQty(cartKey, change) {
+        fetch('{{ route('cart.update') }}', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ _token: csrfToken, cart_key: cartKey, change: change })
+        }).then(res => res.json()).then(data => {
+            if(data.success) { window.location.reload(); } else { alert(data.message); }
         });
     }
 
-    // 2. Hàm Tăng/Giảm số lượng sản phẩm trong giỏ
-    function updateCartItemQty(cartKey, change) {
-        fetch('{{ route('cart.update') }}', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json', 
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
-            },
-            body: JSON.stringify({ _token: csrfToken, cart_key: cartKey, change: change })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-                window.location.reload(); 
-            } else {
-                alert(data.message);
-            }
-        })
-        .catch(error => console.error('Lỗi:', error));
+    function switchCartModalTab(tabId) {
+        document.querySelectorAll('.cart-modal-tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('[id^="btn-modal-"]').forEach(el => {
+            el.classList.remove('text-coral', 'border-coral');
+            el.classList.add('text-gray-400', 'border-transparent');
+        });
+
+        document.getElementById(tabId).classList.remove('hidden');
+        let activeBtn = document.getElementById('btn-' + tabId);
+        activeBtn.classList.remove('text-gray-400', 'border-transparent');
+        activeBtn.classList.add('text-coral', 'border-coral');
     }
 
-    // 3. Mở Pop-up và Lấy dữ liệu Topping
+    // BIẾN LƯU GIÁ GỐC ĐỂ TÍNH TIỀN REAL-TIME
+    let currentModalItemPrice = 0;
+
     function openEditToppingModal(cartKey) {
         fetch('{{ route('cart.getItem') }}', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json', 
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
-            },
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ _token: csrfToken, cart_key: cartKey })
         })
         .then(res => res.json())
@@ -294,35 +330,42 @@
             if(data.success) {
                 document.getElementById('current-cart-key').value = cartKey;
                 document.getElementById('modal-product-name').innerText = data.item_name + ' (' + data.size_name + ')';
+                currentModalItemPrice = parseFloat(data.item_price) || 0;
+                
+                document.querySelectorAll('input[name="modal_ice_level"]').forEach(radio => {
+                    radio.checked = (radio.value === (data.ice_level || '100'));
+                });
+                document.querySelectorAll('input[name="modal_sugar_level"]').forEach(radio => {
+                    radio.checked = (radio.value === (data.sugar_level || '100'));
+                });
+
+                switchCartModalTab('modal-topping');
                 
                 let html = '';
                 if(data.toppings.length === 0) {
-                    html = '<p class="text-center text-gray-500 py-4 italic">Sản phẩm này không có topping nào để thêm.</p>';
+                    html = '<p class="text-center text-gray-500 py-8 italic border border-dashed border-gray-200 rounded-xl">Sản phẩm này không có topping nào để thêm.</p>';
                 } else {
                     data.toppings.forEach(top => {
                         let formattedPrice = new Intl.NumberFormat('vi-VN').format(top.price);
                         let imgUrl = top.image ? top.image : 'https://via.placeholder.com/200';
-                        
                         html += `
                         <div class="flex items-center justify-between p-3 border border-espresso/10 rounded-xl hover:bg-[#FAF7F2] transition-colors group">
-                            <div class="flex items-center gap-3">
-                                <img src="${imgUrl}" class="w-12 h-12 rounded-full object-cover">
-                                <div>
-                                    <span class="block font-medium text-espresso">${top.name}</span>
-                                    <span class="font-bold text-coral">+${formattedPrice}đ</span>
-                                </div>
+                            <div class="flex items-center gap-3"><img src="${imgUrl}" class="w-12 h-12 rounded-full object-cover">
+                                <div><span class="block font-medium text-espresso">${top.name}</span><span class="font-bold text-coral">+${formattedPrice}đ</span></div>
                             </div>
                             <div class="flex items-center justify-between border border-espresso/20 rounded-full h-10 w-28 bg-white shrink-0 overflow-hidden">
                                 <button type="button" onclick="updateModalToppingQty(${top.topping_id}, -1)" class="w-8 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-lg transition-colors">-</button>
-                                <input type="text" id="modal-topping-qty-${top.topping_id}" value="${top.qty}" readonly class="modal-topping-input w-12 h-full text-center bg-transparent border-none outline-none font-bold text-sm text-espresso focus:ring-0 p-0 m-0 leading-none">
+                                <input type="text" id="modal-topping-qty-${top.topping_id}" data-price="${top.price}" value="${top.qty}" readonly class="modal-topping-input w-12 h-full text-center bg-transparent border-none outline-none font-bold text-sm text-espresso focus:ring-0 p-0 m-0 leading-none">
                                 <button type="button" onclick="updateModalToppingQty(${top.topping_id}, 1)" class="w-8 h-full flex items-center justify-center text-espresso font-bold hover:text-coral text-lg transition-colors">+</button>
                             </div>
-                        </div>
-                        `;
+                        </div>`;
                     });
                 }
                 document.getElementById('modal-topping-list').innerHTML = html;
                 
+                // Gọi hàm tính tiền ngay khi bật bảng
+                calculateModalPrice();
+
                 const modal = document.getElementById('edit-topping-modal');
                 const modalContent = document.getElementById('edit-topping-modal-content');
                 modal.classList.remove('hidden');
@@ -330,20 +373,41 @@
                     modalContent.classList.remove('scale-95', 'opacity-0');
                     modalContent.classList.add('scale-100', 'opacity-100');
                 }, 10);
-            } else {
-                alert(data.message);
-            }
+            } else { alert(data.message); }
         });
     }
 
-    // 4. Nút Cộng Trừ trong Pop-up
+    // HÀM TÍNH TOÁN REAL-TIME CHO BẢNG MODAL TRONG GIỎ HÀNG
+    function calculateModalPrice() {
+        let total = currentModalItemPrice;
+        
+        // Cộng tiền Topping
+        document.querySelectorAll('.modal-topping-input').forEach(input => {
+            let qty = parseInt(input.value) || 0;
+            if (qty > 0) {
+                let price = parseFloat(input.getAttribute('data-price')) || 0;
+                total += (price * qty);
+            }
+        });
+
+        // Cộng tiền Đá
+        let iceLevel = document.querySelector('input[name="modal_ice_level"]:checked')?.value;
+        if (iceLevel === '0_full') {
+            total += 3000;
+        }
+
+        document.getElementById('modal-total-price').innerText = new Intl.NumberFormat('vi-VN').format(total) + 'đ';
+    }
+
     function updateModalToppingQty(id, change) {
         let input = document.getElementById('modal-topping-qty-' + id);
         let val = parseInt(input.value) + change;
-        if(val >= 0) input.value = val;
+        if(val >= 0) {
+            input.value = val;
+            calculateModalPrice(); // Gọi tính tiền mỗi khi bấm nút + / -
+        }
     }
 
-    // 5. Đóng Pop-up
     function closeEditToppingModal() {
         const modal = document.getElementById('edit-topping-modal');
         const modalContent = document.getElementById('edit-topping-modal-content');
@@ -352,7 +416,6 @@
         setTimeout(() => { modal.classList.add('hidden'); }, 300);
     }
 
-    // 6. Lưu Thay Đổi Topping vào Session
     function submitToppingChanges() {
         let cartKey = document.getElementById('current-cart-key').value;
         let toppingsData = {};
@@ -365,80 +428,36 @@
             }
         });
 
+        let iceLevel = document.querySelector('input[name="modal_ice_level"]:checked')?.value || '100';
+        let sugarLevel = document.querySelector('input[name="modal_sugar_level"]:checked')?.value || '100';
+
         fetch('{{ route('cart.updateToppings') }}', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json', 
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
-            },
-            body: JSON.stringify({ _token: csrfToken, cart_key: cartKey, toppings: toppingsData })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-                window.location.reload(); 
-            } else {
-                alert(data.message);
-            }
-        });
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ 
+                _token: csrfToken, 
+                cart_key: cartKey, 
+                toppings: toppingsData,
+                ice_level: iceLevel,
+                sugar_level: sugarLevel
+            })
+        }).then(res => res.json()).then(data => { if(data.success) { window.location.reload(); } else { alert(data.message); } });
     }
 
-    // 7. Áp dụng Voucher qua AJAX
     function applyVoucher() {
         const codeInput = document.getElementById('voucher-input');
         const code = codeInput ? codeInput.value.trim() : '';
-        if (!code) {
-            alert('Vui lòng nhập mã giảm giá!');
-            return;
-        }
+        if (!code) { alert('Vui lòng nhập mã giảm giá!'); return; }
 
         fetch('{{ route('cart.applyVoucher') }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
-            },
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ voucher_code: code })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            } else {
-                alert(data.message);
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert('Có lỗi xảy ra khi áp dụng mã giảm giá!');
-        });
+        }).then(res => res.json()).then(data => { if (data.success) { window.location.reload(); } else { alert(data.message); } });
     }
 
-    // 8. Hủy Voucher qua AJAX
     function removeVoucher() {
         fetch('{{ route('cart.removeVoucher') }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
-            },
-            body: JSON.stringify({})
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            } else {
-                alert(data.message);
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert('Có lỗi xảy ra khi hủy mã giảm giá!');
-        });
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }, body: JSON.stringify({})
+        }).then(res => res.json()).then(data => { if (data.success) { window.location.reload(); } else { alert(data.message); } });
     }
 </script>
 @endsection

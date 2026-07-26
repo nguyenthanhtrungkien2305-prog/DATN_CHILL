@@ -16,7 +16,22 @@ class ProductController extends Controller
             abort(404);
         }
 
-        // 2. Lấy biến thể (Size & Giá tương ứng)
+        // ==========================================
+        // 2. [MỚI] XỬ LÝ ẢNH PHỤ (GALLERY - TỐI ĐA 4 ẢNH)
+        // ==========================================
+        // Giả định bạn có bảng `product_images` chứa các ảnh thêm của sản phẩm
+        $extraImages = DB::table('product_images')
+            ->where('product_id', $product->product_id)
+            ->limit(3) // Lấy tối đa 3 ảnh phụ
+            ->pluck('image_url')
+            ->toArray();
+            
+        // Đưa ảnh chính vào mảng đầu tiên, sau đó gộp với các ảnh phụ
+        $gallery = array_merge([$product->image_url], $extraImages);
+        // Cắt mảng để đảm bảo dù lỗi cũng chỉ hiển thị tối đa 4 ảnh
+        $gallery = array_slice($gallery, 0, 4);
+
+        // 3. Lấy biến thể (Size & Giá tương ứng)
         $variants = DB::table('product_variants')
             ->join('sizes', 'product_variants.size_id', '=', 'sizes.size_id')
             ->where('product_id', $product->product_id)
@@ -24,7 +39,7 @@ class ProductController extends Controller
             ->orderBy('product_variants.price', 'asc') // Sắp xếp giá từ thấp đến cao
             ->get();
 
-        // 3. Lấy sản phẩm liên quan (Cùng danh mục)
+        // 4. Lấy sản phẩm liên quan (Cùng danh mục)
         $relatedProducts = DB::table('products')
             ->join('product_variants', 'products.product_id', '=', 'product_variants.product_id')
             ->where('category_id', $product->category_id)
@@ -34,22 +49,58 @@ class ProductController extends Controller
             ->limit(4)
             ->get();
 
-        // ERD hiện tại không có bảng Reviews, ta truyền mảng rỗng để View không bị lỗi
-        $reviews = collect([]); 
+        // 5. Lấy Đánh Giá
+        $reviews = \App\Models\Review::with('user')
+            ->where('product_id', $product->product_id)
+            ->orderBy('created_at', 'desc')
+            ->get(); 
+
         $categoryName = DB::table('categories')->where('category_id', $product->category_id)->value('name');
         $isBanhNgot = $categoryName && (str_contains(mb_strtolower($categoryName), 'bánh') || str_contains(mb_strtolower($categoryName), 'cake'));
         $isToppingCategory = $categoryName && str_contains(mb_strtolower($categoryName), 'topping');
 
+        // ==========================================
+        // 6. [MỚI] LẤY TOPPING TỪ BẢNG SẢN PHẨM
+        // ==========================================
+        $toppings = collect([]);
         if (!$isBanhNgot && !$isToppingCategory) {
+<<<<<<< HEAD
             $toppings = Cache::remember('active_toppings', 3600, function() {
                 return DB::table('toppings')->where('status', 1)->get();
             });
         } else {
             $toppings = collect([]);
+=======
+            
+            // Tìm ID của Danh mục Topping
+            $toppingCategory = DB::table('categories')
+                ->where('name', 'LIKE', '%topping%')
+                ->orWhere('name', 'LIKE', '%Topping%')
+                ->first();
+
+            if ($toppingCategory) {
+                // Lấy các "sản phẩm" thuộc danh mục Topping này
+                $toppings = DB::table('products')
+                    ->join('product_variants', 'products.product_id', '=', 'product_variants.product_id')
+                    ->where('products.category_id', $toppingCategory->category_id)
+                    ->where('products.status', 1)
+                    ->select(
+                        // Dùng bí danh as để giao diện HTML cũ vẫn hiểu
+                        'products.product_id as topping_id', 
+                        'products.name', 
+                        'products.image_url as image', 
+                        DB::raw('MIN(product_variants.price) as price')
+                    )
+                    ->groupBy('products.product_id', 'products.name', 'products.image_url')
+                    ->get();
+            }
+>>>>>>> main
         }
 
-        return view('product.show', compact('product', 'variants', 'relatedProducts', 'reviews', 'toppings'));
+        // Truyền thêm biến $gallery ra View
+        return view('product.show', compact('product', 'variants', 'relatedProducts', 'reviews', 'toppings', 'gallery'));
     }
+
     public function index(Request $request)
     {
         // 1. Lấy danh sách danh mục để hiển thị ở Sidebar (Cache 60 phút)
@@ -110,7 +161,5 @@ class ProductController extends Controller
         $products = $query->paginate(9)->appends($request->all());
 
         return view('product.index', compact('products', 'categories'));
-      
     }
-    
 }
