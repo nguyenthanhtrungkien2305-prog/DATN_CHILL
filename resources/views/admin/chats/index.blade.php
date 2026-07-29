@@ -1,6 +1,7 @@
 @extends('admin.layouts.app')
 
 @section('title', 'Hỗ trợ Trực Tuyến - Chill Chill Admin')
+<<<<<<< HEAD
 @section('page_title', 'Hỗ trợ khách hàng trực tuyến')
 
 @section('main_class', 'overflow-hidden')
@@ -49,8 +50,52 @@
                     <span class="flex items-center gap-1.5 text-[10px] text-green-500 font-medium mt-0.5">
                         <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Đang trực tuyến
                     </span>
-                </div>
+=======
+
+@section('content')
+    <style> 
+        .active-session { background-color: rgba(232, 99, 74, 0.08); border-left: 4px solid #e8634a; }
+    </style>
+
+    {{-- Header của trang Chat --}}
+    <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 shrink-0">
+        <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+            <span>💬</span> Hỗ trợ khách hàng trực tuyến
+        </h2>
+        <div class="flex items-center gap-4">
+            <span class="text-sm text-gray-600">Xin chào, <strong>{{ Auth::user()->name }}</strong></span>
+            <a href="{{ route('logout') }}" class="text-sm text-red-500 hover:underline">Đăng xuất</a>
+        </div>
+    </header>
+
+    {{-- Khung chia đôi chat room --}}
+    <div class="flex-1 flex overflow-hidden">
+        
+        {{-- Cột Trái: Danh sách phiên chat active --}}
+        <div class="w-80 bg-white border-r border-gray-200 flex flex-col h-full shrink-0">
+            <div class="p-4 border-b border-gray-100 shrink-0">
+                <input type="text" id="session-search" oninput="renderSessionSidebar()" placeholder="Tìm khách hàng..." class="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#e8634a] focus:bg-white transition-all text-[#3e2723] placeholder-gray-400">
             </div>
+            {{-- Container danh sách phiên --}}
+            <div id="sessions-list" class="flex-1 overflow-y-auto divide-y divide-gray-50 custom-scrollbar">
+                {{-- Load sessions ở đây --}}
+                <div class="p-8 text-center text-gray-400 italic text-sm">Đang tải cuộc trò chuyện...</div>
+            </div>
+        </div>
+
+        {{-- Cột Phải: Khung chat chi tiết --}}
+        <div class="flex-1 flex flex-col bg-gray-50 h-full relative" id="chat-conversation-pane">
+            
+            {{-- Trạng thái trống khi chưa chọn session --}}
+            <div id="chat-empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-8">
+                <div class="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-sm text-4xl mb-4">
+                    💬
+>>>>>>> main
+                </div>
+                <h3 class="font-bold text-gray-700 text-lg mb-1">Bắt đầu tư vấn</h3>
+                <p class="text-sm text-center max-w-xs">Chọn một khách hàng từ danh sách bên trái để xem nội dung chat và hỗ trợ trực tuyến.</p>
+            </div>
+<<<<<<< HEAD
             {{-- Bot AI Toggle --}}
             <div class="flex items-center gap-2 bg-gray-50 border px-3 py-1.5 rounded-full shadow-sm">
                 <span class="text-xs font-semibold text-gray-600 flex items-center gap-1">
@@ -61,6 +106,50 @@
                 </button>
             </div>
         </div>
+=======
+
+            {{-- Khung trò chuyện khi đã chọn session (Ẩn mặc định) --}}
+            <div id="chat-active-state" class="flex flex-col h-full w-full hidden">
+                {{-- Header phòng chat --}}
+                <div class="bg-white px-6 py-3 shadow-sm border-b flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-[#FAF7F2] border border-[#e8634a]/10 flex items-center justify-center text-lg">
+                            👤
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-sm" id="active-session-name">Khách hàng</h4>
+                            <span class="flex items-center gap-1.5 text-[10px] text-green-500 font-medium mt-0.5">
+                                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Đang trực tuyến
+                            </span>
+                        </div>
+                    </div>
+                    {{-- Bot AI Toggle --}}
+                    <div class="flex items-center gap-2 bg-gray-50 border px-3 py-1.5 rounded-full shadow-sm">
+                        <span class="text-xs font-semibold text-gray-600 flex items-center gap-1">
+                            🤖 Trợ lý AI:
+                        </span>
+                        <button id="btn-toggle-bot" onclick="toggleBotStatus()" class="px-3 py-1 text-[11px] font-bold rounded-full transition-all duration-200 shadow-sm bg-green-100 text-green-700 hover:bg-green-200">
+                            Đang Bật
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Khung hiển thị các tin nhắn --}}
+                <div id="admin-chat-messages" class="flex-1 p-6 overflow-y-auto space-y-4 flex flex-col bg-[#FAF7F2] custom-scrollbar">
+                    {{-- Tin nhắn load ở đây --}}
+                </div>
+
+                {{-- Form nhập tin nhắn gửi đi --}}
+                <form id="admin-chat-form" onsubmit="handleAdminSend(event)" class="p-4 bg-white border-t flex items-center gap-3 shrink-0">
+                    <input type="text" id="admin-chat-input" placeholder="Nhập câu trả lời của bạn..." autocomplete="off" class="flex-1 px-4 py-3 bg-gray-50 border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#e8634a] focus:bg-white transition-all text-[#3e2723] placeholder-gray-400">
+                    <button type="submit" class="bg-[#e8634a] hover:bg-[#d5523b] text-white px-6 py-3 rounded-xl font-bold shadow-md shadow-[#e8634a]/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 text-sm shrink-0">
+                        🚀 Gửi đi
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+>>>>>>> main
 
         {{-- Khung hiển thị các tin nhắn --}}
         <div id="admin-chat-messages" class="flex-1 p-6 overflow-y-auto space-y-4 flex flex-col bg-[#FAF7F2]">
@@ -204,7 +293,35 @@
         const text = input.value.trim();
         if (!text || !activeSessionId) return;
 
+<<<<<<< HEAD
         input.value = '';
+=======
+            if (sender === 'admin') {
+                wrapper.innerHTML = `
+                    <div class="flex flex-col items-end max-w-[75%]">
+                        <div class="bg-gray-800 text-white p-3.5 rounded-[18px] rounded-tr-none shadow-sm text-sm leading-relaxed">
+                            ${formatMessageText(message)}
+                        </div>
+                        <span class="text-[9px] text-gray-400 mt-1">${time}</span>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs shrink-0 font-bold">
+                        AD
+                    </div>
+                `;
+            } else {
+                wrapper.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-[#e8634a] text-white flex items-center justify-center text-xs shrink-0 font-bold">
+                        KH
+                    </div>
+                    <div class="flex flex-col items-start max-w-[70%]">
+                        <div class="bg-white text-[#3e2723] p-3.5 rounded-[18px] rounded-tl-none shadow-sm border border-gray-100 text-sm leading-relaxed">
+                            ${formatMessageText(message)}
+                        </div>
+                        <span class="text-[9px] text-gray-400 mt-1">${time}</span>
+                    </div>
+                `;
+            }
+>>>>>>> main
 
         // Render ngay lập tức lên DOM
         const tempTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
@@ -265,6 +382,7 @@
         container.appendChild(wrapper);
     }
 
+<<<<<<< HEAD
     // Cuộn khung chat xuống đáy
     function scrollAdminChatToBottom() {
         const container = document.getElementById('admin-chat-messages');
@@ -332,3 +450,10 @@
     sessionPoll = setInterval(fetchSessions, 4000);
 </script>
 @endpush
+=======
+        // Chạy lần đầu và khởi tạo polling
+        fetchSessions();
+        sessionPoll = setInterval(fetchSessions, 4000);
+    </script>
+@endsection
+>>>>>>> main

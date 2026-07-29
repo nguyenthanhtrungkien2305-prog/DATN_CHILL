@@ -174,6 +174,74 @@ class AttendanceController extends Controller
         return back()->with('success', 'Đã đăng ký ca làm thành công, đang chờ Quản lý duyệt!')->with('active_tab', 'register');
     }
 
+    /**
+     * TỰ ĐỘNG CHECK-OUT CHO NHÂN VIÊN KHI HẾT GIỜ LÀM VIỆC
+     */
+    public static function autoCheckOutExpiredShifts($userId = null)
+    {
+        $now = \Carbon\Carbon::now('Asia/Ho_Chi_Minh');
+
+        $query = DB::table('attendances')
+            ->whereNull('check_out');
+
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+
+        $openAttendances = $query->get();
+
+        foreach ($openAttendances as $att) {
+            $scheduledEnd = null;
+
+            if (!empty($att->scheduled_end_time)) {
+                $scheduledEnd = \Carbon\Carbon::parse($att->scheduled_end_time);
+            } else {
+                $shifts = DB::table('shift_registrations')
+                    ->where('user_id', $att->user_id)
+                    ->where('status', 'approved')
+                    ->where('shift_date', $att->date)
+                    ->orderBy('start_time', 'asc')
+                    ->get();
+
+                if ($shifts->isNotEmpty()) {
+                    $checkInTime = \Carbon\Carbon::parse($att->check_in);
+                    foreach ($shifts as $shift) {
+                        $shiftStart = \Carbon\Carbon::parse($shift->shift_date . ' ' . $shift->start_time);
+                        $shiftEnd = $shiftStart->copy()->addHours($shift->duration);
+
+                        if ($checkInTime->gte($shiftStart->copy()->subMinutes(10)) && $checkInTime->lte($shiftEnd)) {
+                            $scheduledEnd = $shiftEnd;
+                            foreach ($shifts as $nextShift) {
+                                $nextStart = \Carbon\Carbon::parse($nextShift->shift_date . ' ' . $nextShift->start_time);
+                                if ($nextStart->eq($scheduledEnd)) {
+                                    $scheduledEnd = $nextStart->copy()->addHours($nextShift->duration);
+                                }
+                            }
+                            break;
+                        }
+                    }
+
+                    if (!$scheduledEnd) {
+                        $lastShift = $shifts->last();
+                        $scheduledEnd = \Carbon\Carbon::parse($lastShift->shift_date . ' ' . $lastShift->start_time)->addHours($lastShift->duration);
+                    }
+                } else {
+                    $scheduledEnd = \Carbon\Carbon::parse($att->check_in)->addHours(8);
+                }
+            }
+
+            if ($scheduledEnd && $now->greaterThanOrEqualTo($scheduledEnd)) {
+                DB::table('attendances')
+                    ->where('id', $att->id)
+                    ->update([
+                        'check_out' => $scheduledEnd,
+                        'checkout_note' => 'Tự động kết ca (Hết giờ làm việc)',
+                        'updated_at' => $now
+                    ]);
+            }
+        }
+    }
+
    // ==========================================
     // 3. API XỬ LÝ CHECK-IN (Bắt đầu ca)
     // ==========================================
@@ -181,6 +249,9 @@ class AttendanceController extends Controller
     {
         $userId = auth()->user()->user_id ?? auth()->id();
         $now = now('Asia/Ho_Chi_Minh');
+
+        // Tự động kết thúc các ca cũ đã quá giờ
+        self::autoCheckOutExpiredShifts($userId);
 
         // 1. Kiểm tra xem có đang kẹt ca nào chưa kết thúc không
         $activeShift = \Illuminate\Support\Facades\DB::table('attendances')
@@ -218,27 +289,40 @@ class AttendanceController extends Controller
             ]);
         }
 
-        // 4. KIỂM TRA KHUNG GIỜ THỰC TẾ (Code cũ giữ nguyên)
+        // 4. KIỂM TRA KHUNG GIỜ CHECK-IN (Chỉ cho phép check-in trước hoặc sau giờ vào ca tối đa 10 phút)
         $isValidTime = false;
-        $currentTime = $now->format('H:i:s');
         $shiftTimeMessage = '';
+        $scheduledEndTime = null;
 
         foreach ($todayShifts as $shift) {
-            $startTime = \Carbon\Carbon::parse($shift->start_time);
+            $startTime = \Carbon\Carbon::parse($shift->shift_date . ' ' . $shift->start_time);
             $endTime = $startTime->copy()->addHours($shift->duration);
             
-            $shiftTimeMessage .= '[' . $startTime->format('H:i') . ' - ' . $endTime->format('H:i') . '] ';
-            $allowedStartTime = $startTime->copy()->subMinutes(30)->format('H:i:s');
-            $allowedEndTime = $endTime->format('H:i:s');
+            $allowedStart = $startTime->copy()->subMinutes(10);
+            $allowedEnd = $startTime->copy()->addMinutes(10);
 
-            if ($currentTime >= $allowedStartTime && $currentTime <= $allowedEndTime) {
+            $shiftTimeMessage .= '[' . $startTime->format('H:i') . ' (Mở Check-in từ ' . $allowedStart->format('H:i') . ' đến ' . $allowedEnd->format('H:i') . ')] ';
+
+            if ($now->gte($allowedStart) && $now->lte($allowedEnd)) {
                 $isValidTime = true;
+                $scheduledEndTime = $endTime;
+
+                // Nối các ca liền kề phía sau nếu có
+                foreach ($todayShifts as $nextShift) {
+                    $nextStart = \Carbon\Carbon::parse($nextShift->shift_date . ' ' . $nextShift->start_time);
+                    if ($nextStart->eq($scheduledEndTime)) {
+                        $scheduledEndTime = $nextStart->copy()->addHours($nextShift->duration);
+                    }
+                }
                 break; 
             }
         }
 
         if (!$isValidTime) {
-            return response()->json(['success' => false, 'message' => 'TỪ CHỐI: Chưa đến giờ làm việc hoặc đã hết ca! Ca của bạn hôm nay là: ' . $shiftTimeMessage . ' (Được vào ca sớm tối đa 30 phút)']);
+            return response()->json([
+                'success' => false, 
+                'message' => 'TỪ CHỐI CHECK-IN: Bạn chỉ được phép Check-in trước hoặc sau giờ vào ca tối đa 10 phút! Khung giờ cho phép của bạn hôm nay: ' . $shiftTimeMessage
+            ]);
         }
 
         // 5. Hoàn toàn hợp lệ -> Tạo bản ghi Check-in mới
@@ -246,6 +330,7 @@ class AttendanceController extends Controller
             'user_id' => $userId,
             'date' => $now->format('Y-m-d'),
             'check_in' => $now,
+            'scheduled_end_time' => $scheduledEndTime,
             'created_at' => $now,
             'updated_at' => $now
         ]);

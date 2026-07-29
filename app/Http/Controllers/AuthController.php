@@ -158,7 +158,10 @@ class AuthController extends Controller
         if (Auth::check()) {
             $userId = Auth::user()->user_id ?? Auth::id();
             
-            // Ép Check-out an toàn trước khi thoát
+            // 1. Tự động kết ca nếu ca đã quá giờ làm quy định
+            \App\Http\Controllers\AttendanceController::autoCheckOutExpiredShifts($userId);
+
+            // 2. Ép Check-out an toàn các ca còn lại nếu người dùng chủ động đăng xuất
             \Illuminate\Support\Facades\DB::table('attendances')
                 ->where('user_id', $userId)
                 ->whereNull('check_out')
