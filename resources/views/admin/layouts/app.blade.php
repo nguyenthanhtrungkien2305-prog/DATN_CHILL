@@ -37,11 +37,7 @@
                 <span class="text-xl">📁</span> <span>Quản lý Danh mục</span>
             </a>
 
-            <!-- {{-- Quản lý Topping --}}
-            <a href="{{ route('toppings.index') }}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('toppings.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">🍡</span> <span>Quản lý Topping</span>
-            </a> -->
+
 
             {{-- Quản lý Voucher --}}
             <a href="{{ route('vouchers.index') }}" 

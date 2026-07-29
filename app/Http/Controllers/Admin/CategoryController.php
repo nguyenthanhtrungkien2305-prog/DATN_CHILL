@@ -5,10 +5,39 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
+    /**
+     * Xóa file ảnh khỏi Storage/Public để tránh rác bộ nhớ
+     */
+    protected function deleteImageFile(?string $imageUrl): void
+    {
+        if (empty($imageUrl)) {
+            return;
+        }
+
+        if (Str::startsWith($imageUrl, ['http://', 'https://']) && !Str::contains($imageUrl, request()->getHost())) {
+            return;
+        }
+
+        $relativePath = ltrim($imageUrl, '/');
+        if (Str::startsWith($relativePath, 'storage/')) {
+            $relativePath = Str::after($relativePath, 'storage/');
+        }
+
+        if (Storage::disk('public')->exists($relativePath)) {
+            Storage::disk('public')->delete($relativePath);
+        }
+
+        $publicPath = public_path(ltrim($imageUrl, '/'));
+        if (file_exists($publicPath) && is_file($publicPath)) {
+            @unlink($publicPath);
+        }
+    }
+
     // 1. Hiển thị danh sách danh mục
     public function index()
     {
@@ -16,7 +45,7 @@ class CategoryController extends Controller
         return view('admin.categories.index', compact('categories'));
     }
 
-    // 2. Form thêm danh mục (Sẽ làm ở bước sau)
+    // 2. Form thêm danh mục
     public function create()
     {
         return view('admin.categories.create');
@@ -25,7 +54,6 @@ class CategoryController extends Controller
    // 3. Xử lý lưu danh mục mới
     public function store(Request $request)
     {
-        // Kiểm tra dữ liệu
         $request->validate([
             'name' => 'required|string|max:255',
             'image' => 'nullable|string' 
@@ -33,20 +61,23 @@ class CategoryController extends Controller
             'name.required' => 'Vui lòng nhập tên danh mục'
         ]);
 
-        // Tự động tạo slug từ tên danh mục
+        $imageUrl = $request->image;
+        if ($request->hasFile('image_file')) {
+            $imageUrl = '/storage/' . $request->file('image_file')->store('categories', 'public');
+        }
+
         $slug = Str::slug($request->name);
 
-        // Thêm vào database
         DB::table('categories')->insert([
             'name' => $request->name,
-            'slug' => $slug, // <--- THÊM DÒNG NÀY ĐỂ LƯU SLUG
-            'image' => $request->image,
+            'slug' => $slug,
+            'image' => $imageUrl,
         ]);
 
-        // Điều hướng về trang danh sách kèm thông báo
         return redirect()->route('categories.index')->with('success', 'Thêm danh mục mới thành công!');
     }
-    // 4. Form sửa danh mục (Sẽ làm ở bước sau)
+
+    // 4. Form sửa danh mục
     public function edit($id)
     {
         $category = DB::table('categories')->where('category_id', $id)->first();
@@ -56,7 +87,6 @@ class CategoryController extends Controller
     // 5. Xử lý cập nhật danh mục
     public function update(Request $request, $id)
     {
-        // Kiểm tra dữ liệu
         $request->validate([
             'name' => 'required|string|max:255',
             'image' => 'nullable|string'
@@ -64,33 +94,46 @@ class CategoryController extends Controller
             'name.required' => 'Vui lòng nhập tên danh mục'
         ]);
 
-        // Cập nhật lại slug nếu tên thay đổi
+        $category = DB::table('categories')->where('category_id', $id)->first();
+        if (!$category) abort(404);
+
+        $imageUrl = $request->image;
+
+        if ($request->hasFile('image_file')) {
+            $this->deleteImageFile($category->image);
+            $imageUrl = '/storage/' . $request->file('image_file')->store('categories', 'public');
+        } elseif ($imageUrl && $imageUrl !== $category->image) {
+            $this->deleteImageFile($category->image);
+        }
+
         $slug = Str::slug($request->name);
 
-        // Cập nhật database
         DB::table('categories')->where('category_id', $id)->update([
             'name' => $request->name,
-            'slug' => $slug, // <--- THÊM DÒNG NÀY ĐỂ LƯU SLUG
-            'image' => $request->image,
+            'slug' => $slug,
+            'image' => $imageUrl,
         ]);
 
-        // Điều hướng về trang danh sách
         return redirect()->route('categories.index')->with('success', 'Cập nhật danh mục thành công!');
     }
 
     // 6. Xử lý XÓA danh mục
     public function destroy($id)
     {
-        // Kiểm tra xem danh mục này có đang chứa sản phẩm nào không
         $productCount = DB::table('products')->where('category_id', $id)->count();
         
         if ($productCount > 0) {
             return back()->with('error', 'Không thể xóa! Danh mục này đang chứa ' . $productCount . ' sản phẩm. Vui lòng chuyển các sản phẩm sang danh mục khác trước.');
         }
 
-        // Nếu trống thì cho phép xóa
-        DB::table('categories')->where('category_id', $id)->delete();
-        
-        return redirect()->route('categories.index')->with('success', 'Đã xóa danh mục thành công!');
+        $category = DB::table('categories')->where('category_id', $id)->first();
+        if ($category) {
+            // Xóa file ảnh danh mục
+            $this->deleteImageFile($category->image);
+            // Xóa danh mục trong DB
+            DB::table('categories')->where('category_id', $id)->delete();
+        }
+
+        return redirect()->route('categories.index')->with('success', 'Đã xóa danh mục và ảnh đính kèm thành công!');
     }
 }

@@ -1,9 +1,27 @@
 @php
-    // Đồng bộ tuyệt đối với Middleware: Chỉ tìm xem có ca nào đang mở (check_out = NULL) hay không!
-    $hasActiveShift = \Illuminate\Support\Facades\DB::table('attendances')
-        ->where('user_id', auth()->user()->user_id ?? auth()->id())
-        ->whereNull('check_out') // -> Đã xóa whereDate ở đây để quét sạch mọi ca bị kẹt
-        ->exists();
+    $userId = auth()->user()->user_id ?? auth()->id();
+
+    // Tự động kết ca nếu đã quá giờ làm quy định
+    \App\Http\Controllers\AttendanceController::autoCheckOutExpiredShifts($userId);
+
+    // Tìm ca đang mở của nhân viên
+    $activeAttendance = \Illuminate\Support\Facades\DB::table('attendances')
+        ->where('user_id', $userId)
+        ->whereNull('check_out')
+        ->first();
+
+    $hasActiveShift = !empty($activeAttendance);
+
+    $shiftEndTimeIso = null;
+    if ($hasActiveShift && !empty($activeAttendance->scheduled_end_time)) {
+        $shiftEndTimeIso = \Carbon\Carbon::parse($activeAttendance->scheduled_end_time)->toIso8601String();
+    }
+
+    if (!isset($pendingOrders)) {
+        $pendingOrders = \Illuminate\Support\Facades\DB::table('orders')
+            ->where('status', 'pending')
+            ->get();
+    }
 @endphp
 
 <div id="sidebar" class="bg-white h-screen border-r border-espresso/10 flex flex-col shrink-0 transition-all duration-300 ease-in-out {{ isset($isOpen) && $isOpen ? 'w-64' : 'w-0' }} overflow-hidden shadow-xl z-50">
@@ -129,4 +147,19 @@
             }
         });
     }
+
+    @if($hasActiveShift && $shiftEndTimeIso)
+    (function() {
+        const endTime = new Date("{{ $shiftEndTimeIso }}").getTime();
+        let notified = false;
+        const checkExpiry = () => {
+            if (!notified && Date.now() >= endTime) {
+                notified = true;
+                alert("⏰ ĐÃ HẾT GIỜ LÀM VIỆC!\nHệ thống sẽ tự động kết ca cho bạn.");
+                window.location.reload();
+            }
+        };
+        setInterval(checkExpiry, 10000);
+    })();
+    @endif
 </script>

@@ -172,7 +172,7 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     
     Route::resource('categories', AdminCategoryController::class);
     Route::resource('products', AdminProductController::class);
-    Route::resource('toppings', AdminToppingController::class);
+    // Route::resource('toppings', AdminToppingController::class);
     Route::resource('vouchers', AdminVoucherController::class);
     Route::get('users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.users.index');
     Route::post('users/{id}/update-role', [\App\Http\Controllers\Admin\UserController::class, 'updateRole'])->name('admin.users.update_role');
