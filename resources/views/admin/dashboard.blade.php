@@ -1,117 +1,150 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Chill Chill</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style> body { font-family: 'Poppins', sans-serif; } </style>
-</head>
-<body class="bg-gray-100 flex h-screen overflow-hidden">
+@extends('admin.layouts.app')
 
-    {{-- SIDEBAR (Menu bên trái) --}}
-    <aside class="w-64 bg-[#2B2623] text-white flex flex-col">
-        <div class="h-16 flex items-center justify-center border-b border-white/10">
-            <h1 class="text-xl font-bold tracking-widest text-[#e8634a]">CHILL CHILL ADMIN</h1>
+@section('title', 'Admin Dashboard - Chill Chill')
+
+@section('content')
+    {{-- Header của Main Content --}}
+    <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 shrink-0">
+        <h2 class="text-xl font-semibold text-gray-800">Tổng quan hệ thống</h2>
+        <div class="flex items-center gap-4">
+            <span class="text-sm text-gray-600">Xin chào, <strong>{{ Auth::user()->name ?? 'Admin' }}</strong></span>
+            <a href="{{ route('logout') }}" class="text-sm text-red-500 hover:underline font-medium">Đăng xuất</a>
         </div>
-       <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            {{-- Tổng quan --}}
-            <a href="#" 
-               class="block px-4 py-3 rounded-lg transition-colors {{ request()->is('admin') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                📊 Tổng quan
-            </a>
-            
-            {{-- Quản lý Sản phẩm --}}
-            <a href="{{ route('products.index') }}" 
-               class="block px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('products.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                ☕ Quản lý Sản phẩm
-            </a>
-            
-            {{-- Quản lý Danh mục --}}
-            <a href="{{ route('categories.index') }}" 
-               class="block px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('categories.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                📁 Quản lý Danh mục
-            </a>
+    </header>
 
-            {{-- Quản lý Topping (Mới thêm) --}}
-            <a href="{{ route('toppings.index') }}" 
-               class="block px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('toppings.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                🍡 Quản lý Topping
-            </a>
-
-            {{-- Quản lý Voucher --}}
-            <a href="{{ route('vouchers.index') }}" 
-               class="block px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('vouchers.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                🎟️ Quản lý Voucher
-            </a>
-            
-            {{-- Quản lý Đơn hàng --}}
-            <a href="#" 
-               class="block px-4 py-3 rounded-lg transition-colors hover:bg-white/10">
-                🛒 Quản lý Đơn hàng
-            </a>
-            
-            {{-- Quản lý Người dùng --}}
-            <a href="#" 
-               class="block px-4 py-3 rounded-lg transition-colors hover:bg-white/10">
-                👥 Quản lý Người dùng
-            </a>
-
-            {{-- Quản lý Phản hồi --}}
-            <a href="{{ route('feedbacks.index') }}" 
-               class="block px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('feedbacks.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                ✉️ Quản lý Phản hồi
-            </a>
-
-            {{-- Hỗ trợ trực tuyến --}}
-            <a href="{{ route('admin.chats.index') }}" 
-               class="block px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('admin.chats.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                💬 Hỗ trợ trực tuyến
-            </a>
-        </nav>
-        <div class="p-4 border-t border-white/10">
-            <a href="/" class="block text-center px-4 py-2 bg-white/10 rounded hover:bg-white/20 transition">← Về trang web</a>
-        </div>
-    </aside>
-
-    {{-- MAIN CONTENT (Nội dung chính) --}}
-    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
-        {{-- Header của Main Content --}}
-        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8">
-            <h2 class="text-xl font-semibold text-gray-800">Tổng quan hệ thống</h2>
-            <div class="flex items-center gap-4">
-                <span class="text-sm text-gray-600">Xin chào, <strong>{{ Auth::user()->name }}</strong></span>
-                <a href="{{ route('logout') }}" class="text-sm text-red-500 hover:underline">Đăng xuất</a>
+    {{-- Nội dung Dashboard --}}
+    <div class="p-8 flex-1 overflow-y-auto custom-scrollbar">
+        
+        {{-- Widget thống kê thực tế --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center relative overflow-hidden">
+                <div class="absolute right-[-20px] top-[-20px] w-20 h-20 bg-emerald-500/10 rounded-full blur-xl"></div>
+                <h3 class="text-gray-500 text-sm font-bold uppercase tracking-wider mb-2">Tổng doanh thu</h3>
+                <p class="text-3xl font-black text-emerald-600">{{ number_format($totalRevenue, 0, ',', '.') }}đ</p>
             </div>
-        </header>
+            
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center relative overflow-hidden">
+                <div class="absolute right-[-20px] top-[-20px] w-20 h-20 bg-[#e8634a]/10 rounded-full blur-xl"></div>
+                <h3 class="text-gray-500 text-sm font-bold uppercase tracking-wider mb-2">Đơn chờ xử lý</h3>
+                <p class="text-3xl font-black text-[#e8634a]">{{ $newOrders }}</p>
+            </div>
+            
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center relative overflow-hidden">
+                <div class="absolute right-[-20px] top-[-20px] w-20 h-20 bg-blue-500/10 rounded-full blur-xl"></div>
+                <h3 class="text-gray-500 text-sm font-bold uppercase tracking-wider mb-2">Tổng sản phẩm</h3>
+                <p class="text-3xl font-black text-gray-800">{{ $totalProducts }}</p>
+            </div>
+            
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center relative overflow-hidden">
+                <div class="absolute right-[-20px] top-[-20px] w-20 h-20 bg-purple-500/10 rounded-full blur-xl"></div>
+                <h3 class="text-gray-500 text-sm font-bold uppercase tracking-wider mb-2">Khách hàng</h3>
+                <p class="text-3xl font-black text-gray-800">{{ $totalUsers }}</p>
+            </div>
+        </div>
 
-        {{-- Widget thống kê --}}
-        <div class="p-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 class="text-gray-500 text-sm font-medium mb-1">Tổng doanh thu</h3>
-                    <p class="text-2xl font-bold text-gray-800">12,500,000 đ</p>
+        {{-- KHU VỰC BIỂU ĐỒ --}}
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800">Biểu đồ Doanh Thu</h3>
+                    <p class="text-sm text-gray-500 mt-1">Chỉ thống kê các đơn hàng đã giao thành công.</p>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 class="text-gray-500 text-sm font-medium mb-1">Đơn hàng mới</h3>
-                    <p class="text-2xl font-bold text-gray-800">48</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 class="text-gray-500 text-sm font-medium mb-1">Tổng sản phẩm</h3>
-                    <p class="text-2xl font-bold text-gray-800">156</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 class="text-gray-500 text-sm font-medium mb-1">Khách hàng</h3>
-                    <p class="text-2xl font-bold text-gray-800">1,204</p>
+                
+                {{-- Dropdown Lọc thời gian --}}
+                <div class="mt-4 sm:mt-0">
+                    <select id="chartFilter" onchange="updateChart()" class="bg-gray-50 border border-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg focus:outline-none focus:border-[#e8634a] cursor-pointer">
+                        <option value="day">7 Ngày gần nhất</option>
+                        <option value="week">4 Tuần gần nhất</option>
+                        <option value="month" selected>12 Tháng năm nay</option>
+                        <option value="year">5 Năm gần nhất</option>
+                    </select>
                 </div>
             </div>
 
-            <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 min-h-[400px]">
-                <p class="text-gray-500 text-center mt-20">Khu vực hiển thị biểu đồ hoặc danh sách dữ liệu...</p>
+            {{-- Thẻ Canvas vẽ biểu đồ Chart.js --}}
+            <div class="relative h-[400px] w-full">
+                <canvas id="revenueChart"></canvas>
             </div>
         </div>
-    </main>
+    </div>
 
-</body>
-</html>
+    {{-- Import Chart.js từ CDN --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // 1. Nhận cục dữ liệu JSON từ Controller PHP
+        const chartDataSets = {
+            day: @json($chartDay),
+            week: @json($chartWeek),
+            month: @json($chartMonth),
+            year: @json($chartYear)
+        };
+
+        let revenueChart; // Biến lưu trữ biểu đồ
+
+        // 2. Hàm vẽ/cập nhật biểu đồ
+        function updateChart() {
+            const filter = document.getElementById('chartFilter').value;
+            const dataToRender = chartDataSets[filter];
+
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+
+            // Nếu đã có biểu đồ cũ, hủy nó trước khi vẽ mới để tránh lỗi chập chờn
+            if (revenueChart) {
+                revenueChart.destroy();
+            }
+
+            // Cấu hình vẽ biểu đồ mới
+            revenueChart = new Chart(ctx, {
+                type: 'bar', // Biểu đồ dạng cột
+                data: {
+                    labels: dataToRender.labels,
+                    datasets: [{
+                        label: 'Doanh thu (VNĐ)',
+                        data: dataToRender.data,
+                        backgroundColor: '#e8634a', // Màu cột (Chill Chill brand)
+                        borderRadius: 6, // Bo góc cột
+                        barThickness: 'flex',
+                        maxBarThickness: 40
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }, // Ẩn chú thích
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.raw || 0;
+                                    return value.toLocaleString('vi-VN') + ' đ'; // Định dạng tiền Việt
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { borderDash: [5, 5], color: '#f3f4f6' },
+                            ticks: {
+                                callback: function(value) {
+                                    if(value >= 1000000) return (value / 1000000) + ' Tr';
+                                    if(value >= 1000) return (value / 1000) + ' k';
+                                    return value;
+                                }
+                            }
+                        },
+                        x: {
+                            grid: { display: false } // Ẩn đường kẻ sọc ngang
+                        }
+                    }
+                }
+            });
+        }
+
+        // 3. Gọi hàm vẽ biểu đồ ngay khi trang load xong
+        window.addEventListener('load', function() {
+            updateChart();
+        });
+    </script>
+@endsection

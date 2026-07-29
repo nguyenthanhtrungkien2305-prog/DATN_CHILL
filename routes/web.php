@@ -77,6 +77,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/tai-khoan', [UserController::class, 'profile'])->name('user.profile');
     Route::post('/tai-khoan/cap-nhat', [UserController::class, 'updateProfile'])->name('user.update_profile');
     Route::get('/tai-khoan/don-hang', [UserController::class, 'orders'])->name('user.orders');
+    // QUẢN LÝ ĐƠN HÀNG
+    Route::get('orders', [\App\Http\Controllers\Admin\OrderController::class, 'index'])->name('admin.orders.index');
+    Route::post('orders/{id}/status', [\App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('admin.orders.update_status');
 });
 Route::get('/user/orders/{order_id}', [UserController::class, 'show'])->name('user.orders.show');
 
