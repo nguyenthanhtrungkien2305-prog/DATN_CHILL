@@ -140,12 +140,9 @@ Route::middleware(['auth', 'staff'])->group(function () {
 });
 });
 
-<<<<<<< HEAD
-=======
 Route::get('/tai-khoan/don-hang', [\App\Http\Controllers\UserController::class, 'orders'])->name('user.orders');
 Route::post('/tai-khoan/don-hang/{id}/huy', [UserController::class, 'cancelOrder'])->name('user.orders.cancel');
 Route::post('/tai-khoan/don-hang/danh-gia', [\App\Http\Controllers\UserController::class, 'submitReview'])->name('user.orders.review');
->>>>>>> main
 // ROUTES CHAT BOX TRỰC TUYẾN
 Route::prefix('chat')->group(function () {
     Route::post('/start', [ChatController::class, 'startSession'])->name('chat.start');
@@ -165,18 +162,14 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     Route::resource('products', AdminProductController::class);
     Route::resource('toppings', AdminToppingController::class);
     Route::resource('vouchers', AdminVoucherController::class);
-<<<<<<< HEAD
     Route::resource('users', AdminUserController::class);
     Route::post('users/{id}/toggle-lock', [AdminUserController::class, 'toggleLock'])->name('users.toggle_lock');
-
+    Route::get('users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.users.index');
+    Route::post('users/{id}/update-role', [\App\Http\Controllers\Admin\UserController::class, 'updateRole'])->name('admin.users.update_role');
     
     // QUẢN LÝ ĐƠN HÀNG (ORDERS):
     Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->only(['index', 'show']);
     Route::put('orders/{id}/status', [\App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('orders.update_status');
-=======
-    Route::get('users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.users.index');
-    Route::post('users/{id}/update-role', [\App\Http\Controllers\Admin\UserController::class, 'updateRole'])->name('admin.users.update_role');
->>>>>>> main
     
     // QUẢN LÝ LỊCH LÀM & LƯƠNG NHÂN VIÊN
     Route::get('staff-manager', [\App\Http\Controllers\Admin\StaffManagerController::class, 'index'])->name('admin.staff.manager');
