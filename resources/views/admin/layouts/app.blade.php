@@ -39,6 +39,12 @@
 
 
 
+            {{-- Quản lý Bài viết --}}
+            <a href="{{ route('posts.index') }}" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('posts.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
+                <span class="text-xl">📰</span> <span>Quản lý Bài viết</span>
+            </a>
+
             {{-- Quản lý Voucher --}}
             <a href="{{ route('vouchers.index') }}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('vouchers.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">

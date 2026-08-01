@@ -168,11 +168,35 @@
 
                     <div class="col-span-12 lg:col-span-4 bg-white rounded-2xl border border-espresso/10 p-4 lg:p-6 shadow-sm flex flex-col h-full overflow-hidden justify-between">
                         <div>
-                            <h3 class="text-base font-black text-espresso mb-4 uppercase tracking-wider border-b pb-2 border-dashed">💳 Thanh Toán</h3>
+                            <h3 class="text-base font-black text-espresso mb-3 uppercase tracking-wider border-b pb-2 border-dashed">💳 Thanh Toán</h3>
+                            
+                            <!-- Nút mở modal tìm kiếm khách hàng -->
+                            <button type="button" onclick="openCustomerModal()" class="w-full mb-3 py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-sm hover:shadow transition-all flex items-center justify-center gap-2">
+                                🔍 Tìm & Chọn Khách Hàng (Tích điểm)
+                            </button>
+
+                            <!-- Khung hiển thị thông tin khách hàng đã chọn -->
+                            <div id="selected-customer-card" class="hidden mb-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl shadow-xs">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-xs font-black text-emerald-900" id="card-customer-name">Khách Hàng</span>
+                                            <span class="bg-emerald-200 text-emerald-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded">Thành viên</span>
+                                        </div>
+                                        <p class="text-[11px] text-emerald-700 font-semibold mt-0.5" id="card-customer-phone">📞 ---</p>
+                                        <div class="flex items-center gap-2 mt-1.5">
+                                            <span class="text-[11px] font-bold text-emerald-900">🏆 Hiện có: <strong id="card-customer-points" class="text-emerald-700 font-black">0</strong> điểm</span>
+                                            <span class="text-[10px] font-bold text-emerald-600 bg-white px-2 py-0.5 rounded border border-emerald-200 shadow-2xs">+<span id="card-projected-points">0</span> điểm đơn này</span>
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="clearSelectedCustomer()" class="text-xs text-red-500 hover:text-red-700 font-bold bg-white hover:bg-red-50 px-2 py-1 rounded-lg border border-red-200 transition-colors shrink-0">✕ Đổi khách</button>
+                                </div>
+                            </div>
+
                             <div class="space-y-3 mb-4">
                                 <div>
                                     <label class="block text-xs font-bold text-espresso/70 mb-1">Tên khách hàng</label>
-                                    <input type="text" id="review_customer_name" oninput="syncCustomerInfo(this.value, 'customer_name')" placeholder="Nhập tên..." class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-coral">
+                                    <input type="text" id="review_customer_name" oninput="syncCustomerInfo(this.value, 'customer_name')" placeholder="Nhập tên khách hàng..." class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-coral">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-espresso/70 mb-1">Ghi chú đơn hàng</label>
@@ -216,7 +240,52 @@
     </div>
 
     <input type="hidden" id="customer_name">
+    <input type="hidden" id="customer_phone">
+    <input type="hidden" id="selected_user_id">
     <input type="hidden" id="order_note">
+
+    {{-- MODAL TÌM KIẾM KHÁCH HÀNG THÂN THIẾT (TÍCH ĐIỂM) --}}
+    <div id="customer-search-modal" class="fixed inset-0 bg-black/60 z-[100] hidden flex items-center justify-center backdrop-blur-sm transition-opacity opacity-0" style="transition: opacity 0.2s;">
+        <div class="bg-white rounded-[24px] shadow-2xl overflow-hidden flex flex-col scale-95 transition-transform duration-200 w-[720px] max-h-[85vh]" id="customer-search-modal-content">
+            <div class="bg-espresso text-white px-6 py-4 flex justify-between items-center shrink-0">
+                <div>
+                    <h3 class="font-bold text-lg leading-tight flex items-center gap-2">🔍 Danh Sách Khách Hàng Thân Thiết</h3>
+                    <p class="text-coral font-medium text-xs mt-0.5">Tìm kiếm khách hàng theo Tên, Số điện thoại hoặc Email để tích điểm</p>
+                </div>
+                <button type="button" onclick="closeCustomerModal()" class="text-white/50 hover:text-white bg-white/10 w-8 h-8 rounded-full flex items-center justify-center">✕</button>
+            </div>
+            
+            <div class="p-4 bg-[#FAF7F2] border-b border-gray-200 shrink-0">
+                <div class="relative">
+                    <input type="text" id="customer-search-input" placeholder="Nhập tên, số điện thoại hoặc email khách hàng cần tìm..." class="w-full border border-gray-300 rounded-xl pl-10 pr-4 py-2.5 text-sm text-espresso bg-white focus:outline-none focus:border-coral shadow-xs" oninput="debounceCustomerSearch()">
+                    <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 custom-scrollbar bg-white min-h-[280px]">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead class="bg-gray-100 text-espresso uppercase text-[11px] font-black tracking-wider sticky top-0 z-10">
+                        <tr>
+                            <th class="py-3 px-3 w-10 text-center">STT</th>
+                            <th class="py-3 px-3">Khách Hàng</th>
+                            <th class="py-3 px-3">Số Điện Thoại</th>
+                            <th class="py-3 px-3">Email</th>
+                            <th class="py-3 px-3 text-center">Điểm Hiện Có</th>
+                            <th class="py-3 px-3 text-center w-24">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customer-table-body" class="divide-y divide-gray-100">
+                        <!-- Content rendered dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bg-gray-50 px-6 py-3 border-t border-gray-200 flex justify-between items-center text-xs text-espresso/60 shrink-0">
+                <span class="font-medium">💡 Đơn hàng tích <strong>1 điểm</strong> cho mỗi <strong>10.000đ</strong> thanh toán</span>
+                <button type="button" onclick="closeCustomerModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-espresso rounded-xl font-bold transition-colors">Đóng</button>
+            </div>
+        </div>
+    </div>
 
     {{-- MODAL TOPPING VÀ ĐÁ ĐƯỜNG MỞ RỘNG CỦA POS --}}
     <div id="topping-modal" class="fixed inset-0 bg-black/60 z-[100] hidden flex items-center justify-center backdrop-blur-sm transition-opacity opacity-0" style="transition: opacity 0.2s;">
@@ -340,30 +409,150 @@
             if(step === 2) renderReviewTable(); if(step === 3) renderStep3Summary();
         }
 
+        let selectedCustomer = null;
+        let customerSearchTimeout = null;
+
+        function openCustomerModal() {
+            const modal = document.getElementById('customer-search-modal');
+            const content = document.getElementById('customer-search-modal-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+            document.getElementById('customer-search-input').value = '';
+            fetchCustomersApi('');
+        }
+
+        function closeCustomerModal() {
+            const modal = document.getElementById('customer-search-modal');
+            const content = document.getElementById('customer-search-modal-content');
+            modal.classList.add('opacity-0'); content.classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); }, 200);
+        }
+
+        function debounceCustomerSearch() {
+            clearTimeout(customerSearchTimeout);
+            customerSearchTimeout = setTimeout(() => {
+                const q = document.getElementById('customer-search-input').value;
+                fetchCustomersApi(q);
+            }, 300);
+        }
+
+        function fetchCustomersApi(query) {
+            const tbody = document.getElementById('customer-table-body');
+            tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-gray-400">Đang tải danh sách khách hàng...</td></tr>`;
+
+            fetch(`/staff/api/customers/search?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.customers.length > 0) {
+                        tbody.innerHTML = '';
+                        data.customers.forEach((cust, idx) => {
+                            const tr = document.createElement('tr');
+                            tr.className = 'hover:bg-amber-50/50 transition-colors';
+                            tr.innerHTML = `
+                                <td class="py-3 px-3 text-center font-bold text-gray-400 text-xs">${idx + 1}</td>
+                                <td class="py-3 px-3 font-bold text-espresso">${cust.name} ${cust.role === 'admin' ? '<span class="text-[10px] bg-red-100 text-red-600 px-1 rounded font-normal">Admin</span>' : ''}</td>
+                                <td class="py-3 px-3 text-espresso/80 font-mono text-xs">${cust.phone || '---'}</td>
+                                <td class="py-3 px-3 text-espresso/70 text-xs">${cust.email || '---'}</td>
+                                <td class="py-3 px-3 text-center"><span class="font-black text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full text-xs">${cust.point ?? 0} điểm</span></td>
+                                <td class="py-3 px-3 text-center">
+                                    <button type="button" class="btn-select-cust bg-coral hover:bg-[#d5523b] text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs">Chọn</button>
+                                </td>
+                            `;
+                            tr.querySelector('.btn-select-cust').addEventListener('click', () => selectCustomer(cust));
+                            tbody.appendChild(tr);
+                        });
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-gray-400 font-medium">Không tìm thấy khách hàng nào phù hợp!</td></tr>`;
+                    }
+                })
+                .catch(err => {
+                    tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-red-500 font-medium">Lỗi kết nối khi tải danh sách khách hàng!</td></tr>`;
+                });
+        }
+
+        function selectCustomer(cust) {
+            selectedCustomer = cust;
+            document.getElementById('selected_user_id').value = cust.user_id;
+            document.getElementById('customer_phone').value = cust.phone || '';
+            document.getElementById('review_customer_name').value = cust.name;
+            document.getElementById('customer_name').value = cust.name;
+
+            document.getElementById('card-customer-name').textContent = cust.name;
+            document.getElementById('card-customer-phone').textContent = cust.phone ? '📞 ' + cust.phone : '📞 Chưa có SĐT';
+            document.getElementById('card-customer-points').textContent = cust.point ?? 0;
+            
+            updateProjectedPoints();
+            document.getElementById('selected-customer-card').classList.remove('hidden');
+            closeCustomerModal();
+        }
+
+        function clearSelectedCustomer() {
+            selectedCustomer = null;
+            document.getElementById('selected_user_id').value = '';
+            document.getElementById('customer_phone').value = '';
+            document.getElementById('review_customer_name').value = '';
+            document.getElementById('customer_name').value = '';
+            document.getElementById('selected-customer-card').classList.add('hidden');
+        }
+
+        function updateProjectedPoints() {
+            if (!selectedCustomer) return;
+            let totalAmount = getCartTotalAmount();
+            let projected = Math.floor(totalAmount / 10000);
+            document.getElementById('card-projected-points').textContent = projected;
+        }
+
+        function getCartTotalAmount() {
+            let totalAmount = 0;
+            posCart.forEach(item => {
+                let toppingTotal = 0;
+                for (let tid in item.toppings) {
+                    if (item.toppings[tid] > 0) {
+                        let tData = toppingsData.find(t => t.product_id == tid);
+                        if (tData) toppingTotal += tData.price * item.toppings[tid];
+                    }
+                }
+                let icePrice = item.ice_level === '0_full' ? 3000 : 0;
+                totalAmount += (item.price + toppingTotal + icePrice) * item.quantity;
+            });
+            return totalAmount;
+        }
+
         function renderStep3Summary() {
-            document.getElementById('summary-customer').textContent = document.getElementById('review_customer_name').value.trim() || 'Khách Vãng Lai';
+            let name = document.getElementById('review_customer_name').value.trim() || 'Khách Vãng Lai';
+            if (selectedCustomer) {
+                name += ` (⭐ Tích điểm)`;
+            }
+            document.getElementById('summary-customer').textContent = name;
             document.getElementById('summary-note').textContent = document.getElementById('review_order_note').value.trim() || 'Không có ghi chú';
             document.getElementById('summary-count').textContent = posCart.reduce((sum, i) => sum + i.quantity, 0) + " ly";
             document.getElementById('summary-total').textContent = document.getElementById('review-total-display').textContent;
         }
 
         function submitFinalOrder() {
-            let totalAmount = 0;
-            posCart.forEach(item => {
-                let toppingTotal = 0;
-                for (let tid in item.toppings) { if (item.toppings[tid] > 0) { let tData = toppingsData.find(t => t.product_id == tid); if (tData) toppingTotal += tData.price * item.toppings[tid]; } }
-                let icePrice = item.ice_level === '0_full' ? 3000 : 0;
-                totalAmount += (item.price + toppingTotal + icePrice) * item.quantity;
-            });
-            const payload = { customer_name: document.getElementById('review_customer_name').value.trim(), order_note: document.getElementById('review_order_note').value.trim(), total_amount: totalAmount, items: posCart };
+            let totalAmount = getCartTotalAmount();
+            const payload = { 
+                user_id: selectedCustomer ? selectedCustomer.user_id : null,
+                customer_name: document.getElementById('review_customer_name').value.trim() || 'Khách Vãng Lai',
+                customer_phone: selectedCustomer ? selectedCustomer.phone : (document.getElementById('customer_phone').value.trim() || null),
+                order_note: document.getElementById('review_order_note').value.trim(), 
+                total_amount: totalAmount, 
+                items: posCart 
+            };
             fetch('/staff/api/orders', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }, body: JSON.stringify(payload)
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }, 
+                body: JSON.stringify(payload)
             }).then(res => res.json()).then(data => {
                 if (data.success) {
-                    const toast = document.getElementById('toast-notification'); toast.classList.remove('translate-x-[150%]', 'opacity-0');
+                    const toast = document.getElementById('toast-notification'); 
+                    toast.classList.remove('translate-x-[150%]', 'opacity-0');
                     setTimeout(() => { toast.classList.add('translate-x-[150%]', 'opacity-0'); }, 3000);
-                    posCart = []; document.getElementById('review_customer_name').value = ''; document.getElementById('review_order_note').value = '';
-                    renderBill(); setTimeout(() => goToStep(1), 800);
+                    posCart = []; 
+                    clearSelectedCustomer();
+                    document.getElementById('review_order_note').value = '';
+                    renderBill(); 
+                    setTimeout(() => goToStep(1), 800);
                 }
             }).catch(err => alert("Lỗi mạng khi tạo đơn!"));
         }
@@ -468,6 +657,7 @@
                     </div>`;
             });
             totalDisplays.forEach(el => el.textContent = formatVND(totalAmount));
+            updateProjectedPoints();
             if(document.getElementById('step-track').style.transform.includes('33.3333%')) renderReviewTable();
         }
 

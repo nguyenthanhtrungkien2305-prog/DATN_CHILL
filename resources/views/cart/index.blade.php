@@ -123,24 +123,96 @@
                     <h2 class="font-serif font-bold text-2xl text-espresso mb-6">Tổng đơn hàng</h2>
                     
                     <div class="mb-6 pb-6 border-b border-espresso/10">
-                        <label class="block text-sm font-medium text-espresso/80 mb-2">Mã ưu đãi (Voucher)</label>
-                        @if(session()->has('voucher'))
-                            <div class="flex items-center justify-between p-3 bg-coral/5 border border-coral/20 rounded-xl">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xl">🎟️</span>
-                                    <div>
-                                        <span class="block font-bold text-espresso uppercase text-sm">{{ session('voucher')['code'] }}</span>
-                                        <span class="text-xs text-coral">Đã áp dụng thành công</span>
+                        <label class="block text-sm font-bold text-espresso mb-2">Mã ưu đãi (Voucher)</label>
+                        
+                        <div class="relative">
+                            {{-- Trạng thái 1: Đã áp dụng voucher --}}
+                            @if(session()->has('voucher'))
+                                <div class="w-full flex items-center justify-between bg-emerald-50 border border-emerald-300 rounded-xl px-3.5 py-2.5 text-xs cursor-pointer select-none hover:bg-emerald-100/60 transition-colors" onclick="toggleVoucherDropdown('cart')">
+                                    <div class="flex items-center gap-2 overflow-hidden">
+                                        <span class="text-base">🎟️</span>
+                                        <span class="font-mono font-black text-espresso uppercase">{{ session('voucher')['code'] }}</span>
+                                        <span class="text-emerald-700 font-extrabold truncate">(-{{ number_format(session('voucher')['discount_amount'], 0, ',', '.') }}đ)</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <span class="text-[10px] bg-white text-emerald-800 font-bold px-2 py-0.5 rounded border border-emerald-200 shadow-2xs">✓ Đang áp dụng</span>
+                                        <svg class="w-4 h-4 text-espresso/60 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                                     </div>
                                 </div>
-                                <button type="button" onclick="removeVoucher()" class="text-xs font-bold text-red-500 hover:text-red-700 hover:underline">Hủy áp dụng</button>
-                            </div>
-                        @else
-                            <div class="flex gap-2">
-                                <input type="text" id="voucher-input" placeholder="Nhập mã giảm giá..." class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-coral text-sm uppercase">
-                                <button type="button" onclick="applyVoucher()" class="bg-espresso text-white px-6 py-3 rounded-xl font-bold hover:bg-coral transition-colors text-sm whitespace-nowrap">Áp dụng</button>
-                            </div>
-                        @endif
+                            @else
+                                {{-- Trạng thái 2: Chưa áp dụng voucher --}}
+                                <div class="flex gap-2">
+                                    <div class="relative flex-1 flex items-center">
+                                        <input type="text" id="voucher-input" placeholder="Nhập mã giảm giá..." class="w-full pl-3.5 pr-9 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-coral text-xs uppercase font-medium">
+                                        @if(isset($availableVouchers) && $availableVouchers->isNotEmpty())
+                                            <button type="button" onclick="toggleVoucherDropdown('cart')" title="Xem danh sách mã phù hợp" class="absolute right-2 text-espresso/50 hover:text-coral p-1 transition-colors">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            </button>
+                                        @endif
+                                    </div>
+                                    <button type="button" onclick="applyVoucher()" class="bg-espresso text-white px-4 py-2.5 rounded-xl font-bold hover:bg-coral transition-colors text-xs whitespace-nowrap">Áp dụng</button>
+                                </div>
+                            @endif
+
+                            {{-- Menu Popover Thả Nổi (Absolute) --}}
+                            @if(isset($availableVouchers) && $availableVouchers->isNotEmpty())
+                                <div id="voucher-dropdown-menu-cart" class="hidden absolute top-full left-0 right-0 mt-2 bg-white border border-espresso/15 rounded-2xl shadow-2xl z-50 p-2.5 max-h-60 overflow-y-auto custom-scrollbar">
+                                    <div class="text-[11px] font-extrabold text-espresso/60 px-2 py-1 uppercase tracking-wider border-b border-gray-100 mb-1 flex justify-between items-center">
+                                        <span>💡 Danh sách Mã Giảm Giá</span>
+                                        <button type="button" onclick="toggleVoucherDropdown('cart')" class="text-espresso/40 hover:text-coral font-bold text-sm">✕</button>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        {{-- Tùy chọn 1: Không dùng voucher --}}
+                                        <button type="button" onclick="removeVoucher()" class="w-full text-left p-2.5 rounded-xl flex items-center justify-between text-xs transition-colors hover:bg-red-50 border border-gray-100 {{ !session()->has('voucher') ? 'bg-gray-100 font-bold' : '' }}">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-red-500 font-bold">🚫</span>
+                                                <span class="font-medium text-espresso">Không sử dụng mã giảm giá</span>
+                                            </div>
+                                            @if(!session()->has('voucher'))
+                                                <span class="text-[10px] text-gray-500 font-bold">✓ Đang chọn</span>
+                                            @endif
+                                        </button>
+
+                                        {{-- Các mã giảm giá khả dụng --}}
+                                        @foreach($availableVouchers as $v)
+                                            @php
+                                                $isCurrent = session()->has('voucher') && session('voucher')['code'] === $v->code;
+                                                $isEligible = $v->is_eligible ?? true;
+                                            @endphp
+                                            @if($isEligible)
+                                                <button type="button" onclick="applyVoucherCode('{{ $v->code }}')" class="w-full text-left p-2.5 rounded-xl flex items-center justify-between text-xs transition-colors {{ $isCurrent ? 'bg-coral/10 border border-coral/30 font-bold' : 'hover:bg-gray-50 border border-gray-100' }}">
+                                                    <div>
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="font-mono font-black text-espresso uppercase">{{ $v->code }}</span>
+                                                            <span class="text-coral font-extrabold">-{{ number_format($v->discount_amount, 0, ',', '.') }}đ</span>
+                                                        </div>
+                                                        <span class="text-[10px] text-espresso/50 block">Đơn tối thiểu: {{ number_format($v->min_order, 0, ',', '.') }}đ</span>
+                                                    </div>
+                                                    @if($isCurrent)
+                                                        <span class="text-[10px] text-coral font-black bg-white px-2 py-0.5 rounded border border-coral/20">✓ Đang dùng</span>
+                                                    @else
+                                                        <span class="text-[10px] text-white bg-coral px-2.5 py-1 rounded-lg font-bold">Chọn mã</span>
+                                                    @endif
+                                                </button>
+                                            @else
+                                                <button type="button" onclick="alertIneligibleVoucher('{{ number_format($v->missing_amount, 0, ',', '.') }}')" class="w-full text-left p-2.5 rounded-xl flex items-center justify-between text-xs transition-colors bg-gray-50/70 border border-dashed border-gray-200 hover:bg-amber-50/60 opacity-75">
+                                                    <div>
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="font-mono font-black text-gray-500 uppercase">{{ $v->code }}</span>
+                                                            <span class="text-xs text-amber-700 font-bold">
+                                                                ({{ $v->discount_type === 'percent' ? 'Giảm '.$v->discount_value.'%' : 'Giảm '.number_format($v->discount_value, 0, ',', '.').'đ' }})
+                                                            </span>
+                                                        </div>
+                                                        <span class="text-[10px] text-amber-700 font-bold block mt-0.5">🔒 Cần mua thêm {{ number_format($v->missing_amount, 0, ',', '.') }}đ</span>
+                                                    </div>
+                                                    <span class="text-[10px] text-amber-800 font-bold bg-amber-100 px-2 py-1 rounded-lg border border-amber-200">Chưa đủ điều kiện</span>
+                                                </button>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
                     </div>
 
                     <div class="space-y-4 mb-6">
@@ -434,6 +506,26 @@
                 sugar_level: sugarLevel
             })
         }).then(res => res.json()).then(data => { if(data.success) { window.location.reload(); } else { alert(data.message); } });
+    }
+
+    function alertIneligibleVoucher(missingText) {
+        alert('Bạn cần mua thêm ' + missingText + 'đ để sử dụng voucher này nhé!');
+    }
+
+    function toggleVoucherDropdown(page) {
+        const menu = document.getElementById('voucher-dropdown-menu-' + page);
+        if (menu) {
+            menu.classList.toggle('hidden');
+        }
+    }
+
+    function applyVoucherCode(code) {
+        const codeInput = document.getElementById('voucher-input');
+        if (codeInput) codeInput.value = code;
+        fetch('{{ route('cart.applyVoucher') }}', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ voucher_code: code })
+        }).then(res => res.json()).then(data => { if (data.success) { window.location.reload(); } else { alert(data.message); } });
     }
 
     function applyVoucher() {

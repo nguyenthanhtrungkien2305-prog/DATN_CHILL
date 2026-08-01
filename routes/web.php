@@ -28,6 +28,9 @@ use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\Admin\ChatController as AdminChatController;
 
+use App\Http\Controllers\PostController as PublicPostController;
+use App\Http\Controllers\Admin\PostController as AdminPostController;
+
 /*
 |--------------------------------------------------------------------------
 | ROUTES CHUNG (Ai cũng có thể truy cập)
@@ -37,7 +40,8 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/san-pham/{slug}', [PublicProductController::class, 'show'])->name('product.show');
 Route::get('/thuc-don', [PublicProductController::class, 'index'])->name('product.index');
 Route::get('/chuyen-nha', function () { return view('post.story'); })->name('post.story');
-Route::get('/tin-tuc', function () { return view('post.index'); })->name('post.index');
+Route::get('/tin-tuc', [PublicPostController::class, 'index'])->name('post.index');
+Route::get('/tin-tuc/{slug}', [PublicPostController::class, 'show'])->name('post.show');
 Route::get('/lien-he', function () { return view('contact'); })->name('contact');
 
 /*
@@ -59,14 +63,6 @@ Route::get('/dang-xuat', [AuthController::class, 'logout'])->name('logout');
 | ROUTES NGƯỜI DÙNG THÀNH VIÊN (ĐÃ ĐĂNG NHẬP)
 |--------------------------------------------------------------------------
 */
-// Trang câu chuyện thương hiệu (Bài viết nổi bật)
-Route::get('/chuyen-nha', function () {
-    return view('post.story'); // Trỏ tới file view story.blade.php
-})->name('post.story');
-// Trang Tin tức / Blog
-Route::get('/tin-tuc', function () {
-    return view('post.index'); 
-})->name('post.index');
 // Trang Liên hệ
 Route::get('/lien-he', function () {
     return view('contact'); 
@@ -77,6 +73,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/tai-khoan', [UserController::class, 'profile'])->name('user.profile');
     Route::post('/tai-khoan/cap-nhat', [UserController::class, 'updateProfile'])->name('user.update_profile');
     Route::get('/tai-khoan/don-hang', [UserController::class, 'orders'])->name('user.orders');
+    Route::get('/tai-khoan/tich-diem', [UserController::class, 'points'])->name('user.points');
+    Route::post('/tai-khoan/tich-diem/doi-voucher', [UserController::class, 'redeemVoucher'])->name('user.points.redeem');
     // QUẢN LÝ ĐƠN HÀNG
     Route::get('orders', [\App\Http\Controllers\Admin\OrderController::class, 'index'])->name('admin.orders.index');
     Route::post('orders/{id}/status', [\App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('admin.orders.update_status');
@@ -137,7 +135,8 @@ Route::middleware(['auth', 'staff'])->group(function () {
         Route::get('/staff/new-orders', [\App\Http\Controllers\PosController::class, 'newOrders'])->name('staff.new_orders');
         Route::get('/staff/commission', [\App\Http\Controllers\CommissionController::class, 'index'])->name('staff.commission');
         
-        // API xử lý đơn hàng cũng cần được bảo vệ để người ngoài không chọc vào được
+        // API xử lý đơn hàng và tìm kiếm khách hàng
+        Route::get('/staff/api/customers/search', [\App\Http\Controllers\PosController::class, 'searchCustomers'])->name('staff.api.customers.search');
         Route::post('/staff/api/orders/{id}/complete', [\App\Http\Controllers\PosController::class, 'completeOrder'])->name('staff.api.complete_order');
     });
     Route::prefix('staff')->group(function () {
@@ -172,6 +171,7 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     
     Route::resource('categories', AdminCategoryController::class);
     Route::resource('products', AdminProductController::class);
+    Route::resource('posts', AdminPostController::class);
     // Route::resource('toppings', AdminToppingController::class);
     Route::resource('vouchers', AdminVoucherController::class);
     Route::get('users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.users.index');

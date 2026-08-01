@@ -37,6 +37,29 @@ class PosController extends Controller
         return view('staff.pos', compact('products', 'categories', 'toppings'));
     }
 
+    public function searchCustomers(Request $request)
+    {
+        $q = trim($request->query('q', ''));
+
+        $query = DB::table('users')
+            ->select('user_id', 'name', 'email', 'phone', 'point', 'role');
+
+        if ($q !== '') {
+            $query->where(function ($sub) use ($q) {
+                $sub->where('name', 'like', "%{$q}%")
+                    ->orWhere('phone', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%");
+            });
+        }
+
+        $customers = $query->limit(20)->get();
+
+        return response()->json([
+            'success' => true,
+            'customers' => $customers
+        ]);
+    }
+
     public function checkNewOrders(Request $request)
     {
         $lastOrderId = $request->query('last_order_id', 0);
@@ -56,10 +79,12 @@ class PosController extends Controller
     public function storeOrder(Request $request)
     {
         $data = $request->validate([
-            'customer_name' => 'nullable|string',
-            'order_note'    => 'nullable|string',
-            'total_amount'  => 'required|numeric',
-            'items'         => 'required|array',
+            'user_id'        => 'nullable|integer',
+            'customer_name'  => 'nullable|string',
+            'customer_phone' => 'nullable|string',
+            'order_note'     => 'nullable|string',
+            'total_amount'   => 'required|numeric',
+            'items'          => 'required|array',
         ]);
 
         // 👉 TỰ ĐỘNG TÌM CA LÀM VIỆC CỦA NGÀY HÔM NAY ĐỂ GẮN VÀO ĐƠN HÀNG
@@ -68,10 +93,11 @@ class PosController extends Controller
         $shiftId = $shift ? $shift->id : null;
 
         $orderId = DB::table('orders')->insertGetId([
+            'user_id'          => $data['user_id'] ?? null,
             'customer_name'    => $data['customer_name'] ?? 'Khách Vãng Lai',
-            'customer_phone'   => null,
+            'customer_phone'   => $data['customer_phone'] ?? null,
             'shift_id'         => $shiftId, // LƯU VÀO CA LÀM VIỆC
-            'shipping_address' => $data['order_note'],
+            'shipping_address' => $data['order_note'] ?? null,
             'order_type'       => 'pos',
             'payment_method'   => 'cash',
             'total_amount'     => $data['total_amount'],
@@ -103,7 +129,7 @@ class PosController extends Controller
         return view('staff.new_orders', compact('pendingOrders', 'toppings'));
     }
 
-    // Hàm cập nhật trạng thái đơn hàng thành "Đã hoàn thành" và Ghi nhận Hoa Hồng
+    // Hàm cập nhật trạng thái đơn hàng thành "Đã hoàn thành" và Ghi nhận Hoa Hồng + Tích Điểm Khách Hàng
     public function completeOrder($id)
     {
         $now = now('Asia/Ho_Chi_Minh');
@@ -125,12 +151,22 @@ class PosController extends Controller
             ]
         );
 
+        $order = DB::table('orders')->where('order_id', $id)->first();
+
         // 3. Gắn đơn hàng này vào Ca hiện tại & Đánh dấu hoàn thành
-        \Illuminate\Support\Facades\DB::table('orders')->where('order_id', $id)->update([
+        DB::table('orders')->where('order_id', $id)->update([
             'status' => 'completed',
             'shift_id' => $shift->id, // 👉 LƯU DỮ LIỆU THẬT ĐỂ TÍNH HOA HỒNG TẠI ĐÂY
             'updated_at' => $now
         ]);
+
+        // 4. Cộng điểm tích lũy cho khách hàng (10.000đ = 1 điểm)
+        if ($order && $order->user_id && $order->status !== 'completed') {
+            $pointsEarned = (int) floor($order->total_amount / 10000);
+            if ($pointsEarned > 0) {
+                DB::table('users')->where('user_id', $order->user_id)->increment('point', $pointsEarned);
+            }
+        }
         
         return response()->json(['success' => true]);
     }

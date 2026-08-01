@@ -24,11 +24,33 @@ class CheckoutController extends Controller
         $addresses = [];
         if ($user && $user->address) {
             $decoded = json_decode($user->address, true);
-            // Nếu parse JSON thành công thì lấy, không thì coi như nó là 1 chuỗi text bình thường
             $addresses = is_array($decoded) ? $decoded : [$user->address];
         }
 
-        return view('checkout.index', compact('cart', 'user', 'addresses'));
+        $subTotal = 0;
+        foreach ($cart as $item) {
+            $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
+        }
+
+        $availableVouchers = (new CartController())->getApplicableVouchers($subTotal);
+
+        // Tự động chọn và áp dụng mã hời nhất ĐỦ ĐIỀU KIỆN nếu chưa chọn mã nào VÀ chưa bấm hủy voucher
+        if (!session()->has('voucher') && !session()->get('voucher_opt_out', false) && $subTotal > 0) {
+            $bestEligible = $availableVouchers->firstWhere('is_eligible', true);
+            if ($bestEligible) {
+                session()->put('voucher', [
+                    'voucher_id' => $bestEligible->voucher_id,
+                    'code' => $bestEligible->code,
+                    'discount_type' => $bestEligible->discount_type,
+                    'discount_value' => $bestEligible->discount_value,
+                    'discount_amount' => $bestEligible->discount_amount,
+                    'min_order' => $bestEligible->min_order,
+                    'auto_applied' => true
+                ]);
+            }
+        }
+
+        return view('checkout.index', compact('cart', 'user', 'addresses', 'availableVouchers'));
     }
 
     // 2. Thêm địa chỉ mới trực tiếp tại trang Checkout (AJAX)

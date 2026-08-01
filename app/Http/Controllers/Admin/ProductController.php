@@ -251,7 +251,32 @@ class ProductController extends Controller
             return redirect()->route('products.index')->with('error', 'Sản phẩm không tồn tại!');
         }
 
-        // 1. Kiểm tra xem sản phẩm có xuất hiện trong LỊCH SỬ ĐƠN HÀNG không
+        // 1. Kiểm tra xem sản phẩm có nằm trong GIỎ HÀNG KHÁCH HÀNG (cart_items / carts / session) không
+        $inCart = false;
+        if (Schema::hasTable('cart_items')) {
+            $inCart = DB::table('cart_items')->where('product_id', $id)->exists();
+        }
+        if (!$inCart && Schema::hasTable('carts')) {
+            $variantIds = DB::table('product_variants')->where('product_id', $id)->pluck('variant_id')->toArray();
+            if (!empty($variantIds)) {
+                $inCart = DB::table('carts')->whereIn('variant_id', $variantIds)->exists();
+            }
+        }
+        if (!$inCart) {
+            $sessionCart = session()->get('cart', []);
+            foreach ($sessionCart as $item) {
+                if (isset($item['product_id']) && $item['product_id'] == $id) {
+                    $inCart = true;
+                    break;
+                }
+            }
+        }
+
+        if ($inCart) {
+            return redirect()->route('products.index')->with('error', '⚠️ Không thể xóa vĩnh viễn! Sản phẩm này hiện đang nằm trong GIỎ HÀNG của khách hàng. Vui lòng chuyển trạng thái sản phẩm sang "Ngừng bán" (Xóa mềm) để đảm bảo không làm hỏng giỏ hàng của khách hàng!');
+        }
+
+        // 2. Kiểm tra xem sản phẩm có xuất hiện trong LỊCH SỬ ĐƠN HÀNG không
         $hasOrderHistory = false;
 
         if (Schema::hasTable('order_items')) {
@@ -267,7 +292,7 @@ class ProductController extends Controller
                 ->exists();
         }
 
-        // 2. NẾU CÓ TRONG ĐƠN HÀNG -> THỰC HIỆN XÓA MỀM (Chuyển status sang 0: Ngừng bán)
+        // 3. NẾU CÓ TRONG ĐƠN HÀNG -> THỰC HIỆN XÓA MỀM (Chuyển status sang 0: Ngừng bán)
         if ($hasOrderHistory) {
             DB::table('products')->where('product_id', $id)->update([
                 'status' => 0,

@@ -165,7 +165,100 @@
                             </div>
                         @endforeach
                     </div>
-                    <div class="space-y-3 mb-6 pt-6 border-t border-espresso/10">
+                    {{-- Khối Voucher siêu gọn trên trang Checkout --}}
+                    <div class="mb-4 pt-4 border-t border-espresso/10">
+                        <label class="block text-xs font-bold text-espresso mb-1.5 uppercase tracking-wider">Mã ưu đãi (Voucher)</label>
+
+                        <div class="relative">
+                            {{-- Trạng thái 1: Đã áp dụng voucher --}}
+                            @if(session()->has('voucher'))
+                                <div class="w-full flex items-center justify-between bg-emerald-50 border border-emerald-300 rounded-xl px-3 py-2 text-xs cursor-pointer select-none hover:bg-emerald-100/60 transition-colors" onclick="toggleVoucherDropdownCheckout()">
+                                    <div class="flex items-center gap-1.5 overflow-hidden">
+                                        <span>🎟️</span>
+                                        <span class="font-mono font-black text-espresso uppercase">{{ session('voucher')['code'] }}</span>
+                                        <span class="text-emerald-700 font-extrabold truncate">(-{{ number_format(session('voucher')['discount_amount'], 0, ',', '.') }}đ)</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 shrink-0">
+                                        <span class="text-[10px] bg-white text-emerald-800 font-bold px-1.5 py-0.5 rounded border border-emerald-200 shadow-2xs">✓ Đang dùng</span>
+                                        <svg class="w-3.5 h-3.5 text-espresso/60 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                </div>
+                            @else
+                                {{-- Trạng thái 2: Chưa áp dụng voucher --}}
+                                <div class="flex gap-2">
+                                    <div class="relative flex-1 flex items-center">
+                                        <input type="text" id="voucher-input-checkout" placeholder="Mã giảm giá..." class="w-full pl-3 pr-8 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-coral text-xs uppercase font-medium">
+                                        @if(isset($availableVouchers) && $availableVouchers->isNotEmpty())
+                                            <button type="button" onclick="toggleVoucherDropdownCheckout()" title="Xem danh sách mã phù hợp" class="absolute right-2 text-espresso/50 hover:text-coral p-1 transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            </button>
+                                        @endif
+                                    </div>
+                                    <button type="button" onclick="applyVoucherCheckoutManual()" class="bg-espresso text-white px-3 py-2 rounded-xl font-bold hover:bg-coral text-xs whitespace-nowrap">Áp dụng</button>
+                                </div>
+                            @endif
+
+                            {{-- Menu Popover Thả Nổi (Absolute) --}}
+                            @if(isset($availableVouchers) && $availableVouchers->isNotEmpty())
+                                <div id="voucher-dropdown-menu-checkout" class="hidden absolute top-full left-0 right-0 mt-2 bg-white border border-espresso/15 rounded-2xl shadow-2xl z-50 p-2 max-h-56 overflow-y-auto custom-scrollbar">
+                                    <div class="text-[10px] font-extrabold text-espresso/60 px-2 py-1 uppercase tracking-wider border-b border-gray-100 mb-1 flex justify-between items-center">
+                                        <span>💡 Danh sách Mã Giảm Giá</span>
+                                        <button type="button" onclick="toggleVoucherDropdownCheckout()" class="text-espresso/40 hover:text-coral font-bold text-sm">✕</button>
+                                    </div>
+                                    <div class="space-y-1">
+                                        {{-- Tùy chọn 1: Không dùng voucher --}}
+                                        <button type="button" onclick="removeVoucherCheckout()" class="w-full text-left p-2 rounded-xl flex items-center justify-between text-xs transition-colors hover:bg-red-50 border border-gray-100 {{ !session()->has('voucher') ? 'bg-gray-100 font-bold' : '' }}">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="text-red-500 font-bold text-xs">🚫</span>
+                                                <span class="font-medium text-espresso text-[11px]">Không sử dụng mã</span>
+                                            </div>
+                                            @if(!session()->has('voucher'))
+                                                <span class="text-[9px] text-gray-500 font-bold">✓ Đang chọn</span>
+                                            @endif
+                                        </button>
+
+                                        {{-- Các mã giảm giá khả dụng --}}
+                                        @foreach($availableVouchers as $v)
+                                            @php
+                                                $isCurrent = session()->has('voucher') && session('voucher')['code'] === $v->code;
+                                                $isEligible = $v->is_eligible ?? true;
+                                            @endphp
+                                            @if($isEligible)
+                                                <button type="button" onclick="applyVoucherCodeCheckout('{{ $v->code }}')" class="w-full text-left p-2 rounded-xl flex items-center justify-between text-xs transition-colors {{ $isCurrent ? 'bg-coral/10 border border-coral/30 font-bold' : 'hover:bg-gray-50 border border-gray-100' }}">
+                                                    <div>
+                                                        <div class="flex items-center gap-1.5">
+                                                            <span class="font-mono font-black text-espresso uppercase text-[11px]">{{ $v->code }}</span>
+                                                            <span class="text-coral font-extrabold text-[11px]">-{{ number_format($v->discount_amount, 0, ',', '.') }}đ</span>
+                                                        </div>
+                                                    </div>
+                                                    @if($isCurrent)
+                                                        <span class="text-[9px] text-coral font-black bg-white px-1.5 py-0.5 rounded border border-coral/20">✓ Đang dùng</span>
+                                                    @else
+                                                        <span class="text-[9px] text-white bg-coral px-2 py-0.5 rounded font-bold">Chọn</span>
+                                                    @endif
+                                                </button>
+                                            @else
+                                                <button type="button" onclick="alertIneligibleVoucherCheckout('{{ number_format($v->missing_amount, 0, ',', '.') }}')" class="w-full text-left p-2 rounded-xl flex items-center justify-between text-xs transition-colors bg-gray-50/70 border border-dashed border-gray-200 hover:bg-amber-50/60 opacity-75">
+                                                    <div>
+                                                        <div class="flex items-center gap-1.5">
+                                                            <span class="font-mono font-black text-gray-500 uppercase text-[11px]">{{ $v->code }}</span>
+                                                            <span class="text-[10px] text-amber-700 font-bold">
+                                                                ({{ $v->discount_type === 'percent' ? 'Giảm '.$v->discount_value.'%' : 'Giảm '.number_format($v->discount_value, 0, ',', '.').'đ' }})
+                                                            </span>
+                                                        </div>
+                                                        <span class="text-[9px] text-amber-700 font-bold block mt-0.5">🔒 Cần mua thêm {{ number_format($v->missing_amount, 0, ',', '.') }}đ</span>
+                                                    </div>
+                                                    <span class="text-[9px] text-amber-800 font-bold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">Chưa đủ</span>
+                                                </button>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 mb-6 pt-4 border-t border-espresso/10">
                         <div class="flex justify-between text-espresso/80 text-sm"><span>Tạm tính</span><span class="font-medium">{{ number_format($subTotal, 0, ',', '.') }}đ</span></div>
                         <div class="flex justify-between text-espresso/80 text-sm">
                             <span>Giảm giá (Voucher)</span>
@@ -376,6 +469,44 @@
             body: JSON.stringify({ new_address: `${street}, ${ward}, ${district}, TP. Hồ Chí Minh` })
         }).then(res => res.json()).then(data => {
             if(data.success) { window.location.reload(); } else { alert(data.message); }
+        });
+    }
+
+    function alertIneligibleVoucherCheckout(missingText) {
+        alert('Bạn cần mua thêm ' + missingText + 'đ để sử dụng voucher này nhé!');
+    }
+
+    function toggleVoucherDropdownCheckout() {
+        const menu = document.getElementById('voucher-dropdown-menu-checkout');
+        if (menu) {
+            menu.classList.toggle('hidden');
+        }
+    }
+
+    function removeVoucherCheckout() {
+        fetch('{{ route('cart.removeVoucher') }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            body: JSON.stringify({})
+        }).then(res => res.json()).then(data => {
+            if (data.success) { window.location.reload(); } else { alert(data.message); }
+        });
+    }
+
+    function applyVoucherCheckoutManual() {
+        const input = document.getElementById('voucher-input-checkout');
+        const code = input ? input.value.trim() : '';
+        if (!code) { alert('Vui lòng nhập mã giảm giá!'); return; }
+        applyVoucherCodeCheckout(code);
+    }
+
+    function applyVoucherCodeCheckout(code) {
+        fetch('{{ route('cart.applyVoucher') }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            body: JSON.stringify({ voucher_code: code })
+        }).then(res => res.json()).then(data => {
+            if (data.success) { window.location.reload(); } else { alert(data.message); }
         });
     }
 </script>

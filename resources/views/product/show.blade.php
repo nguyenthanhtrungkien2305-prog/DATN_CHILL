@@ -7,7 +7,8 @@
     
     @php
         $categoryName = \DB::table('categories')->where('category_id', $product->category_id)->value('name');
-        $isToppingCategory = $categoryName && str_contains(mb_strtolower($categoryName), 'topping');
+        $isBanhNgot = $isBanhNgot ?? ($categoryName && (str_contains(mb_strtolower($categoryName), 'bánh') || str_contains(mb_strtolower($categoryName), 'cake')));
+        $isToppingCategory = $isToppingCategory ?? ($categoryName && (str_contains(mb_strtolower($categoryName), 'topping') || str_contains(mb_strtolower($categoryName), 'kèm')));
         
         $reviewCount = $reviews->count();
         $avgRating = $reviewCount > 0 ? round($reviews->avg('rating'), 1) : 0;
@@ -20,9 +21,9 @@
         $count1 = $reviews->where('rating', 1)->count();
     @endphp
 
-    <div class="max-w-7xl mx-auto px-6">
+    <div class="max-w-5xl mx-auto px-4 md:px-6">
         
-        <nav class="flex text-sm text-espresso/60 mb-8">
+        <nav class="flex text-xs md:text-sm text-espresso/60 mb-6">
             <a href="/" class="hover:text-coral transition-colors">Trang chủ</a>
             <span class="mx-2">/</span>
             <a href="{{ route('product.index') }}" class="hover:text-coral transition-colors">Thực đơn</a>
@@ -30,25 +31,28 @@
             <span class="text-espresso font-medium">{{ $product->name }}</span>
         </nav>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-start bg-white p-8 md:p-12 rounded-[40px] shadow-xl mb-16">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start bg-white p-6 md:p-8 rounded-[32px] shadow-lg mb-12">
             
-            <div class="order-1 md:order-1 flex flex-col gap-4">
-                <div class="bg-cream rounded-[32px] overflow-hidden aspect-square relative shadow-inner group">
-                    <img id="main-image" src="{{ $gallery[0] ?? 'https://via.placeholder.com/600' }}" alt="{{ $product->name }}" class="w-full h-full object-cover mix-blend-multiply transition-transform duration-700 group-hover:scale-105" />
+            {{-- KHU VỰC ẢNH SẢN PHẨM & ẢNH PHỤ (CĂN GIỮA NẰM TRONG KHU VỰC ẢNH) --}}
+            <div class="order-1 md:order-1 md:col-span-5 flex flex-col items-center gap-4 w-full">
+                <div class="bg-cream rounded-[28px] overflow-hidden w-full max-w-[380px] aspect-square relative shadow-inner group border border-espresso/5">
+                    <img id="main-image" src="{{ $gallery[0] ?? $product->image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover mix-blend-multiply transition-all duration-300 group-hover:scale-105" />
                 </div>
 
-                @if(count($gallery) > 1)
-                <div class="grid grid-cols-4 gap-4">
+                {{-- DANH SÁCH ẢNH PHỤ CĂN GIỮA BÊN DƯỚI ẢNH CHÍNH (TỐI ĐA 4 ẢNH PHỤ) --}}
+                @if(count($gallery) > 0)
+                <div class="flex flex-wrap justify-center items-center gap-3 w-full max-w-[380px]">
                     @foreach($gallery as $index => $img)
-                        <div class="bg-cream rounded-2xl overflow-hidden aspect-square cursor-pointer border-2 {{ $index === 0 ? 'border-coral' : 'border-transparent' }} hover:border-coral transition-colors" onclick="changeMainImage(this, '{{ $img }}')">
-                            <img src="{{ $img }}" class="w-full h-full object-cover mix-blend-multiply" />
+                        <div class="thumb-item bg-cream rounded-2xl overflow-hidden w-16 h-16 md:w-18 md:h-18 shrink-0 aspect-square cursor-pointer border-2 transition-all duration-300 transform {{ $index === 0 ? 'border-coral ring-2 ring-coral/40 scale-105 shadow-md opacity-100' : 'border-gray-200/60 opacity-70 hover:opacity-100 hover:border-coral' }}" onclick="changeMainImage(this, '{{ $img }}')">
+                            <img src="{{ $img }}" class="w-full h-full object-cover mix-blend-multiply pointer-events-none" />
                         </div>
                     @endforeach
                 </div>
                 @endif
             </div>
 
-            <div class="order-2 md:order-2 flex flex-col h-full">
+            {{-- KHU VỰC THÔNG TIN SẢN PHẨM (VỪA VẶN KHUNG HÌNH) --}}
+            <div class="order-2 md:order-2 md:col-span-7 flex flex-col h-full">
                 <span class="inline-block bg-coral/10 text-coral text-xs font-bold px-3 py-1 rounded-full w-max mb-4 uppercase tracking-widest">Đặc trưng</span>
                 
                 <h1 class="font-serif font-bold text-4xl md:text-5xl text-espresso mb-4">{{ $product->name }}</h1>
@@ -87,7 +91,7 @@
                 </div>
                 @endif
 
-                @if(!$isToppingCategory)
+                @if(!$isToppingCategory && !$isBanhNgot)
                 <div class="mb-6 pt-6 border-t border-espresso/10">
                     <button type="button" onclick="openToppingModal()" class="w-full py-4 rounded-xl border-2 border-dashed border-coral text-coral font-bold flex items-center justify-center gap-2 hover:bg-coral/5 transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
@@ -213,7 +217,7 @@
 {{-- ========================================= --}}
 {{-- MODAL (POP-UP) TÙY CHỈNH ĐỒ UỐNG & TOPPING --}}
 {{-- ========================================= --}}
-@if(!$isToppingCategory)
+@if(!$isToppingCategory && !$isBanhNgot)
 <div id="topping-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 hidden">
     <div class="absolute inset-0 bg-espresso/60 backdrop-blur-sm" onclick="closeToppingModal()"></div>
     
@@ -529,14 +533,25 @@
     }
 
     function changeMainImage(element, imageUrl) {
-        document.getElementById('main-image').src = imageUrl;
-        let thumbs = element.parentElement.children;
-        for(let i = 0; i < thumbs.length; i++) {
-            thumbs[i].classList.remove('border-coral');
-            thumbs[i].classList.add('border-transparent');
+        const mainImg = document.getElementById('main-image');
+        if (mainImg) {
+            mainImg.style.opacity = '0.2';
+            mainImg.style.transform = 'scale(0.96)';
+            setTimeout(() => {
+                mainImg.src = imageUrl;
+                mainImg.style.opacity = '1';
+                mainImg.style.transform = 'scale(1)';
+            }, 150);
         }
-        element.classList.remove('border-transparent');
-        element.classList.add('border-coral');
+
+        let thumbs = document.querySelectorAll('.thumb-item');
+        thumbs.forEach(thumb => {
+            thumb.classList.remove('border-coral', 'ring-2', 'ring-coral/40', 'scale-105', 'shadow-md', 'opacity-100');
+            thumb.classList.add('border-gray-200/60', 'opacity-70');
+        });
+
+        element.classList.remove('border-gray-200/60', 'opacity-70');
+        element.classList.add('border-coral', 'ring-2', 'ring-coral/40', 'scale-105', 'shadow-md', 'opacity-100');
     }
 
     function filterReviews(rating, btnElement) {

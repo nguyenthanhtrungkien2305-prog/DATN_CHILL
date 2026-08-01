@@ -43,6 +43,7 @@
                         <th class="p-4 font-medium">Loại giảm</th>
                         <th class="p-4 font-medium">Mức giảm</th>
                         <th class="p-4 font-medium">Đơn tối thiểu</th>
+                        <th class="p-4 font-medium text-center">Phân loại</th>
                         <th class="p-4 font-medium">Giới hạn sử dụng</th>
                         <th class="p-4 font-medium">Đã dùng</th>
                         <th class="p-4 font-medium">Thời gian hiệu lực</th>
@@ -69,6 +70,17 @@
                             @endif
                         </td>
                         <td class="p-4 font-medium">{{ number_format($v->min_order, 0, ',', '.') }}đ</td>
+                        <td class="p-4 text-center">
+                            @if($v->assigned_user_id || (isset($v->is_points_exchange) && !$v->is_points_exchange))
+                                <span class="bg-purple-50 text-purple-700 font-bold px-2.5 py-1 rounded-full text-xs border border-purple-200 block whitespace-nowrap">
+                                    👤 Cá nhân: {{ $v->assigned_user_name ?? ('ID #'.$v->assigned_user_id) }}
+                                </span>
+                            @else
+                                <span class="bg-amber-50 text-amber-700 font-bold px-2.5 py-1 rounded-full text-xs border border-amber-200 block whitespace-nowrap">
+                                    🎁 Đổi điểm (🏆 {{ $v->points_required ?? 10 }}p)
+                                </span>
+                            @endif
+                        </td>
                         <td class="p-4 text-gray-600">
                             {{ $v->usage_limit ? $v->usage_limit . ' lượt' : 'Không giới hạn' }}
                         </td>

@@ -30,11 +30,99 @@ class CartController extends Controller
         return $clean;
     }
 
+    public function getApplicableVouchers($subTotal)
+    {
+        \App\Http\Controllers\Admin\VoucherController::cleanupExpiredVouchers();
+
+        $vouchers = collect();
+
+        // 1. Lấy mã công khai
+        $publicVouchers = DB::table('vouchers')
+            ->where(function ($q) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', now());
+            })
+            ->where(function ($q) {
+                $q->whereNull('start_date')->orWhere('start_date', '<=', now());
+            })
+            ->where(function ($q) {
+                $q->whereNull('usage_limit')->orWhereRaw('used_count < usage_limit');
+            })
+            ->whereNull('assigned_user_id')
+            ->get();
+
+        foreach ($publicVouchers as $v) {
+            $vouchers->push($v);
+        }
+
+        // 2. Lấy mã cá nhân của user đang đăng nhập
+        if (auth()->check()) {
+            $userId = auth()->id() ?? auth()->user()->user_id;
+
+            $myVouchers = DB::table('user_vouchers')
+                ->join('vouchers', 'user_vouchers.voucher_id', '=', 'vouchers.voucher_id')
+                ->where('user_vouchers.user_id', $userId)
+                ->where('user_vouchers.is_used', 0)
+                ->where(function ($q) {
+                    $q->whereNull('vouchers.end_date')->orWhere('vouchers.end_date', '>=', now());
+                })
+                ->select('vouchers.*')
+                ->get();
+
+            foreach ($myVouchers as $mv) {
+                if (!$vouchers->contains('voucher_id', $mv->voucher_id)) {
+                    $vouchers->push($mv);
+                }
+            }
+        }
+
+        // Tính toán tính khả dụng cho mỗi voucher
+        $vouchers->transform(function ($v) use ($subTotal) {
+            $v->is_eligible = ($subTotal >= $v->min_order);
+            $v->missing_amount = max(0, $v->min_order - $subTotal);
+
+            $discount = $v->discount_type === 'percent' 
+                ? $subTotal * ($v->discount_value / 100) 
+                : $v->discount_value;
+            $v->discount_amount = min($discount, $subTotal);
+            return $v;
+        });
+
+        // Sắp xếp: Mã đủ điều kiện lên trên (giảm nhiều nhất lên đầu), mã chưa đủ điều kiện xuống dưới
+        return $vouchers->sortBy([
+            ['is_eligible', 'desc'],
+            ['discount_amount', 'desc'],
+            ['missing_amount', 'asc']
+        ])->values();
+    }
+
     // 1. Hiển thị trang Giỏ hàng
     public function index()
     {
         $cart = session()->get('cart', []);
-        return view('cart.index', compact('cart'));
+        $subTotal = 0;
+        foreach ($cart as $item) {
+            $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
+        }
+
+        $availableVouchers = $this->getApplicableVouchers($subTotal);
+
+        // Tự động áp dụng mã tốt nhất ĐỦ ĐIỀU KIỆN nếu chưa có mã trong session VÀ chưa chọn bỏ dùng voucher
+        if (!session()->has('voucher') && !session()->get('voucher_opt_out', false) && $subTotal > 0) {
+            $bestEligible = $availableVouchers->firstWhere('is_eligible', true);
+            if ($bestEligible) {
+                session()->put('voucher', [
+                    'voucher_id' => $bestEligible->voucher_id,
+                    'code' => $bestEligible->code,
+                    'discount_type' => $bestEligible->discount_type,
+                    'discount_value' => $bestEligible->discount_value,
+                    'discount_amount' => $bestEligible->discount_amount,
+                    'min_order' => $bestEligible->min_order,
+                    'auto_applied' => true
+                ]);
+            }
+        }
+
+        return view('cart.index', compact('cart', 'availableVouchers'));
     }
 
     // 2. Thêm sản phẩm vào giỏ (Đã dùng Bộ lọc)
@@ -110,6 +198,7 @@ class CartController extends Controller
 
         session()->put('cart', $cart);
         self::checkAndRecalculateVoucher();
+        self::syncCartItemsToDatabase();
 
         $totalItems = array_sum(array_column($cart, 'quantity'));
         return response()->json(['success' => true, 'message' => 'Đã thêm vào giỏ hàng!', 'cart_count' => $totalItems]);
@@ -128,6 +217,7 @@ class CartController extends Controller
             
             session()->put('cart', $cart);
             self::checkAndRecalculateVoucher();
+            self::syncCartItemsToDatabase();
             
             $totalItems = array_sum(array_column($cart, 'quantity'));
             return response()->json(['success' => true, 'cart_count' => $totalItems]);
@@ -145,6 +235,7 @@ class CartController extends Controller
             unset($cart[$cartKey]);
             session()->put('cart', $cart);
             self::checkAndRecalculateVoucher();
+            self::syncCartItemsToDatabase();
             
             $totalItems = array_sum(array_column($cart, 'quantity'));
             return response()->json(['success' => true, 'cart_count' => $totalItems]);
@@ -300,6 +391,7 @@ class CartController extends Controller
         $discount = $voucher->discount_type === 'percent' ? $subTotal * ($voucher->discount_value / 100) : $voucher->discount_value;
         $discount = min($discount, $subTotal);
 
+        session()->forget('voucher_opt_out');
         session()->put('voucher', [
             'voucher_id' => $voucher->voucher_id, 'code' => $voucher->code, 'discount_type' => $voucher->discount_type,
             'discount_value' => $voucher->discount_value, 'discount_amount' => $discount, 'min_order' => $voucher->min_order
@@ -312,6 +404,7 @@ class CartController extends Controller
     public function removeVoucher(Request $request)
     {
         session()->forget('voucher');
+        session()->put('voucher_opt_out', true);
         return response()->json(['success' => true, 'message' => 'Đã hủy mã giảm giá.']);
     }
 
@@ -342,5 +435,45 @@ class CartController extends Controller
         $cart = session()->get('cart', []);
         $totalItems = array_sum(array_column($cart, 'quantity'));
         return response()->json(['cart_count' => $totalItems]);
+    }
+
+    public static function syncCartItemsToDatabase()
+    {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('cart_items')) return;
+
+        $cart = session()->get('cart', []);
+        $userId = auth()->id() ?? (auth()->check() ? auth()->user()->user_id : null);
+
+        if ($userId) {
+            $cartId = DB::table('carts')->where('user_id', $userId)->value('cart_id');
+            if (!$cartId) {
+                $firstVariantId = DB::table('product_variants')->value('variant_id') ?? 1;
+                $cartId = DB::table('carts')->insertGetId([
+                    'user_id' => $userId,
+                    'variant_id' => $firstVariantId,
+                    'quantity' => 1,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
+            DB::table('cart_items')->where('cart_id', $cartId)->delete();
+
+            foreach ($cart as $item) {
+                if (isset($item['product_id'])) {
+                    DB::table('cart_items')->insert([
+                        'cart_id' => $cartId,
+                        'product_id' => $item['product_id'],
+                        'variant_id' => $item['variant_id'] ?? null,
+                        'quantity' => $item['quantity'] ?? 1,
+                        'toppings' => json_encode($item['toppings'] ?? []),
+                        'ice_level' => $item['ice_level'] ?? '100',
+                        'sugar_level' => $item['sugar_level'] ?? '100',
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                }
+            }
+        }
     }
 }

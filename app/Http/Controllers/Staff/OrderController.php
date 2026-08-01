@@ -28,7 +28,9 @@ class OrderController extends Controller
     {
         try {
             $orderId = DB::table('orders')->insertGetId([
+                'user_id' => $request->user_id ?? null,
                 'customer_name' => $request->customer_name ?? 'Khách Vãng Lai',
+                'customer_phone' => $request->customer_phone ?? null,
                 'shipping_address' => $request->order_note,
                 'total_amount' => $request->total_amount,
                 'items' => json_encode($request->items, JSON_UNESCAPED_UNICODE),
@@ -49,13 +51,15 @@ class OrderController extends Controller
     }
 
     /**
-     * XỬ LÝ HOÀN THÀNH ĐƠN HÀNG VÀ GHI NHẬN HOA HỒNG
+     * XỬ LÝ HOÀN THÀNH ĐƠN HÀNG VÀ GHI NHẬN HOA HỒNG + TÍCH ĐIỂM
      */
     public function complete($id)
     {
         try {
             $now = now('Asia/Ho_Chi_Minh');
             $today = $now->format('Y-m-d');
+
+            $order = DB::table('orders')->where('order_id', $id)->first();
 
             // 1. Tìm Ca làm việc hiện tại của nhân viên để cộng Hoa hồng
             $activeShift = DB::table('shifts')
@@ -84,7 +88,15 @@ class OrderController extends Controller
                 ->where('order_id', $id)
                 ->update($updateData);
 
-            // 4. Trả về tín hiệu cho màn hình Giao diện
+            // 4. Cộng điểm tích lũy cho khách hàng (10.000đ = 1 điểm)
+            if ($order && $order->user_id && $order->status !== 'completed') {
+                $pointsEarned = (int) floor($order->total_amount / 10000);
+                if ($pointsEarned > 0) {
+                    DB::table('users')->where('user_id', $order->user_id)->increment('point', $pointsEarned);
+                }
+            }
+
+            // 5. Trả về tín hiệu cho màn hình Giao diện
             return response()->json([
                 'success' => true,
                 'message' => 'Đã hoàn thành đơn hàng!'
