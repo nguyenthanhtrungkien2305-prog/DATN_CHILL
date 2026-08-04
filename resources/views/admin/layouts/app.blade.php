@@ -22,69 +22,67 @@
             {{-- Tổng quan --}}
             <a href="{{ route('admin.dashboard') }}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('admin.dashboard') || request()->is('admin') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">📊</span> <span>Tổng quan</span>
+                <span>Tổng quan</span>
             </a>
 
             {{-- Bán hàng (POS) - Trực tiếp không cần Check-in --}}
             <a href="{{ route('admin.pos') }}" target="_blank"
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('admin.pos') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">🖥️</span> <span>Bán hàng (POS)</span>
+                <span>Bán hàng (POS)</span>
             </a>
             
             {{-- Quản lý Sản phẩm --}}
             <a href="{{ route('products.index') }}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('products.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">☕</span> <span>Quản lý Sản phẩm</span>
+                <span>Quản lý Sản phẩm</span>
             </a>
             
             {{-- Quản lý Danh mục --}}
             <a href="{{ route('categories.index') }}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('categories.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">📁</span> <span>Quản lý Danh mục</span>
+                <span>Quản lý Danh mục</span>
             </a>
-
-
 
             {{-- Quản lý Bài viết --}}
             <a href="{{ route('posts.index') }}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('posts.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">📰</span> <span>Quản lý Bài viết</span>
+                <span>Quản lý Bài viết</span>
             </a>
 
             {{-- Quản lý Voucher --}}
             <a href="{{ route('vouchers.index') }}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('vouchers.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">🎟️</span> <span>Quản lý Voucher</span>
+                <span>Quản lý Voucher</span>
             </a>
             
             {{-- Quản lý Đơn hàng --}}
             <a href="{{ route('admin.orders.index') }}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
-                <span class="text-xl">🛒</span> <span>Quản lý Đơn hàng</span>
+                <span>Quản lý Đơn hàng</span>
             </a>
 
-            {{-- QUẢN LÝ NHÂN VIÊN (Đã được bổ sung) --}}
+            {{-- QUẢN LÝ NHÂN VIÊN --}}
             <a href="{{ route('admin.staff.manager') }}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('admin.staff.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">🧑‍💼</span> <span>Quản lý Nhân viên</span>
+                <span>Quản lý Nhân viên</span>
             </a>
             
             {{-- Quản lý Người dùng --}}
             <a href="{{ route('admin.users.index') }}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('admin.users.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">👥</span> <span>Quản lý Người dùng</span>
+                <span>Quản lý Người dùng</span>
             </a>
 
             {{-- Quản lý Phản hồi --}}
             <a href="{{ route('feedbacks.index') }}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('feedbacks.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">✉️</span> <span>Quản lý Phản hồi</span>
+                <span>Quản lý Phản hồi</span>
             </a>
 
             {{-- Hỗ trợ trực tuyến --}}
             <a href="{{ route('admin.chats.index') }}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('admin.chats.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                <span class="text-xl">💬</span> <span>Hỗ trợ trực tuyến</span>
+                <span>Hỗ trợ trực tuyến</span>
             </a>
             
         </nav>

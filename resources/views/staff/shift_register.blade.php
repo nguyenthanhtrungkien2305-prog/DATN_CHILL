@@ -33,15 +33,15 @@
             {{-- MENU TABS TỰ ĐỘNG ĐỔI TÊN NẾU LÀ TUẦN SAU --}}
             <div class="flex space-x-6 mb-6 border-b border-gray-200">
                 <button onclick="switchTab('schedule')" id="tab-btn-schedule" class="pb-3 px-2 font-black text-coral border-b-4 border-coral transition-all uppercase tracking-wider text-sm">
-                    📅 Lịch Cá Nhân ({{ $isNextWeek ? 'Tuần Sau' : 'Tuần Này' }})
+                    Lịch Cá Nhân ({{ $isNextWeek ? 'Tuần Sau' : 'Tuần Này' }})
                 </button>
                 <button onclick="switchTab('register')" id="tab-btn-register" class="pb-3 px-2 font-bold text-gray-400 border-b-4 border-transparent hover:text-coral transition-all uppercase tracking-wider text-sm flex items-center gap-2">
-                    📝 Đăng Ký Ca Mới & Danh Sách Chờ
+                    Đăng Ký Ca Mới & Danh Sách Chờ
                     @php $pendingCount = $registrations->where('status', 'pending')->count(); @endphp
                     @if($pendingCount > 0) <span class="bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px]">{{ $pendingCount }}</span> @endif
                 </button>
                 <button onclick="switchTab('statistics')" id="tab-btn-statistics" class="pb-3 px-2 font-bold text-gray-400 border-b-4 border-transparent hover:text-coral transition-all uppercase tracking-wider text-sm flex items-center gap-2">
-                    📊 Thống Kê Giờ Làm Thực Tế
+                    Thống Kê Giờ Làm Thực Tế
                 </button>
             </div>
 

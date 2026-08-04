@@ -20,7 +20,7 @@
                 <a href="{{ route('user.orders') }}" class="block px-4 py-3 rounded-xl bg-white/10 text-white font-medium transition-colors">Đơn hàng của tôi</a>
                 <a href="{{ route('user.points') }}" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white transition-colors flex items-center justify-between">
                     <span>Tích điểm & Ưu đãi</span>
-                    <span class="bg-coral/20 text-coral text-xs font-black px-2 py-0.5 rounded-full">🏆 {{ auth()->user()->point ?? 0 }}p</span>
+                    <span class="bg-coral/20 text-coral text-xs font-black px-2 py-0.5 rounded-full">{{ auth()->user()->point ?? 0 }}p</span>
                 </a>
             </nav>
             <a href="{{ route('logout') }}" class="mt-auto px-4 py-3 text-coral hover:text-white transition-colors flex items-center gap-2">
@@ -57,8 +57,7 @@
 
             @if($orders->isEmpty())
                 <div class="text-center py-12 bg-white rounded-3xl border border-dashed border-gray-300">
-                    <div class="text-6xl mb-4 opacity-50">🥤</div>
-                    <p class="text-espresso/60 font-medium mb-4">Bạn chưa có đơn hàng nào!</p>
+                    <p class="text-[#2D1B18]/60 text-sm font-medium mb-4">Bạn chưa có đơn hàng nào thuộc trạng thái này.</p>
                     <a href="{{ route('product.index') }}" class="inline-block px-6 py-2.5 bg-coral text-white font-bold rounded-full hover:bg-[#d5523b] transition-colors">Menu Đồ Uống</a>
                 </div>
             @else

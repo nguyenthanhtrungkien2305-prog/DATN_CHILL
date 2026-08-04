@@ -23,13 +23,13 @@
 
             <div class="flex space-x-6 border-b border-gray-200">
                 <button onclick="switchTab('shifts')" id="tab-btn-shifts" class="pb-3 px-4 font-black text-[#e8634a] border-b-4 border-[#e8634a] transition-all uppercase tracking-wider text-sm flex items-center gap-2">
-                    📅 Duyệt Lịch Làm
+                    Duyệt Lịch Làm
                     @if(count($pendingShifts) > 0)
                         <span class="bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px]">{{ count($pendingShifts) }}</span>
                     @endif
                 </button>
                 <button onclick="switchTab('salary')" id="tab-btn-salary" class="pb-3 px-4 font-bold text-gray-400 border-b-4 border-transparent hover:text-[#e8634a] transition-all uppercase tracking-wider text-sm">
-                    💳 Bảng Lương (Tháng {{ $month }}/{{ $year }})
+                    Bảng Lương (Tháng {{ $month }}/{{ $year }})
                 </button>
             </div>
 

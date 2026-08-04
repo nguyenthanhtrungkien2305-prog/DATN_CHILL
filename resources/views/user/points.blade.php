@@ -24,7 +24,7 @@
                 <a href="{{ route('user.orders') }}" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white transition-colors">Đơn hàng của tôi</a>
                 <a href="{{ route('user.points') }}" class="block px-4 py-3 rounded-xl bg-white/10 text-white font-medium transition-colors flex items-center justify-between">
                     <span>Tích điểm & Ưu đãi</span>
-                    <span class="bg-coral text-white text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm">🏆 {{ number_format($user->point ?? 0) }}p</span>
+                    <span class="bg-coral text-white text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm">{{ number_format($user->point ?? 0) }}p</span>
                 </a>
             </nav>
             <a href="{{ route('logout') }}" class="mt-auto px-4 py-3 text-coral hover:text-white transition-colors flex items-center gap-2">
@@ -49,7 +49,7 @@
 
             @if(session('error'))
                 <div class="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-xs">
-                    <span>⚠️ {{ session('error') }}</span>
+                    <span>{{ session('error') }}</span>
                 </div>
             @endif
 
@@ -60,14 +60,14 @@
                     <div>
                         <span class="text-amber-400/80 uppercase tracking-widest text-[10px] font-black">Ví Điểm Điểm Cộng</span>
                         <h4 class="text-4xl font-black text-amber-400 mt-1 tracking-tight">{{ number_format($user->point ?? 0) }} <span class="text-lg font-bold text-white/80">điểm</span></h4>
-                        <p class="text-xs text-white/70 mt-2 font-medium">💡 <strong>Quy tắc:</strong> 10.000đ thanh toán đơn hàng = <strong>+1 điểm</strong></p>
+                        <p class="text-xs text-white/70 mt-2 font-medium"><strong>Quy tắc:</strong> 10.000đ thanh toán đơn hàng = <strong>+1 điểm</strong></p>
                     </div>
                     <div class="text-right">
                         @php
                             $pts = $user->point ?? 0;
-                            if ($pts >= 150) { $rank = '🥇 Thẻ Vàng'; $badgeBg = 'bg-amber-400 text-espresso'; }
-                            elseif ($pts >= 50) { $rank = '🥈 Thẻ Bạc'; $badgeBg = 'bg-slate-200 text-espresso'; }
-                            else { $rank = '🥉 Thẻ Đồng'; $badgeBg = 'bg-amber-700/40 text-amber-200 border border-amber-500/30'; }
+                            if ($pts >= 150) { $rank = 'Thẻ Vàng'; $badgeBg = 'bg-amber-400 text-espresso'; }
+                            elseif ($pts >= 50) { $rank = 'Thẻ Bạc'; $badgeBg = 'bg-slate-200 text-espresso'; }
+                            else { $rank = 'Thẻ Đồng'; $badgeBg = 'bg-amber-700/40 text-amber-200 border border-amber-500/30'; }
                         @endphp
                         <span class="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider {{ $badgeBg }} shadow-sm">
                             {{ $rank }}
@@ -79,7 +79,7 @@
             {{-- 2. ĐỔI VOUCHER BẰNG ĐIỂM --}}
             <div>
                 <h4 class="font-bold text-base text-espresso uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <span>🎁 Đổi Voucher Ưu Đãi</span>
+                    <span>Đổi Voucher Ưu Đãi</span>
                 </h4>
 
                 @if($availableVouchers->isEmpty())
@@ -136,7 +136,7 @@
             {{-- 3. KHO VOUCHER CỦA TÔI --}}
             <div>
                 <h4 class="font-bold text-base text-espresso uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <span>🎟️ Kho Voucher Của Tôi</span>
+                    <span>Kho Voucher Của Tôi</span>
                 </h4>
 
                 @if($myVouchers->isEmpty())
@@ -148,8 +148,8 @@
                         @foreach($myVouchers as $mv)
                             <div class="bg-white rounded-2xl p-4 border border-espresso/10 shadow-xs flex justify-between items-center">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 {{ $mv->assigned_user_id ? 'bg-purple-50 text-purple-600 border-purple-200' : 'bg-amber-50 text-amber-600 border-amber-200' }} rounded-xl flex items-center justify-center font-bold text-lg shrink-0 border">
-                                        {{ $mv->assigned_user_id ? '🎁' : '🎫' }}
+                                    <div class="w-10 h-10 {{ $mv->assigned_user_id ? 'bg-purple-50 text-purple-600 border-purple-200' : 'bg-amber-50 text-amber-600 border-amber-200' }} rounded-xl flex items-center justify-center font-bold text-sm shrink-0 border">
+                                        Voucher
                                     </div>
                                     <div>
                                         <div class="flex items-center gap-2 flex-wrap">
@@ -158,7 +158,7 @@
                                                 ({{ $mv->discount_type === 'percent' ? 'Giảm '.$mv->discount_value.'%' : 'Giảm '.number_format($mv->discount_value, 0, ',', '.').'đ' }})
                                             </span>
                                             @if($mv->assigned_user_id)
-                                                <span class="text-[10px] font-extrabold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md border border-purple-200">🎁 Ưu đãi tặng riêng</span>
+                                                <span class="text-[10px] font-extrabold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md border border-purple-200">Ưu đãi tặng riêng</span>
                                             @endif
                                         </div>
                                         <p class="text-[11px] text-espresso/50 mt-0.5">Ngày nhận: {{ \Carbon\Carbon::parse($mv->save_at)->format('H:i - d/m/Y') }}</p>
@@ -180,7 +180,7 @@
             {{-- 4. LỊCH SỬ TÍCH ĐIỂM TỪ ĐƠN HÀNG --}}
             <div>
                 <h4 class="font-bold text-base text-espresso uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <span>📊 Lịch Sử Tích Điểm Đơn Hàng</span>
+                    <span>Lịch Sử Tích Điểm Đơn Hàng</span>
                 </h4>
 
                 @if($completedOrders->isEmpty())

@@ -24,7 +24,7 @@
                         🛵 Giao hàng tận nơi
                     </button>
                     <button type="button" id="btn-tab-dinein" onclick="switchOrderType('dine_in')" class="flex-1 py-4 rounded-xl font-bold text-lg transition-all text-espresso/60 hover:bg-gray-50">
-                        🍽️ Thưởng thức tại quán
+                        Thưởng thức tại quán
                     </button>
                 </div>
 
@@ -125,7 +125,7 @@
 
                 <div class="bg-white p-6 md:p-8 rounded-[24px] shadow-sm border border-espresso/5">
                     <h2 class="font-bold text-xl text-espresso mb-4 flex items-center gap-2">
-                        <span class="bg-coral text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">💳</span> Phương thức thanh toán
+                        <span class="bg-coral text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span> Phương thức thanh toán
                     </h2>
                     <div class="space-y-3">
                         <label class="flex items-center gap-3 p-4 border border-coral bg-coral/5 rounded-xl cursor-pointer payment-method-label" id="label-cash">
@@ -174,7 +174,6 @@
                             @if(session()->has('voucher'))
                                 <div class="w-full flex items-center justify-between bg-emerald-50 border border-emerald-300 rounded-xl px-3 py-2 text-xs cursor-pointer select-none hover:bg-emerald-100/60 transition-colors" onclick="toggleVoucherDropdownCheckout()">
                                     <div class="flex items-center gap-1.5 overflow-hidden">
-                                        <span>🎟️</span>
                                         <span class="font-mono font-black text-espresso uppercase">{{ session('voucher')['code'] }}</span>
                                         <span class="text-emerald-700 font-extrabold truncate">(-{{ number_format(session('voucher')['discount_amount'], 0, ',', '.') }}đ)</span>
                                     </div>
@@ -246,7 +245,7 @@
                                                                 ({{ $v->discount_type === 'percent' ? 'Giảm '.$v->discount_value.'%' : 'Giảm '.number_format($v->discount_value, 0, ',', '.').'đ' }})
                                                             </span>
                                                         </div>
-                                                        <span class="text-[9px] text-amber-700 font-bold block mt-0.5">🔒 Cần mua thêm {{ number_format($v->missing_amount, 0, ',', '.') }}đ</span>
+                                                        <span class="text-[9px] text-amber-700 font-bold block mt-0.5">Cần mua thêm {{ number_format($v->missing_amount, 0, ',', '.') }}đ</span>
                                                     </div>
                                                     <span class="text-[9px] text-amber-800 font-bold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">Chưa đủ</span>
                                                 </button>

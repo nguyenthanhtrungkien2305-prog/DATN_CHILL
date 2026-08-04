@@ -79,12 +79,12 @@
                                 <div class="flex flex-wrap gap-1.5 mb-2">
                                     @if(isset($item['ice_level']) && $item['ice_level'] !== '100')
                                         <span class="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 font-medium">
-                                            🧊 {{ $iceTexts[$item['ice_level']] ?? $item['ice_level'] }}
+                                            {{ $iceTexts[$item['ice_level']] ?? $item['ice_level'] }}
                                         </span>
                                     @endif
                                     @if(isset($item['sugar_level']) && $item['sugar_level'] !== '100')
                                         <span class="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100 font-medium">
-                                            🍯 {{ $sugarTexts[$item['sugar_level']] ?? $item['sugar_level'] }}
+                                            {{ $sugarTexts[$item['sugar_level']] ?? $item['sugar_level'] }}
                                         </span>
                                     @endif
                                 </div>
@@ -131,7 +131,7 @@
 
                     {{-- Khung hiển thị khi tìm không thấy sản phẩm --}}
                     <div id="no-search-results" class="hidden bg-white p-8 text-center rounded-3xl border border-dashed border-gray-200">
-                        <p class="text-sm text-espresso/60 font-medium">🔍 Không tìm thấy sản phẩm nào khớp với từ khóa tìm kiếm.</p>
+                        <p class="text-sm text-espresso/60 font-medium">Không tìm thấy sản phẩm nào khớp với từ khóa tìm kiếm.</p>
                     </div>
                 </div>
 
@@ -149,7 +149,6 @@
                             @if(session()->has('voucher'))
                                 <div class="w-full flex items-center justify-between bg-emerald-50 border border-emerald-300 rounded-xl px-3.5 py-2.5 text-xs cursor-pointer select-none hover:bg-emerald-100/60 transition-colors" onclick="toggleVoucherDropdown('cart')">
                                     <div class="flex items-center gap-2 overflow-hidden">
-                                        <span class="text-base">🎟️</span>
                                         <span class="font-mono font-black text-espresso uppercase">{{ session('voucher')['code'] }}</span>
                                         <span class="text-emerald-700 font-extrabold truncate">(-{{ number_format(session('voucher')['discount_amount'], 0, ',', '.') }}đ)</span>
                                     </div>
@@ -177,14 +176,13 @@
                             @if(isset($availableVouchers) && $availableVouchers->isNotEmpty())
                                 <div id="voucher-dropdown-menu-cart" class="hidden absolute top-full left-0 right-0 mt-2 bg-white border border-espresso/15 rounded-2xl shadow-2xl z-50 p-2.5 max-h-60 overflow-y-auto custom-scrollbar">
                                     <div class="text-[11px] font-extrabold text-espresso/60 px-2 py-1 uppercase tracking-wider border-b border-gray-100 mb-1 flex justify-between items-center">
-                                        <span>💡 Danh sách Mã Giảm Giá</span>
+                                        <span>Danh sách Mã Giảm Giá</span>
                                         <button type="button" onclick="toggleVoucherDropdown('cart')" class="text-espresso/40 hover:text-coral font-bold text-sm">✕</button>
                                     </div>
                                     <div class="space-y-1.5">
                                         {{-- Tùy chọn 1: Không dùng voucher --}}
                                         <button type="button" onclick="removeVoucher()" class="w-full text-left p-2.5 rounded-xl flex items-center justify-between text-xs transition-colors hover:bg-red-50 border border-gray-100 {{ !session()->has('voucher') ? 'bg-gray-100 font-bold' : '' }}">
                                             <div class="flex items-center gap-2">
-                                                <span class="text-red-500 font-bold">🚫</span>
                                                 <span class="font-medium text-espresso">Không sử dụng mã giảm giá</span>
                                             </div>
                                             @if(!session()->has('voucher'))
@@ -222,7 +220,7 @@
                                                                 ({{ $v->discount_type === 'percent' ? 'Giảm '.$v->discount_value.'%' : 'Giảm '.number_format($v->discount_value, 0, ',', '.').'đ' }})
                                                             </span>
                                                         </div>
-                                                        <span class="text-[10px] text-amber-700 font-bold block mt-0.5">🔒 Cần mua thêm {{ number_format($v->missing_amount, 0, ',', '.') }}đ</span>
+                                                        <span class="text-[10px] text-amber-700 font-bold block mt-0.5">Cần mua thêm {{ number_format($v->missing_amount, 0, ',', '.') }}đ</span>
                                                     </div>
                                                     <span class="text-[10px] text-amber-800 font-bold bg-amber-100 px-2 py-1 rounded-lg border border-amber-200">Chưa đủ điều kiện</span>
                                                 </button>

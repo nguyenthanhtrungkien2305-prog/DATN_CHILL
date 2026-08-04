@@ -101,7 +101,6 @@
                             @forelse($productsSold ?? [] as $product)
                             <tr class="hover:bg-gray-50 transition-colors">
                                 <td class="py-4 flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-lg bg-cream flex items-center justify-center text-xl">☕</div>
                                     <span class="font-bold text-espresso text-sm">{{ $product['name'] }}</span>
                                 </td>
                                 <td class="py-4 text-center font-black text-espresso">{{ $product['quantity'] }} ly</td>

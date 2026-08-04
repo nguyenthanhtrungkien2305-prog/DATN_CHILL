@@ -87,8 +87,8 @@
                         </div>
 
                         <div class="flex border-b border-gray-200 mb-4 mt-4 shrink-0">
-                            <button type="button" onclick="switchPosTab('products')" id="btn-tab-products" class="flex-1 py-2 text-sm font-black uppercase tracking-wider text-coral border-b-2 border-coral transition-colors flex items-center justify-center gap-2">☕ Sản phẩm</button>
-                            <button type="button" onclick="switchPosTab('toppings')" id="btn-tab-toppings" class="flex-1 py-2 text-sm font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-coral transition-colors flex items-center justify-center gap-2">✨ Topping</button>
+                            <button type="button" onclick="switchPosTab('products')" id="btn-tab-products" class="flex-1 py-2 text-sm font-black uppercase tracking-wider text-coral border-b-2 border-coral transition-colors flex items-center justify-center gap-2">Sản phẩm</button>
+                            <button type="button" onclick="switchPosTab('toppings')" id="btn-tab-toppings" class="flex-1 py-2 text-sm font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-coral transition-colors flex items-center justify-center gap-2">Topping</button>
                         </div>
 
                         <div id="content-tab-products" class="flex-1 min-h-0 overflow-y-auto pr-2 space-y-2 custom-scrollbar p-2 rounded-xl block">
@@ -97,14 +97,14 @@
                                     <div class="flex items-center gap-3">
                                         <div class="w-12 h-12 bg-cream rounded-lg flex items-center justify-center overflow-hidden shrink-0">
                                             @if($product->image_url) <img src="{{ asset($product->image_url) }}" class="w-full h-full object-cover">
-                                            @else <span class="text-xl">☕</span> @endif
+                                            @endif
                                         </div>
                                         <div>
                                             <h4 class="font-bold text-espresso text-sm group-hover:text-coral transition-colors line-clamp-1">{{ $product->name }}</h4>
                                             <p class="text-xs text-coral font-medium">{{ number_format($product->price, 0, ',', '.') }}đ</p>
                                         </div>
                                     </div>
-                                    <button class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-espresso group-hover:bg-coral group-hover:text-white transition-all shrink-0">➕</button>
+                                    <button class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-espresso font-bold group-hover:bg-coral group-hover:text-white transition-all shrink-0">+</button>
                                 </div>
                             @endforeach
                         </div>
@@ -115,14 +115,14 @@
                                     <div class="flex items-center gap-3">
                                         <div class="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center overflow-hidden shrink-0">
                                             @if($topping->image_url) <img src="{{ asset($topping->image_url) }}" class="w-full h-full object-cover">
-                                            @else <span class="text-xl">✨</span> @endif
+                                            @endif
                                         </div>
                                         <div>
                                             <h4 class="font-bold text-espresso text-sm group-hover:text-emerald-600 transition-colors line-clamp-1">{{ $topping->name }}</h4>
                                             <p class="text-xs text-emerald-500 font-medium">+{{ number_format($topping->price, 0, ',', '.') }}đ</p>
                                         </div>
                                     </div>
-                                    <button class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-all shrink-0">➕</button>
+                                    <button class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold group-hover:bg-emerald-500 group-hover:text-white transition-all shrink-0">+</button>
                                 </div>
                             @endforeach
                         </div>
@@ -145,7 +145,7 @@
                 <div class="w-1/3 h-full p-4 lg:p-6 overflow-hidden grid grid-cols-12 gap-4 lg:gap-6 shrink-0">
                     <div class="col-span-12 lg:col-span-8 bg-white rounded-2xl border border-espresso/10 p-4 lg:p-6 shadow-sm flex flex-col h-full overflow-hidden">
                         <div class="flex justify-between items-center mb-4 shrink-0">
-                            <h3 class="text-lg font-black text-espresso uppercase tracking-wider flex items-center gap-2">📋 Bảng Kiểm Tra Chi Tiết</h3>
+                            <h3 class="text-lg font-black text-espresso uppercase tracking-wider flex items-center gap-2">Bảng Kiểm Tra Chi Tiết</h3>
                             <button onclick="goToStep(1)" class="text-xs bg-gray-100 hover:bg-espresso hover:text-white px-3 py-1.5 rounded-lg font-bold transition-colors">&larr; Thêm món khác</button>
                         </div>
                         <div class="flex-1 min-h-0 border border-gray-200 rounded-xl overflow-hidden bg-gray-50/30 flex flex-col">
@@ -168,11 +168,11 @@
 
                     <div class="col-span-12 lg:col-span-4 bg-white rounded-2xl border border-espresso/10 p-4 lg:p-6 shadow-sm flex flex-col h-full overflow-hidden justify-between">
                         <div>
-                            <h3 class="text-base font-black text-espresso mb-3 uppercase tracking-wider border-b pb-2 border-dashed">💳 Thanh Toán</h3>
+                            <h3 class="text-base font-black text-espresso mb-3 uppercase tracking-wider border-b pb-2 border-dashed">Thanh Toán</h3>
                             
                             <!-- Nút mở modal tìm kiếm khách hàng -->
                             <button type="button" onclick="openCustomerModal()" class="w-full mb-3 py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-sm hover:shadow transition-all flex items-center justify-center gap-2">
-                                🔍 Tìm & Chọn Khách Hàng (Tích điểm)
+                                Tìm & Chọn Khách Hàng (Tích điểm)
                             </button>
 
                             <!-- Khung hiển thị thông tin khách hàng đã chọn -->
@@ -183,9 +183,9 @@
                                             <span class="text-xs font-black text-emerald-900" id="card-customer-name">Khách Hàng</span>
                                             <span class="bg-emerald-200 text-emerald-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded">Thành viên</span>
                                         </div>
-                                        <p class="text-[11px] text-emerald-700 font-semibold mt-0.5" id="card-customer-phone">📞 ---</p>
+                                        <p class="text-[11px] text-emerald-700 font-semibold mt-0.5" id="card-customer-phone">SĐT: ---</p>
                                         <div class="flex items-center gap-2 mt-1.5">
-                                            <span class="text-[11px] font-bold text-emerald-900">🏆 Hiện có: <strong id="card-customer-points" class="text-emerald-700 font-black">0</strong> điểm</span>
+                                            <span class="text-[11px] font-bold text-emerald-900">Hiện có: <strong id="card-customer-points" class="text-emerald-700 font-black">0</strong> điểm</span>
                                             <span class="text-[10px] font-bold text-emerald-600 bg-white px-2 py-0.5 rounded border border-emerald-200 shadow-2xs">+<span id="card-projected-points">0</span> điểm đơn này</span>
                                         </div>
                                     </div>
@@ -249,7 +249,7 @@
         <div class="bg-white rounded-[24px] shadow-2xl overflow-hidden flex flex-col scale-95 transition-transform duration-200 w-[720px] max-h-[85vh]" id="customer-search-modal-content">
             <div class="bg-espresso text-white px-6 py-4 flex justify-between items-center shrink-0">
                 <div>
-                    <h3 class="font-bold text-lg leading-tight flex items-center gap-2">🔍 Danh Sách Khách Hàng Thân Thiết</h3>
+                    <h3 class="font-bold text-lg leading-tight flex items-center gap-2">Danh Sách Khách Hàng Thân Thiết</h3>
                     <p class="text-coral font-medium text-xs mt-0.5">Tìm kiếm khách hàng theo Tên, Số điện thoại hoặc Email để tích điểm</p>
                 </div>
                 <button type="button" onclick="closeCustomerModal()" class="text-white/50 hover:text-white bg-white/10 w-8 h-8 rounded-full flex items-center justify-center">✕</button>
@@ -281,7 +281,7 @@
             </div>
 
             <div class="bg-gray-50 px-6 py-3 border-t border-gray-200 flex justify-between items-center text-xs text-espresso/60 shrink-0">
-                <span class="font-medium">💡 Đơn hàng tích <strong>1 điểm</strong> cho mỗi <strong>10.000đ</strong> thanh toán</span>
+                <span class="font-medium">Đơn hàng tích <strong>1 điểm</strong> cho mỗi <strong>10.000đ</strong> thanh toán</span>
                 <button type="button" onclick="closeCustomerModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-espresso rounded-xl font-bold transition-colors">Đóng</button>
             </div>
         </div>
@@ -646,8 +646,8 @@
                 let icePrice = item.ice_level === '0_full' ? 3000 : 0;
                 let itemUnitPrice = item.price + toppingTotal + icePrice; let itemTotal = itemUnitPrice * item.quantity; totalAmount += itemTotal;
                 
-                if(item.ice_level !== '100') optionsHtml.push(`🧊 ${iceTexts[item.ice_level]}`);
-                if(item.sugar_level !== '100') optionsHtml.push(`🍯 ${sugarTexts[item.sugar_level]}`);
+                if(item.ice_level !== '100') optionsHtml.push(`${iceTexts[item.ice_level]}`);
+                if(item.sugar_level !== '100') optionsHtml.push(`${sugarTexts[item.sugar_level]}`);
                 
                 let detailHtml = optionsHtml.length > 0 ? `<p class="text-[10px] text-espresso/60 italic leading-tight mt-0.5">+ ${optionsHtml.join(', ')}</p>` : '';
                 step1Container.innerHTML += `
@@ -672,8 +672,8 @@
                 let icePrice = item.ice_level === '0_full' ? 3000 : 0;
                 let itemUnitPrice = item.price + toppingTotal + icePrice; let itemTotal = itemUnitPrice * item.quantity; totalAmount += itemTotal;
                 
-                if(item.ice_level !== '100') optionsHtml.push(`<span class="bg-blue-50 text-blue-500 border border-blue-100 px-2 py-0.5 rounded-md text-[11px] font-medium">🧊 ${iceTexts[item.ice_level]}</span>`);
-                if(item.sugar_level !== '100') optionsHtml.push(`<span class="bg-amber-50 text-amber-500 border border-amber-100 px-2 py-0.5 rounded-md text-[11px] font-medium">🍯 ${sugarTexts[item.sugar_level]}</span>`);
+                if(item.ice_level !== '100') optionsHtml.push(`<span class="bg-blue-50 text-blue-500 border border-blue-100 px-2 py-0.5 rounded-md text-[11px] font-medium">${iceTexts[item.ice_level]}</span>`);
+                if(item.sugar_level !== '100') optionsHtml.push(`<span class="bg-amber-50 text-amber-500 border border-amber-100 px-2 py-0.5 rounded-md text-[11px] font-medium">${sugarTexts[item.sugar_level]}</span>`);
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-gray-50/50 transition-colors">
@@ -681,7 +681,7 @@
                         <td class="py-4 px-4"><span class="font-black text-espresso block text-sm">${item.name}</span><div class="flex flex-wrap gap-1 mt-1.5">${optionsHtml.length > 0 ? optionsHtml.join('') : '<span class="text-xs text-gray-400 italic">Mặc định</span>'}</div></td>
                         <td class="py-4 px-4"><div class="flex items-center justify-center gap-2.5"><button onclick="changeQty(${item.cartItemId}, -1)" class="w-7 h-7 bg-gray-100 rounded-lg font-bold flex items-center justify-center hover:bg-coral hover:text-white transition-colors">-</button><span class="font-black text-espresso text-sm w-4 text-center">${item.quantity}</span><button onclick="changeQty(${item.cartItemId}, 1)" class="w-7 h-7 bg-gray-100 rounded-lg font-bold flex items-center justify-center hover:bg-coral hover:text-white transition-colors">+</button></div></td>
                         <td class="py-4 px-4 text-right font-black text-espresso text-sm">${formatVND(itemTotal)}</td>
-                        <td class="py-4 px-4"><div class="flex items-center justify-center gap-2"><button onclick="openToppingModal(${item.productId}, '${item.name}', ${item.price}, ${item.cartItemId})" class="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-600 hover:text-white transition-all">Sửa</button><button onclick="removeCartItem(${item.cartItemId})" class="text-red-500 hover:text-white bg-red-50 hover:bg-red-500 p-2 rounded-lg transition-colors">🗑️</button></div></td>
+                        <td class="py-4 px-4"><div class="flex items-center justify-center gap-2"><button onclick="openToppingModal(${item.productId}, '${item.name}', ${item.price}, ${item.cartItemId})" class="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-600 hover:text-white transition-all">Sửa</button><button onclick="removeCartItem(${item.cartItemId})" class="text-xs font-bold text-red-500 hover:text-white bg-red-50 hover:bg-red-500 px-2.5 py-1.5 rounded-lg transition-colors">Xóa</button></div></td>
                     </tr>`;
             });
             totalDisplay.textContent = formatVND(totalAmount);

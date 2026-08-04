@@ -5,7 +5,7 @@
 @section('content')
     <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 shrink-0">
         <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
-            <span>🛒</span> Quản lý Đơn hàng & Tiến độ
+            Quản lý Đơn hàng & Tiến độ
         </h2>
         <div class="flex items-center gap-4">
             <span class="text-sm text-gray-600">Xin chào, <strong>{{ Auth::user()->name ?? 'Admin' }}</strong></span>

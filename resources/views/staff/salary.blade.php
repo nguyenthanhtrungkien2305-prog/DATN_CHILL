@@ -27,10 +27,10 @@
             {{-- MENU TABS --}}
             <div class="flex space-x-6 mb-6 border-b border-gray-200">
                 <button onclick="switchTab('current')" id="tab-btn-current" class="pb-3 px-2 font-black text-coral border-b-4 border-coral transition-all uppercase tracking-wider text-sm">
-                    💳 Bảng Lương (Tháng {{ $month }})
+                    Bảng Lương (Tháng {{ $month }})
                 </button>
                 <button onclick="switchTab('history')" id="tab-btn-history" class="pb-3 px-2 font-bold text-gray-400 border-b-4 border-transparent hover:text-coral transition-all uppercase tracking-wider text-sm flex items-center gap-2">
-                    🗂️ Lịch Sử Nhận Lương
+                    Lịch Sử Nhận Lương
                 </button>
             </div>
 

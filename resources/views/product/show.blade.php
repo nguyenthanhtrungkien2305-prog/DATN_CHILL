@@ -455,11 +455,11 @@
         let sugarText = sugarRadio ? sugarRadio.nextElementSibling.innerText.trim() : '100% Đường';
 
         // Chỉ hiển thị tag nếu khách có thay đổi so với Mặc định
-        if(iceRadio && iceRadio.value !== '100') {
-            html += `<div class="px-4 py-1.5 bg-blue-50 text-blue-500 border border-blue-200 rounded-full text-sm font-medium shadow-sm">🧊 ${iceText}</div>`;
+        if (iceText && iceText !== '100% Đá (Mặc định)') {
+            html += `<div class="px-4 py-1.5 bg-blue-50 text-blue-500 border border-blue-200 rounded-full text-sm font-medium shadow-sm">${iceText}</div>`;
         }
-        if(sugarRadio && sugarRadio.value !== '100') {
-            html += `<div class="px-4 py-1.5 bg-amber-50 text-amber-500 border border-amber-200 rounded-full text-sm font-medium shadow-sm">🍯 ${sugarText}</div>`;
+        if (sugarText && sugarText !== '100% Đường (Mặc định)') {
+            html += `<div class="px-4 py-1.5 bg-amber-50 text-amber-500 border border-amber-200 rounded-full text-sm font-medium shadow-sm">${sugarText}</div>`;
         }
 
         if (html !== '') {

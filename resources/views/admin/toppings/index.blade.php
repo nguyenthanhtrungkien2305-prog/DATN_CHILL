@@ -18,43 +18,43 @@
             {{-- Tổng quan --}}
             <a href="#" 
                class="block px-4 py-3 rounded-lg transition-colors {{ request()->is('admin') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                📊 Tổng quan
+                Tổng quan
             </a>
             
             {{-- Quản lý Sản phẩm --}}
             <a href="{{ route('products.index') }}" 
                class="block px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('products.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                ☕ Quản lý Sản phẩm
+                Quản lý Sản phẩm
             </a>
             
             {{-- Quản lý Danh mục --}}
             <a href="{{ route('categories.index') }}" 
                class="block px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('categories.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                📁 Quản lý Danh mục
+                Quản lý Danh mục
             </a>
 
             {{-- Quản lý Topping (Mới thêm) --}}
             <a href="{{ route('toppings.index') }}" 
                class="block px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('toppings.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                🍡 Quản lý Topping
+                Quản lý Topping
             </a>
 
             {{-- Quản lý Voucher --}}
             <a href="{{ route('vouchers.index') }}" 
                class="block px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('vouchers.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
-                🎟️ Quản lý Voucher
+                Quản lý Voucher
             </a>
             
             {{-- Quản lý Đơn hàng --}}
             <a href="#" 
                class="block px-4 py-3 rounded-lg transition-colors hover:bg-white/10">
-                🛒 Quản lý Đơn hàng
+                Quản lý Đơn hàng
             </a>
             
             {{-- Quản lý Người dùng --}}
             <a href="#" 
                class="block px-4 py-3 rounded-lg transition-colors hover:bg-white/10">
-                👥 Quản lý Người dùng
+                Quản lý Người dùng
             </a>
         </nav>
         <div class="p-4 border-t border-white/10">

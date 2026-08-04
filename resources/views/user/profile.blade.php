@@ -28,7 +28,7 @@
                 <a href="{{ route('user.orders') }}" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white transition-colors">Đơn hàng của tôi</a>
                 <a href="{{ route('user.points') }}" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white transition-colors flex items-center justify-between">
                     <span>Tích điểm & Ưu đãi</span>
-                    <span class="bg-coral/20 text-coral text-xs font-black px-2 py-0.5 rounded-full">🏆 {{ auth()->user()->point ?? 0 }}p</span>
+                    <span class="bg-coral/20 text-coral text-xs font-black px-2 py-0.5 rounded-full">{{ auth()->user()->point ?? 0 }}p</span>
                 </a>
             </nav>
             <a href="{{ route('logout') }}" class="mt-auto px-4 py-3 text-coral hover:text-white transition-colors flex items-center gap-2">

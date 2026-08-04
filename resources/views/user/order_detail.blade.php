@@ -150,13 +150,13 @@
                                         <div class="flex flex-wrap gap-1.5 mt-1.5">
                                             @if(isset($item['ice_level']) && $item['ice_level'] !== '100')
                                                 <span class="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 font-medium">
-                                                    🧊 {{ $iceTexts[$item['ice_level']] ?? $item['ice_level'] }}
+                                                    {{ $iceTexts[$item['ice_level']] ?? $item['ice_level'] }}
                                                 </span>
                                             @endif
                                             
                                             @if(isset($item['sugar_level']) && $item['sugar_level'] !== '100')
                                                 <span class="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 font-medium">
-                                                    🍯 {{ $sugarTexts[$item['sugar_level']] ?? $item['sugar_level'] }}
+                                                    {{ $sugarTexts[$item['sugar_level']] ?? $item['sugar_level'] }}
                                                 </span>
                                             @endif
                                             
@@ -195,7 +195,7 @@
                                                     'toppings' => $item['toppings'] ?? []
                                                 ]) }}, '{{ addslashes($itemName) }}')" 
                                                 class="text-[11px] font-bold text-espresso bg-espresso/5 border border-espresso/20 px-3 py-1.5 rounded-xl hover:bg-espresso hover:text-white transition-all shadow-sm flex items-center justify-center gap-1 whitespace-nowrap">
-                                            🔄 Mua lại
+                                            Mua lại
                                         </button>
 
                                         @if($isReviewed)
@@ -204,7 +204,7 @@
                                             </span>
                                         @else
                                             <button type="button" onclick="openReviewModal('{{ $realProductId }}', '{{ addslashes($itemName) }}')" class="text-[11px] font-bold text-coral bg-coral/5 border border-coral/30 px-3 py-1.5 rounded-xl hover:bg-coral hover:text-white transition-all shadow-sm flex items-center justify-center gap-1 whitespace-nowrap">
-                                                ⭐ Viết Đánh Giá
+                                                Viết Đánh Giá
                                             </button>
                                         @endif
                                     </div>
@@ -233,7 +233,7 @@
                         <div class="pt-3 border-t border-gray-100 flex justify-end">
                             <a href="{{ route('cart.reorder_all', $order->order_id) }}" 
                                class="w-full sm:w-auto px-6 py-3 bg-coral text-white font-bold text-sm rounded-2xl hover:bg-[#d5523b] transition-all shadow-lg shadow-coral/20 flex items-center justify-center gap-2 uppercase tracking-wider">
-                                🛒 Mua lại toàn bộ đơn hàng
+                                Mua lại toàn bộ đơn hàng
                             </a>
                         </div>
                     @endif
