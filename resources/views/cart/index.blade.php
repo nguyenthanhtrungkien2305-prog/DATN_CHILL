@@ -26,95 +26,114 @@
         
         <div class="flex flex-col lg:flex-row gap-8 items-start">
             
-            <div class="w-full lg:w-2/3 space-y-4">
+            <div class="w-full lg:w-2/3 flex flex-col space-y-4">
                 
-                @foreach(session('cart') as $cartKey => $item)
-                @php
-                    $categoryName = \DB::table('products')
-                        ->join('categories', 'products.category_id', '=', 'categories.category_id')
-                        ->where('products.product_id', $item['product_id'])
-                        ->value('categories.name');
-
-                    $isStandaloneTopping = $categoryName && str_contains(mb_strtolower($categoryName), 'topping');
-                @endphp
-
-                <div class="{{ $isStandaloneTopping ? 'bg-coral/5 border-coral/20 p-4 rounded-[20px]' : 'bg-white border-espresso/5 p-4 md:p-6 rounded-[24px]' }} shadow-sm border flex flex-col sm:flex-row gap-6 relative group transition-all">
-                    
-                    <button type="button" onclick="removeCartItem('{{ $cartKey }}')" class="absolute top-4 right-4 text-espresso/40 hover:text-red-500 transition-colors p-2" title="Xóa món này">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    </button>
-
-                    <div class="{{ $isStandaloneTopping ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-24 h-24 sm:w-32 sm:h-32' }} rounded-2xl overflow-hidden bg-cream shrink-0">
-                        <img src="{{ $item['image'] ?? 'https://via.placeholder.com/200' }}" class="w-full h-full object-cover">
+                {{-- Thanh Tìm Kiếm Món Trong Giỏ Hàng --}}
+                @if(count(session('cart')) > 1)
+                    <div class="relative w-full bg-white rounded-2xl p-2.5 border border-espresso/10 shadow-sm flex items-center gap-3">
+                        <div class="pl-2 text-espresso/40">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <input type="text" id="cart-search-input" onkeyup="filterCartItems()" placeholder="Tìm món trong giỏ hàng..." class="w-full bg-transparent border-none outline-none text-sm text-espresso font-medium focus:ring-0 placeholder:text-espresso/40">
+                        <button type="button" onclick="clearCartSearch()" id="btn-clear-cart-search" class="hidden pr-2 text-espresso/40 hover:text-coral font-bold text-xs">✕ Xóa</button>
                     </div>
+                @endif
 
-                    <div class="flex-1 flex flex-col justify-center">
-                        @if($isStandaloneTopping)
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-coral mb-1 w-max">Topping Mua Rời</span>
-                        @endif
+                {{-- Container Giới Hạn Chiều Cao Có Thanh Cuộn (Scrollbar) --}}
+                <div id="cart-items-container" class="space-y-4 max-h-[620px] overflow-y-auto pr-2 custom-scrollbar">
+                    @foreach(session('cart') as $cartKey => $item)
+                    @php
+                        $categoryName = \DB::table('products')
+                            ->join('categories', 'products.category_id', '=', 'categories.category_id')
+                            ->where('products.product_id', $item['product_id'])
+                            ->value('categories.name');
 
-                        <h3 class="font-serif font-bold {{ $isStandaloneTopping ? 'text-lg' : 'text-xl' }} text-espresso mb-1 pr-8">{{ $item['name'] }}</h3>
+                        $isStandaloneTopping = $categoryName && str_contains(mb_strtolower($categoryName), 'topping');
+                    @endphp
+
+                    <div class="cart-item-card {{ $isStandaloneTopping ? 'bg-coral/5 border-coral/20 p-4 rounded-[20px]' : 'bg-white border-espresso/5 p-4 md:p-6 rounded-[24px]' }} shadow-sm border flex flex-col sm:flex-row gap-6 relative group transition-all" data-name="{{ mb_strtolower($item['name']) }}" data-size="{{ mb_strtolower($item['size_name']) }}">
                         
-                        <p class="text-sm text-espresso/60 mb-1">Kích cỡ: <span class="font-medium text-espresso">{{ $item['size_name'] }}</span></p>
-                        
-                        @php
-                            $iceTexts = ['70' => '70% Đá', '50' => '50% Đá', '20' => '20% Đá', '0' => 'Không đá', '0_full' => 'Không đá (Nước đầy ly)'];
-                            $sugarTexts = ['70' => '70% Đường', '50' => '50% Đường', '20' => '20% Đường', '0' => 'Không đường'];
-                        @endphp
-
-                        @if((isset($item['ice_level']) && $item['ice_level'] !== '100') || (isset($item['sugar_level']) && $item['sugar_level'] !== '100'))
-                            <div class="flex flex-wrap gap-1.5 mb-2">
-                                @if(isset($item['ice_level']) && $item['ice_level'] !== '100')
-                                    <span class="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 font-medium">
-                                        🧊 {{ $iceTexts[$item['ice_level']] ?? $item['ice_level'] }}
-                                    </span>
-                                @endif
-                                @if(isset($item['sugar_level']) && $item['sugar_level'] !== '100')
-                                    <span class="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100 font-medium">
-                                        🍯 {{ $sugarTexts[$item['sugar_level']] ?? $item['sugar_level'] }}
-                                    </span>
-                                @endif
-                            </div>
-                        @endif
-
-                        @if(!empty($item['toppings']))
-                            <div class="bg-[#FAF7F2] p-3 rounded-xl mb-3 border border-espresso/5 w-full md:w-max">
-                                <p class="text-xs font-bold text-espresso/50 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                                    Topping đi kèm
-                                </p>
-                                <div class="flex flex-wrap gap-2">
-                                    @foreach($item['toppings'] as $top)
-                                        <div class="px-3 py-1 bg-white text-coral border border-coral/20 rounded-lg text-xs font-medium flex items-center gap-1 shadow-sm">
-                                            {{ $top['name'] }} 
-                                            <span class="bg-coral text-white text-[10px] px-1.5 py-0.5 rounded-md ml-1">x{{ $top['qty'] }}</span>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endif
-
-                        @if(!$isStandaloneTopping)
-                        <button onclick="openEditToppingModal('{{ $cartKey }}')" class="text-xs font-medium text-coral hover:text-[#d5523b] hover:underline text-left w-max mb-4 flex items-center gap-1 mt-1">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                            Tùy chỉnh Đồ uống & Topping
+                        <button type="button" onclick="removeCartItem('{{ $cartKey }}')" class="absolute top-4 right-4 text-espresso/40 hover:text-red-500 transition-colors p-2" title="Xóa món này">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         </button>
-                        @endif
 
-                        <div class="flex items-end justify-between mt-auto pt-2">
-                            <div class="font-black {{ $isStandaloneTopping ? 'text-base' : 'text-lg' }} text-espresso">
-                                {{ number_format(($item['price'] + $item['topping_total']) * $item['quantity'], 0, ',', '.') }} đ
-                            </div>
+                        <div class="{{ $isStandaloneTopping ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-24 h-24 sm:w-32 sm:h-32' }} rounded-2xl overflow-hidden bg-cream shrink-0">
+                            <img src="{{ $item['image'] ?? 'https://via.placeholder.com/200' }}" class="w-full h-full object-cover">
+                        </div>
 
-                            <div class="flex items-center justify-between border border-espresso/20 rounded-full h-9 w-24 bg-white overflow-hidden">
-                                <button onclick="updateCartItemQty('{{ $cartKey }}', -1)" class="w-7 h-full flex items-center justify-center text-espresso hover:text-coral font-bold text-base transition-colors">-</button>
-                                <input type="text" value="{{ $item['quantity'] }}" readonly class="w-8 h-full text-center bg-transparent border-none outline-none font-bold text-sm text-espresso focus:ring-0 p-0 m-0 leading-none">
-                                <button onclick="updateCartItemQty('{{ $cartKey }}', 1)" class="w-7 h-full flex items-center justify-center text-espresso hover:text-coral font-bold text-base transition-colors">+</button>
+                        <div class="flex-1 flex flex-col justify-center">
+                            @if($isStandaloneTopping)
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-coral mb-1 w-max">Topping Mua Rời</span>
+                            @endif
+
+                            <h3 class="font-serif font-bold {{ $isStandaloneTopping ? 'text-lg' : 'text-xl' }} text-espresso mb-1 pr-8">{{ $item['name'] }}</h3>
+                            
+                            <p class="text-sm text-espresso/60 mb-1">Kích cỡ: <span class="font-medium text-espresso">{{ $item['size_name'] }}</span></p>
+                            
+                            @php
+                                $iceTexts = ['70' => '70% Đá', '50' => '50% Đá', '20' => '20% Đá', '0' => 'Không đá', '0_full' => 'Không đá (Nước đầy ly)'];
+                                $sugarTexts = ['70' => '70% Đường', '50' => '50% Đường', '20' => '20% Đường', '0' => 'Không đường'];
+                            @endphp
+
+                            @if((isset($item['ice_level']) && $item['ice_level'] !== '100') || (isset($item['sugar_level']) && $item['sugar_level'] !== '100'))
+                                <div class="flex flex-wrap gap-1.5 mb-2">
+                                    @if(isset($item['ice_level']) && $item['ice_level'] !== '100')
+                                        <span class="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 font-medium">
+                                            🧊 {{ $iceTexts[$item['ice_level']] ?? $item['ice_level'] }}
+                                        </span>
+                                    @endif
+                                    @if(isset($item['sugar_level']) && $item['sugar_level'] !== '100')
+                                        <span class="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100 font-medium">
+                                            🍯 {{ $sugarTexts[$item['sugar_level']] ?? $item['sugar_level'] }}
+                                        </span>
+                                    @endif
+                                </div>
+                            @endif
+
+                            @if(!empty($item['toppings']))
+                                <div class="bg-[#FAF7F2] p-3 rounded-xl mb-3 border border-espresso/5 w-full md:w-max">
+                                    <p class="text-xs font-bold text-espresso/50 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                                        Topping đi kèm
+                                    </p>
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach($item['toppings'] as $top)
+                                            <div class="px-3 py-1 bg-white text-coral border border-coral/20 rounded-lg text-xs font-medium flex items-center gap-1 shadow-sm">
+                                                {{ $top['name'] }} 
+                                                <span class="bg-coral text-white text-[10px] px-1.5 py-0.5 rounded-md ml-1">x{{ $top['qty'] }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
+                            @if(!$isStandaloneTopping)
+                            <button onclick="openEditToppingModal('{{ $cartKey }}')" class="text-xs font-medium text-coral hover:text-[#d5523b] hover:underline text-left w-max mb-4 flex items-center gap-1 mt-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                Tùy chỉnh Đồ uống & Topping
+                            </button>
+                            @endif
+
+                            <div class="flex items-end justify-between mt-auto pt-2">
+                                <div class="font-black {{ $isStandaloneTopping ? 'text-base' : 'text-lg' }} text-espresso">
+                                    {{ number_format(($item['price'] + $item['topping_total']) * $item['quantity'], 0, ',', '.') }} đ
+                                </div>
+
+                                <div class="flex items-center justify-between border border-espresso/20 rounded-full h-9 w-24 bg-white overflow-hidden">
+                                    <button onclick="updateCartItemQty('{{ $cartKey }}', -1)" class="w-7 h-full flex items-center justify-center text-espresso hover:text-coral font-bold text-base transition-colors">-</button>
+                                    <input type="text" value="{{ $item['quantity'] }}" readonly class="w-8 h-full text-center bg-transparent border-none outline-none font-bold text-sm text-espresso focus:ring-0 p-0 m-0 leading-none">
+                                    <button onclick="updateCartItemQty('{{ $cartKey }}', 1)" class="w-7 h-full flex items-center justify-center text-espresso hover:text-coral font-bold text-base transition-colors">+</button>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    @endforeach
+
+                    {{-- Khung hiển thị khi tìm không thấy sản phẩm --}}
+                    <div id="no-search-results" class="hidden bg-white p-8 text-center rounded-3xl border border-dashed border-gray-200">
+                        <p class="text-sm text-espresso/60 font-medium">🔍 Không tìm thấy sản phẩm nào khớp với từ khóa tìm kiếm.</p>
+                    </div>
                 </div>
-                @endforeach
 
             </div>
 
@@ -543,6 +562,39 @@
         fetch('{{ route('cart.removeVoucher') }}', {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }, body: JSON.stringify({})
         }).then(res => res.json()).then(data => { if (data.success) { window.location.reload(); } else { alert(data.message); } });
+    }
+
+    function filterCartItems() {
+        const query = (document.getElementById('cart-search-input')?.value || '').toLowerCase().trim();
+        const clearBtn = document.getElementById('btn-clear-cart-search');
+        if (clearBtn) {
+            clearBtn.classList.toggle('hidden', query === '');
+        }
+
+        let visibleCount = 0;
+        document.querySelectorAll('.cart-item-card').forEach(card => {
+            const name = card.getAttribute('data-name') || '';
+            const size = card.getAttribute('data-size') || '';
+            if (query === '' || name.includes(query) || size.includes(query)) {
+                card.style.display = '';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        const noResults = document.getElementById('no-search-results');
+        if (noResults) {
+            noResults.classList.toggle('hidden', visibleCount > 0);
+        }
+    }
+
+    function clearCartSearch() {
+        const input = document.getElementById('cart-search-input');
+        if (input) {
+            input.value = '';
+            filterCartItems();
+        }
     }
 </script>
 @endsection

@@ -12,22 +12,27 @@ class CheckActiveShift
     {
         $userId = auth()->user()->user_id ?? auth()->id();
         
-        // Tự động kết ca nếu đã hết giờ làm việc
-        \App\Http\Controllers\AttendanceController::autoCheckOutExpiredShifts($userId);
-        
-        // KIỂM TRA NGHIÊM NGẶT: Phải có ca làm việc đang mở (chưa check out)
+        // 1. Quản trị viên (Admin) -> Được phép ra vào POS tự do không cần Check-in
+        if (auth()->check() && auth()->user()->role === 'admin') {
+            return $next($request);
+        }
+
+        // 2. Tự động kết ca nếu ca đã hết giờ làm việc
+        if ($userId) {
+            \App\Http\Controllers\AttendanceController::autoCheckOutExpiredShifts($userId);
+        }
+
+        // 3. Kiểm tra xem Nhân viên đã Check-in ca làm việc chưa
         $hasActiveShift = DB::table('attendances')
             ->where('user_id', $userId)
             ->whereNull('check_out')
             ->exists();
 
         if (!$hasActiveShift) {
-            // Nếu gọi qua API (Bấm hoàn thành đơn, v.v.)
             if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['success' => false, 'message' => '⏰ HẾT GIỜ LÀM VIỆC: Bạn đã bị tự động Check-out!'], 403);
+                return response()->json(['success' => false, 'message' => '🔒 CHƯA CHECK-IN: Bạn cần Check-in để truy cập quầy bán hàng!'], 403);
             }
-            // Nếu gõ URL trực tiếp, đá văng ra ngoài
-            return redirect()->route('staff.shifts')->with('error', '🔒 HẾT GIỜ LÀM VIỆC HOẶC CHƯA CHECK-IN! Hệ thống đã tự động kết ca.');
+            return redirect()->route('staff.shifts')->with('error', '🔒 CHƯA CHECK-IN: Vui lòng Check-in (khi có lịch duyệt) để vào quầy bán hàng POS!');
         }
 
         return $next($request);

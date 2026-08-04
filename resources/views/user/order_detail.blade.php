@@ -178,20 +178,36 @@
                                 </div>
                             </div>
                             
-                            {{-- Giá tiền & Nút đánh giá --}}
+                            {{-- Giá tiền & Nút đánh giá / Mua lại --}}
                             <div class="shrink-0 flex flex-col sm:items-end justify-between sm:w-1/3">
                                 <div class="font-bold text-coral text-sm mb-3 sm:mb-0">{{ number_format($itemPrice, 0, ',', '.') }}đ</div>
                                 
                                 @if($order->status == 'completed')
-                                    @if($isReviewed)
-                                        <span class="text-[11px] font-bold text-emerald-500 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100 flex items-center justify-center gap-1 shadow-sm w-full sm:w-auto mt-2">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Đã đánh giá
-                                        </span>
-                                    @else
-                                        <button type="button" onclick="openReviewModal('{{ $realProductId }}', '{{ addslashes($itemName) }}')" class="w-full sm:w-auto text-[11px] font-bold text-coral bg-coral/5 border border-coral/30 px-3 py-1.5 rounded-xl hover:bg-coral hover:text-white transition-all shadow-sm flex items-center justify-center gap-1 mt-2">
-                                            ⭐ Viết Đánh Giá
+                                    <div class="flex items-center gap-2 mt-2 w-full sm:w-auto justify-end">
+                                        {{-- Nút MUA LẠI từng sản phẩm (nằm bên trái nút đánh giá) --}}
+                                        <button type="button" 
+                                                onclick="buyItemAgain({{ json_encode([
+                                                    'product_id' => $realProductId,
+                                                    'variant_id' => $item['variant_id'] ?? null,
+                                                    'quantity' => $itemQty,
+                                                    'ice_level' => $item['ice_level'] ?? '100',
+                                                    'sugar_level' => $item['sugar_level'] ?? '100',
+                                                    'toppings' => $item['toppings'] ?? []
+                                                ]) }}, '{{ addslashes($itemName) }}')" 
+                                                class="text-[11px] font-bold text-espresso bg-espresso/5 border border-espresso/20 px-3 py-1.5 rounded-xl hover:bg-espresso hover:text-white transition-all shadow-sm flex items-center justify-center gap-1 whitespace-nowrap">
+                                            🔄 Mua lại
                                         </button>
-                                    @endif
+
+                                        @if($isReviewed)
+                                            <span class="text-[11px] font-bold text-emerald-500 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100 flex items-center justify-center gap-1 shadow-sm whitespace-nowrap">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Đã đánh giá
+                                            </span>
+                                        @else
+                                            <button type="button" onclick="openReviewModal('{{ $realProductId }}', '{{ addslashes($itemName) }}')" class="text-[11px] font-bold text-coral bg-coral/5 border border-coral/30 px-3 py-1.5 rounded-xl hover:bg-coral hover:text-white transition-all shadow-sm flex items-center justify-center gap-1 whitespace-nowrap">
+                                                ⭐ Viết Đánh Giá
+                                            </button>
+                                        @endif
+                                    </div>
                                 @endif
                             </div>
                         </div>
@@ -203,15 +219,25 @@
                     @endforelse
                 </div>
 
-                {{-- Tổng Tiền --}}
+                {{-- Tổng Tiền & Nút Mua lại toàn bộ đơn hàng --}}
                 <div class="mt-6 pt-4 border-t border-gray-200">
                     @if(isset($order->discount_amount) && $order->discount_amount > 0)
                         <div class="flex justify-between text-sm text-espresso/60 mb-2"><span>Giảm giá Voucher:</span><span class="text-coral font-bold">-{{ number_format($order->discount_amount, 0, ',', '.') }}đ</span></div>
                     @endif
-                    <div class="flex justify-between items-end">
+                    <div class="flex justify-between items-end mb-4">
                         <span class="font-bold text-espresso uppercase tracking-wider text-sm">Tổng thanh toán:</span>
                         <span class="font-black text-2xl text-coral">{{ number_format($order->total_amount, 0, ',', '.') }}đ</span>
                     </div>
+
+                    @if($order->status == 'completed')
+                        <div class="pt-3 border-t border-gray-100 flex justify-end">
+                            <a href="{{ route('cart.reorder_all', $order->order_id) }}" 
+                               class="w-full sm:w-auto px-6 py-3 bg-coral text-white font-bold text-sm rounded-2xl hover:bg-[#d5523b] transition-all shadow-lg shadow-coral/20 flex items-center justify-center gap-2 uppercase tracking-wider">
+                                🛒 Mua lại toàn bộ đơn hàng
+                            </a>
+                        </div>
+                    @endif
+
                     @if($order->status == 'pending')
                         <form action="{{ route('user.orders.cancel', $order->order_id) }}" method="POST" class="mt-4 text-right" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?');">
                             @csrf
@@ -280,6 +306,30 @@
     function closeReviewModal() {
         let modal = document.getElementById('review-modal');
         if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+    }
+
+    function buyItemAgain(itemData, itemName) {
+        fetch("{{ route('cart.add') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': "{{ csrf_token() }}"
+            },
+            body: JSON.stringify(itemData)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert("Đã thêm món \"" + itemName + "\" vào giỏ hàng thành công!");
+                window.location.href = "{{ route('cart.index') }}";
+            } else {
+                alert(data.message || "Có lỗi xảy ra khi thêm vào giỏ hàng!");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Lỗi kết nối máy chủ!");
+        });
     }
 </script>
 @endsection

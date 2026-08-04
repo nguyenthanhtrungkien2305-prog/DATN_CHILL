@@ -24,6 +24,12 @@
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('admin.dashboard') || request()->is('admin') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
                 <span class="text-xl">📊</span> <span>Tổng quan</span>
             </a>
+
+            {{-- Bán hàng (POS) - Trực tiếp không cần Check-in --}}
+            <a href="{{ route('admin.pos') }}" target="_blank"
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('admin.pos') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
+                <span class="text-xl">🖥️</span> <span>Bán hàng (POS)</span>
+            </a>
             
             {{-- Quản lý Sản phẩm --}}
             <a href="{{ route('products.index') }}" 

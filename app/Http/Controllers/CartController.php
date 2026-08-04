@@ -19,6 +19,9 @@ class CartController extends Controller
         }
         if (is_array($input) || is_object($input)) {
             foreach ($input as $id => $qty) {
+                if (is_array($qty)) {
+                    $qty = $qty['qty'] ?? 0;
+                }
                 $id = (int)$id;
                 $qty = (int)$qty;
                 if ($id > 0 && $qty > 0) {
@@ -99,6 +102,13 @@ class CartController extends Controller
     public function index()
     {
         $cart = session()->get('cart', []);
+
+        // Nạp giỏ hàng từ CSDL nếu session rỗng và người dùng đã đăng nhập
+        if (empty($cart) && auth()->check()) {
+            self::loadCartFromDatabase();
+            $cart = session()->get('cart', []);
+        }
+
         $subTotal = 0;
         foreach ($cart as $item) {
             $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
@@ -128,9 +138,11 @@ class CartController extends Controller
     // 2. Thêm sản phẩm vào giỏ (Đã dùng Bộ lọc)
     public function add(Request $request)
     {
-        $productId = $request->product_id;
-        $variantId = $request->variant_id;
-        $quantity = (int)($request->quantity ?? 1);
+        $productId = $request->input('product_id', $request->input('productId', $request->input('id')));
+        $variantId = $request->input('variant_id', $request->input('variantId'));
+        $quantity = (int)($request->input('quantity', 1));
+        if ($quantity < 1) $quantity = 1;
+
         $iceLevel = $request->input('ice_level', '100');
         $sugarLevel = $request->input('sugar_level', '100');
         
@@ -139,15 +151,21 @@ class CartController extends Controller
 
         $product = DB::table('products')->where('product_id', $productId)->first();
 
-        if (!$variantId && $product) {
-            $firstVariant = DB::table('product_variants')->where('product_id', $product->product_id)->orderBy('price', 'asc')->first();
-            if ($firstVariant) $variantId = $firstVariant->variant_id;
+        if (!$product) {
+            return response()->json(['success' => false, 'message' => 'Món này hiện không còn tồn tại hoặc đã ngừng kinh doanh!']);
         }
 
-        $variant = DB::table('product_variants')->where('variant_id', $variantId)->first();
+        $variant = null;
+        if ($variantId) {
+            $variant = DB::table('product_variants')->where('variant_id', $variantId)->first();
+        }
 
-        if (!$product || !$variant) {
-            return response()->json(['success' => false, 'message' => 'Sản phẩm hoặc kích cỡ không hợp lệ!']);
+        if (!$variant) {
+            $variant = DB::table('product_variants')->where('product_id', $product->product_id)->orderBy('price', 'asc')->first();
+        }
+
+        if (!$variant) {
+            return response()->json(['success' => false, 'message' => 'Sản phẩm này chưa được thiết lập kích cỡ/giá bán!']);
         }
 
         $toppingDetails = [];
@@ -474,6 +492,154 @@ class CartController extends Controller
                     ]);
                 }
             }
+        }
+    }
+
+    /**
+     * NẠP GIỎ HÀNG TỪ CSDL (CHỐNG MẤT GIỎ KHI ĐĂNG NHẬP HOẶC MOUNT SESSION)
+     */
+    public static function loadCartFromDatabase()
+    {
+        if (!auth()->check() || !\Illuminate\Support\Facades\Schema::hasTable('cart_items')) return;
+
+        $userId = auth()->id() ?? auth()->user()->user_id;
+        $cartId = DB::table('carts')->where('user_id', $userId)->value('cart_id');
+        if (!$cartId) return;
+
+        $dbItems = DB::table('cart_items')->where('cart_id', $cartId)->get();
+        if ($dbItems->isEmpty()) return;
+
+        $cart = session()->get('cart', []);
+
+        foreach ($dbItems as $dbItem) {
+            $productId = $dbItem->product_id;
+            $variantId = $dbItem->variant_id;
+            $quantity = (int)$dbItem->quantity;
+            $iceLevel = $dbItem->ice_level ?? '100';
+            $sugarLevel = $dbItem->sugar_level ?? '100';
+            $cleanToppings = json_decode($dbItem->toppings, true) ?? [];
+
+            $product = DB::table('products')->where('product_id', $productId)->first();
+            if (!$variantId && $product) {
+                $firstVariant = DB::table('product_variants')->where('product_id', $product->product_id)->orderBy('price', 'asc')->first();
+                if ($firstVariant) $variantId = $firstVariant->variant_id;
+            }
+            $variant = DB::table('product_variants')->where('variant_id', $variantId)->first();
+
+            if ($product && $variant) {
+                $toppingDetails = [];
+                $toppingTotal = 0;
+
+                foreach ($cleanToppings as $topId => $topVal) {
+                    $topQty = is_array($topVal) ? ($topVal['qty'] ?? 0) : (int)$topVal;
+                    $topProduct = DB::table('products')->where('product_id', $topId)->first();
+                    $topPrice = DB::table('product_variants')->where('product_id', $topId)->min('price');
+                    $topPrice = $topPrice ? (float) $topPrice : 0;
+
+                    if ($topProduct && $topQty > 0) {
+                        $toppingDetails[$topId] = [
+                            'name' => $topProduct->name,
+                            'price' => $topPrice,
+                            'qty' => $topQty
+                        ];
+                        $toppingTotal += ($topPrice * $topQty);
+                    }
+                }
+
+                if ($iceLevel === '0_full') {
+                    $toppingTotal += 3000;
+                }
+
+                $cartKey = md5($productId . '_' . $variantId . '_' . $iceLevel . '_' . $sugarLevel . '_' . json_encode($cleanToppings));
+
+                $cart[$cartKey] = [
+                    'product_id' => $product->product_id,
+                    'name' => $product->name,
+                    'image' => $product->image_url,
+                    'variant_id' => $variant->variant_id,
+                    'size_name' => DB::table('sizes')->where('size_id', $variant->size_id)->value('name') ?? 'Mặc định',
+                    'price' => (float) $variant->price,
+                    'quantity' => $quantity,
+                    'toppings' => $toppingDetails,
+                    'topping_total' => $toppingTotal,
+                    'ice_level' => $iceLevel,
+                    'sugar_level' => $sugarLevel,
+                ];
+            }
+        }
+
+        session()->put('cart', $cart);
+    }
+
+    /**
+     * MUA LẠI TOÀN BỘ ĐƠN HÀNG
+     */
+    public function reorderAll($id)
+    {
+        $userId = auth()->user()->user_id ?? auth()->id();
+        $order = DB::table('orders')
+            ->where('order_id', $id)
+            ->first();
+
+        if (!$order) {
+            return redirect()->back()->with('error', 'Không tìm thấy đơn hàng!');
+        }
+
+        $items = [];
+        if (!empty($order->items)) {
+            $decoded = json_decode($order->items, true);
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded, true);
+            }
+            if (is_array($decoded)) {
+                $items = $decoded;
+            }
+        }
+
+        if (empty($items)) {
+            return redirect()->back()->with('error', 'Đơn hàng không có sản phẩm để mua lại!');
+        }
+
+        $addedCount = 0;
+        $skippedCount = 0;
+
+        foreach ($items as $item) {
+            $productId = $item['product_id'] ?? $item['productId'] ?? $item['id'] ?? 0;
+            $variantId = $item['variant_id'] ?? $item['variantId'] ?? null;
+            $quantity = (int)($item['quantity'] ?? 1);
+            $iceLevel = $item['ice_level'] ?? '100';
+            $sugarLevel = $item['sugar_level'] ?? '100';
+            $rawToppings = $item['toppings'] ?? [];
+
+            $dummyReq = new Request([
+                'product_id' => $productId,
+                'variant_id' => $variantId,
+                'quantity' => $quantity,
+                'ice_level' => $iceLevel,
+                'sugar_level' => $sugarLevel,
+                'toppings' => $rawToppings
+            ]);
+
+            $res = $this->add($dummyReq);
+            $resData = json_decode($res->getContent(), true);
+
+            if (isset($resData['success']) && $resData['success']) {
+                $addedCount++;
+            } else {
+                $skippedCount++;
+            }
+        }
+
+        session()->save();
+
+        if ($addedCount > 0) {
+            $msg = "Đã mua lại thành công $addedCount món vào giỏ hàng!";
+            if ($skippedCount > 0) {
+                $msg .= " ($skippedCount món cũ đã ngừng kinh doanh nên hệ thống tự động bỏ qua)";
+            }
+            return redirect()->route('cart.index')->with('success', $msg);
+        } else {
+            return redirect()->back()->with('error', 'Rất tiếc! Tất cả các món trong đơn hàng này hiện đã bị xóa hoặc ngừng kinh doanh trên hệ thống.');
         }
     }
 }

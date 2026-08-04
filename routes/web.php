@@ -97,6 +97,7 @@ Route::prefix('cart')->group(function () {
     Route::post('/apply-voucher', [CartController::class, 'applyVoucher'])->name('cart.applyVoucher');
     Route::post('/remove-voucher', [CartController::class, 'removeVoucher'])->name('cart.removeVoucher');
     Route::get('/count', [CartController::class, 'getCount'])->name('cart.count');
+    Route::get('/reorder-all/{id}', [CartController::class, 'reorderAll'])->name('cart.reorder_all');
 });
 
 Route::prefix('checkout')->group(function () {
@@ -117,23 +118,23 @@ Route::prefix('checkout')->group(function () {
 Route::middleware(['auth', 'staff'])->group(function () {
     
     // ==========================================
-    // VÙNG 1: KHÔNG CẦN VÀO CA VẪN TRUY CẬP ĐƯỢC
+    // VÙNG 1: KHÔNG CẦN VÀO CA VẪN TRUY CẬP ĐƯỢC (CHỨC NĂNG CÁ NHÂN)
     // ==========================================
     Route::get('/staff/shifts', [\App\Http\Controllers\AttendanceController::class, 'index'])->name('staff.shifts');
     Route::post('/staff/shifts/register', [\App\Http\Controllers\AttendanceController::class, 'storeRegistration'])->name('staff.shifts.register');
     Route::get('/staff/salary', [\App\Http\Controllers\SalaryController::class, 'index'])->name('staff.salary');   
+    Route::get('/staff/commission', [\App\Http\Controllers\CommissionController::class, 'index'])->name('staff.commission');
     Route::post('/staff/api/orders', [OrderController::class, 'storeApi']);
-    // 👉 ĐÃ CỨU: API Check-in và Check-out được đưa ra vùng an toàn để ai cũng bấm được!
+    // 👉 API Check-in và Check-out
     Route::post('/staff/attendance/checkin', [\App\Http\Controllers\AttendanceController::class, 'checkIn'])->name('staff.checkin');
     Route::post('/staff/attendance/checkout', [\App\Http\Controllers\AttendanceController::class, 'checkOut'])->name('staff.checkout');
 
     // ==========================================
-    // VÙNG 2: NHẠY CẢM - BẮT BUỘC PHẢI ĐANG TRONG CA LÀM (MIDDLEWARE CHẶN)
+    // VÙNG 2: BÁN HÀNG POS - BẮT BUỘC PHẢI DỰA TRÊN CHECK-IN (CA LÀM VIỆC ACTIVE)
     // ==========================================
     Route::middleware([\App\Http\Middleware\CheckActiveShift::class])->group(function () {
         Route::get('/staff/pos', [\App\Http\Controllers\PosController::class, 'index'])->name('staff.pos');
         Route::get('/staff/new-orders', [\App\Http\Controllers\PosController::class, 'newOrders'])->name('staff.new_orders');
-        Route::get('/staff/commission', [\App\Http\Controllers\CommissionController::class, 'index'])->name('staff.commission');
         
         // API xử lý đơn hàng và tìm kiếm khách hàng
         Route::get('/staff/api/customers/search', [\App\Http\Controllers\PosController::class, 'searchCustomers'])->name('staff.api.customers.search');
@@ -168,6 +169,7 @@ Route::prefix('chat')->group(function () {
 Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(function () {
     
     Route::get('/', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('pos', [\App\Http\Controllers\PosController::class, 'index'])->name('admin.pos');
     
     Route::resource('categories', AdminCategoryController::class);
     Route::resource('products', AdminProductController::class);
