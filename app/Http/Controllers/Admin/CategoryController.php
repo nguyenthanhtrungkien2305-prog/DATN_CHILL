@@ -75,13 +75,9 @@ class CategoryController extends Controller
             'image' => $imageUrl,
         ]);
 
-<<<<<<< HEAD
         Cache::forget('home_categories');
         Cache::forget('public_categories');
 
-        // Điều hướng về trang danh sách kèm thông báo
-=======
->>>>>>> main
         return redirect()->route('categories.index')->with('success', 'Thêm danh mục mới thành công!');
     }
 
@@ -122,13 +118,9 @@ class CategoryController extends Controller
             'image' => $imageUrl,
         ]);
 
-<<<<<<< HEAD
         Cache::forget('home_categories');
         Cache::forget('public_categories');
 
-        // Điều hướng về trang danh sách
-=======
->>>>>>> main
         return redirect()->route('categories.index')->with('success', 'Cập nhật danh mục thành công!');
     }
 
@@ -141,24 +133,15 @@ class CategoryController extends Controller
             return back()->with('error', 'Không thể xóa! Danh mục này đang chứa ' . $productCount . ' sản phẩm. Vui lòng chuyển các sản phẩm sang danh mục khác trước.');
         }
 
-<<<<<<< HEAD
-        // Nếu trống thì cho phép xóa
-        DB::table('categories')->where('category_id', $id)->delete();
-        
+        $category = DB::table('categories')->where('category_id', $id)->first();
+        if ($category) {
+            $this->deleteImageFile($category->image);
+            DB::table('categories')->where('category_id', $id)->delete();
+        }
+
         Cache::forget('home_categories');
         Cache::forget('public_categories');
 
         return redirect()->route('categories.index')->with('success', 'Đã xóa danh mục thành công!');
-=======
-        $category = DB::table('categories')->where('category_id', $id)->first();
-        if ($category) {
-            // Xóa file ảnh danh mục
-            $this->deleteImageFile($category->image);
-            // Xóa danh mục trong DB
-            DB::table('categories')->where('category_id', $id)->delete();
-        }
-
-        return redirect()->route('categories.index')->with('success', 'Đã xóa danh mục và ảnh đính kèm thành công!');
->>>>>>> main
     }
 }

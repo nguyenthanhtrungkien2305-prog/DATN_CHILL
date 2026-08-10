@@ -1,39 +1,33 @@
 @extends('admin.layouts.app')
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 @section('title', 'Quản lý Người dùng - Chill Chill Admin')
 @section('page_title', 'Danh sách Người dùng')
 
 @section('content')
 {{-- Thông báo --}}
 @if(session('success'))
-    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg relative mb-4 shadow-sm">{{ session('success') }}</div>
+    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl relative mb-4 shadow-sm">{{ session('success') }}</div>
 @endif
 @if(session('error'))
-    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4 shadow-sm">{{ session('error') }}</div>
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl relative mb-4 shadow-sm">{{ session('error') }}</div>
 @endif
 
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
     <p class="text-gray-500">Quản lý tài khoản khách hàng, nhân viên và quản trị viên của cửa hàng.</p>
-    <a href="{{ route('users.create') }}" class="bg-[#e8634a] text-white px-6 py-2.5 rounded-lg hover:bg-[#d5523b] transition font-medium shadow-sm flex items-center gap-2 whitespace-nowrap">
-        <span>➕</span> Thêm người dùng mới
-    </a>
 </div>
 
 {{-- Thanh bộ lọc --}}
-<div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6">
-    <form action="{{ route('users.index') }}" method="GET" class="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+<div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-6">
+    <form action="{{ Route::has('admin.users.index') ? route('admin.users.index') : route('users.index') }}" method="GET" class="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
         <div class="flex-1 relative">
-            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">🔍</span>
             <input type="text" name="search" value="{{ request('search') }}" 
-                   placeholder="Tìm theo tên đăng nhập, email, số điện thoại..." 
-                   class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#e8634a] transition">
+                   placeholder="Tìm theo tên, email, số điện thoại..." 
+                   class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#e8634a] transition">
         </div>
         
         <div class="w-full md:w-48">
             <select name="role" onchange="this.form.submit()" 
-                    class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#e8634a] transition text-gray-700">
+                    class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#e8634a] transition text-gray-700">
                 <option value="">Tất cả Vai trò</option>
                 <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Quản trị viên (Admin)</option>
                 <option value="staff" {{ request('role') == 'staff' ? 'selected' : '' }}>Nhân viên (Staff)</option>
@@ -42,12 +36,12 @@
         </div>
         
         <div class="flex gap-2">
-            <button type="submit" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2 rounded-lg text-sm font-medium transition">
+            <button type="submit" class="bg-gray-800 hover:bg-gray-700 text-white px-5 py-2 rounded-xl text-sm font-medium transition">
                 Lọc
             </button>
             @if(request('search') || request('role'))
-                <a href="{{ route('users.index') }}" class="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center whitespace-nowrap">
-                    Xóa lọc
+                <a href="{{ Route::has('admin.users.index') ? route('admin.users.index') : route('users.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-xl text-sm font-medium transition flex items-center">
+                    Reset
                 </a>
             @endif
         </div>
@@ -58,85 +52,67 @@
     <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse min-w-[800px]">
             <thead>
-                <tr class="bg-gray-50 text-gray-500 text-sm border-b whitespace-nowrap">
+                <tr class="bg-gray-50 text-gray-500 text-sm border-b">
                     <th class="p-4 font-medium w-16 text-center">ID</th>
-                    <th class="p-4 font-medium w-28 text-center">Ảnh đại diện</th>
-                    <th class="p-4 font-medium">Tên đăng nhập</th>
+                    <th class="p-4 font-medium">Tài khoản / Người dùng</th>
                     <th class="p-4 font-medium">Email</th>
-                    <th class="p-4 font-medium">Số điện thoại</th>
-                    <th class="p-4 font-medium w-36 text-center">Vai trò</th>
-                    <th class="p-4 font-medium w-28 text-center">Điểm số</th>
+                    <th class="p-4 font-medium w-48 text-center">Vai trò phân quyền</th>
                     <th class="p-4 font-medium text-center w-36">Trạng thái</th>
-                    <th class="p-4 font-medium text-center w-40">Hành động</th>
                 </tr>
             </thead>
-            <tbody class="text-gray-700 text-sm">
+            <tbody class="text-gray-700 text-sm divide-y divide-gray-100">
                 @forelse($users as $u)
-                <tr class="border-b hover:bg-gray-50 transition">
-                    <td class="p-4 text-center text-gray-400 font-mono whitespace-nowrap">{{ $u->user_id }}</td>
-                    <td class="p-4 text-center whitespace-nowrap">
-                        <div class="inline-flex justify-center">
-                            <img src="{{ $u->avatar ? asset($u->avatar) : 'https://api.dicebear.com/7.x/adventurer-neutral/svg?seed=' . urlencode($u->name) }}" 
-                                 alt="{{ $u->name }}" 
-                                 class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm">
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="p-4 text-center font-bold text-gray-500">#{{ $u->user_id }}</td>
+                    <td class="p-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-[#e8634a]/10 text-[#e8634a] font-bold flex items-center justify-center text-sm">
+                                {{ strtoupper(substr($u->name, 0, 1)) }}
+                            </div>
+                            <div>
+                                <div class="font-bold text-gray-900">{{ $u->name }}</div>
+                                <div class="text-xs text-gray-400">{{ $u->phone ?? 'Chưa cập nhật SĐT' }}</div>
+                            </div>
                         </div>
                     </td>
-                    <td class="p-4 font-medium text-gray-900 text-base whitespace-nowrap">
-                        {{ $u->name }}
-                        @if(auth()->id() == $u->user_id || auth()->user()->user_id == $u->user_id)
-                            <span class="ml-1 text-xs bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100 font-medium whitespace-nowrap">Bạn</span>
-                        @endif
-                    </td>
-                    <td class="p-4 text-gray-600 font-mono whitespace-nowrap">{{ $u->email ?: '-' }}</td>
-                    <td class="p-4 text-gray-600 font-mono whitespace-nowrap">{{ $u->phone ?: '-' }}</td>
-                    <td class="p-4 text-center whitespace-nowrap">
-                        @if($u->role === 'admin')
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-100 shadow-sm whitespace-nowrap">
-                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Quản trị viên
-                            </span>
-                        @elseif($u->role === 'staff')
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 shadow-sm whitespace-nowrap">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Nhân viên
-                            </span>
+                    <td class="p-4 text-gray-600 font-mono text-xs">{{ $u->email ?: '-' }}</td>
+                    <td class="p-4 text-center">
+                        @if(Route::has('admin.users.update_role'))
+                        <form action="{{ route('admin.users.update_role', $u->user_id) }}" method="POST" class="m-0">
+                            @csrf
+                            <select name="role" onchange="this.form.submit()" 
+                                class="w-full rounded-xl px-3 py-1.5 text-xs font-bold border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#e8634a]/50 transition-colors cursor-pointer text-center
+                                {{ $u->role == 'admin' ? 'bg-red-50 text-red-600 border-red-100' : ($u->role == 'staff' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-blue-50 text-blue-600 border-blue-100') }}">
+                                <option value="user" {{ $u->role == 'user' ? 'selected' : '' }}>Khách hàng</option>
+                                <option value="staff" {{ $u->role == 'staff' ? 'selected' : '' }}>Nhân viên</option>
+                                <option value="admin" {{ $u->role == 'admin' ? 'selected' : '' }}>Admin</option>
+                            </select>
+                        </form>
                         @else
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 shadow-sm whitespace-nowrap">
-                                <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Khách hàng
+                            <span class="px-3 py-1 rounded-full text-xs font-bold {{ $u->role == 'admin' ? 'bg-red-50 text-red-600' : ($u->role == 'staff' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600') }}">
+                                {{ ucfirst($u->role) }}
                             </span>
                         @endif
                     </td>
-                    <td class="p-4 text-center font-semibold text-amber-600 whitespace-nowrap">{{ number_format($u->point) }}</td>
-                    <td class="p-4 text-center whitespace-nowrap">
-                        @if($u->is_locked)
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-100 shadow-sm whitespace-nowrap">
-                                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Đã khóa
-                            </span>
+                    <td class="p-4 text-center">
+                        @if(Route::has('users.toggle_lock') && auth()->id() != $u->user_id)
+                        <form action="{{ route('users.toggle_lock', $u->user_id) }}" method="POST" 
+                              onsubmit="return confirm('Bạn có chắc chắn muốn {{ $u->is_locked ? 'mở khóa' : 'khóa' }} tài khoản này?');">
+                            @csrf
+                            <button type="submit" class="px-3 py-1 text-xs font-bold rounded-full transition {{ $u->is_locked ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200' }}">
+                                {{ $u->is_locked ? '🔒 Đã khóa' : '✅ Hoạt động' }}
+                            </button>
+                        </form>
                         @else
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-100 shadow-sm whitespace-nowrap">
-                                <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Hoạt động
+                            <span class="px-3 py-1 text-xs font-bold rounded-full {{ $u->is_locked ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">
+                                {{ $u->is_locked ? '🔒 Đã khóa' : '✅ Hoạt động' }}
                             </span>
                         @endif
-                    </td>
-                    <td class="p-4 whitespace-nowrap">
-                        <div class="flex justify-center items-center gap-3">
-                            @if(auth()->id() != $u->user_id && auth()->user()->user_id != $u->user_id)
-                            <form action="{{ route('users.toggle_lock', $u->user_id) }}" method="POST" 
-                                  onsubmit="return confirm('Bạn có chắc chắn muốn {{ $u->is_locked ? 'mở khóa' : 'khóa' }} tài khoản này?');">
-                                @csrf
-                                <button type="submit" class="{{ $u->is_locked ? 'text-emerald-600 hover:text-emerald-800' : 'text-red-600 hover:text-red-800' }} font-medium flex items-center gap-1 transition whitespace-nowrap">
-                                    {{ $u->is_locked ? '🔓' : '🔒' }} <span>{{ $u->is_locked ? 'Mở khóa' : 'Khóa' }}</span>
-                                </button>
-                            </form>
-                            @else
-                            <span class="text-gray-300 select-none cursor-not-allowed font-medium flex items-center gap-1 whitespace-nowrap" title="Không thể tự khóa bản thân">
-                                🔒 <span class="line-through text-gray-300">Khóa</span>
-                            </span>
-                            @endif
-                        </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="9" class="p-8 text-center text-gray-400 whitespace-nowrap">
+                    <td colspan="5" class="p-8 text-center text-gray-400 italic">
                         Không tìm thấy người dùng phù hợp.
                     </td>
                 </tr>
@@ -146,98 +122,10 @@
     </div>
     
     {{-- Phân trang --}}
-    @if($users->hasPages())
-    <div class="p-4 border-t bg-gray-50 flex items-center justify-between">
-        <div class="text-xs text-gray-500">
-            Hiển thị {{ $users->firstItem() }} đến {{ $users->lastItem() }} trong tổng số {{ $users->total() }} người dùng
-        </div>
-        <div>
-            {{ $users->appends(request()->query())->links() }}
-        </div>
+    @if(method_exists($users, 'hasPages') && $users->hasPages())
+    <div class="p-4 border-t">
+        {{ $users->appends(request()->query())->links() }}
     </div>
     @endif
 </div>
 @endsection
-=======
-@section('title', 'Quản lý Người Dùng')
-=======
-@section('title', 'Quản lý Người Dùng - Chill Chill Admin')
->>>>>>> main
-
-@section('content')
-    {{-- Header của trang --}}
-    <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 shrink-0">
-        <h2 class="text-xl font-semibold text-gray-800">Quản lý Người Dùng</h2>
-        <div class="flex items-center gap-4">
-            <span class="text-sm text-gray-600">Xin chào, <strong>{{ Auth::user()->name }}</strong></span>
-            <a href="{{ route('logout') }}" class="text-sm text-red-500 hover:underline">Đăng xuất</a>
-        </div>
-    </header>
-
-    <div class="p-8">
-        <div class="w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            
-            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
-                <h3 class="text-lg font-black text-gray-800 uppercase tracking-wider">Danh sách tài khoản</h3>
-                <span class="bg-gray-100 text-gray-600 px-4 py-1.5 rounded-lg text-sm font-bold">Tổng: {{ count($users) }} người</span>
-            </div>
-
-            <div class="overflow-x-auto w-full">
-                <table class="w-full text-left border-collapse min-w-[800px]">
-                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-bold border-b border-gray-100">
-                        <tr>
-                            <th class="p-4 pl-6 w-20">ID</th>
-                            <th class="p-4">Tài khoản / Người dùng</th>
-                            <th class="p-4 text-center w-48">Vai trò phân quyền</th>
-                            <th class="p-4 pr-6 text-right w-32">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-50">
-                        @foreach($users as $user)
-                        <tr class="hover:bg-gray-50/80 transition-colors group">
-                            <td class="p-4 pl-6 font-black text-gray-900">{{ $user->user_id }}</td>
-                            
-                            <td class="p-4">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-10 h-10 rounded-full bg-[#e8634a]/10 flex items-center justify-center text-[#e8634a] font-black text-lg shadow-sm">
-                                        {{ strtoupper(substr($user->name, 0, 1)) }}
-                                    </div>
-                                    <div>
-                                        <div class="font-bold text-gray-800 text-base">{{ $user->name }}</div>
-                                        <div class="text-xs text-gray-400 font-medium mt-0.5">Tham gia: {{ $user->created_at ? $user->created_at->format('d/m/Y') : 'Mới' }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            
-                            <td class="p-4 text-center">
-                                <form action="{{ route('admin.users.update_role', $user->user_id) }}" method="POST" class="m-0">
-                                    @csrf
-                                    <select name="role" onchange="this.form.submit()" 
-                                        class="w-full rounded-lg px-3 py-2 text-sm font-bold border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#e8634a]/50 transition-colors cursor-pointer text-center
-                                        {{ $user->role == 'admin' ? 'bg-red-50 text-red-600 border-red-100' : ($user->role == 'staff' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-gray-50 text-gray-600') }}">
-                                        <option value="user" {{ $user->role == 'user' ? 'selected' : '' }}>Khách hàng</option>
-                                        <option value="staff" {{ $user->role == 'staff' ? 'selected' : '' }}>Nhân viên</option>
-                                        <option value="admin" {{ $user->role == 'admin' ? 'selected' : '' }}>Admin</option>
-                                    </select>
-                                </form>
-                            </td>
-                            
-                            <td class="p-4 pr-6 text-right">
-                                <button class="text-red-400 hover:text-red-600 font-bold text-sm px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">
-                                    Xóa
-                                </button>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-<<<<<<< HEAD
-</div>
-@endsection
->>>>>>> main
-=======
-@endsection
->>>>>>> main

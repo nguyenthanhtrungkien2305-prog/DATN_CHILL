@@ -17,3 +17,8 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+// Route Webhook tự động nhận thông báo chuyển khoản từ SePay
+use App\Http\Controllers\PaymentWebhookController;
+Route::post('/sepay-webhook', [PaymentWebhookController::class, 'handleSePay']);
+

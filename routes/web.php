@@ -151,6 +151,7 @@ Route::prefix('chat')->group(function () {
     Route::post('/start', [ChatController::class, 'startSession'])->name('chat.start');
     Route::get('/messages', [ChatController::class, 'getMessages'])->name('chat.messages');
     Route::post('/send', [ChatController::class, 'sendMessage'])->name('chat.send');
+    Route::post('/add-to-cart', [ChatController::class, 'addToCartAction'])->name('chat.add_to_cart');
 });
 /*
 |--------------------------------------------------------------------------
@@ -160,6 +161,7 @@ Route::prefix('chat')->group(function () {
 Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(function () {
     
     Route::get('/', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index']);
     
     Route::resource('categories', AdminCategoryController::class);
     Route::resource('products', AdminProductController::class);

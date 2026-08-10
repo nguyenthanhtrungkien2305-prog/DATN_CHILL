@@ -335,26 +335,9 @@ class AttendanceController extends Controller
             'updated_at' => $now
         ]);
 
-<<<<<<< HEAD
-        // 3. Gắn tên nhân viên vào Ca 4 tiếng hiện tại (Để chia hoa hồng)
-        $shiftIndex = floor($now->hour / 4) + 1;
-        $startHour = ($shiftIndex - 1) * 4;
-        $startTime = sprintf('%02d:00:00', $startHour);
-        $endTime = ($startHour + 4 == 24) ? '23:59:59' : sprintf('%02d:00:00', $startHour + 4);
-        
-        $shift = \App\Models\Shift::firstOrCreate(
-            ['date' => $now->format('Y-m-d'), 'start_time' => $startTime],
-            [
-                'name' => "Ca $shiftIndex (" . sprintf('%02d:00', $startHour) . " - " . sprintf('%02d:00', $startHour + 4 > 23 ? 0 : $startHour + 4) . ")",
-                'end_time' => $endTime
-            ]
-        );
-
-        if (!$shift->users->contains($userId)) {
-            $shift->users()->attach($userId);
-=======
         return response()->json(['success' => true, 'message' => 'Vào ca thành công! Hệ thống đã mở khóa các tính năng Bán hàng.']);
     }
+
     // ==========================================
     // 4. API XỬ LÝ CHECK-OUT (Kết ca) - BẢN QUÉT SẠCH LỖI
     // ==========================================
@@ -379,13 +362,11 @@ class AttendanceController extends Controller
                 'success' => true, 
                 'message' => 'Kết ca thành công! Hệ thống đã khóa quyền truy cập Bán hàng.'
             ]);
->>>>>>> main
         }
 
         return response()->json([
             'success' => false, 
             'message' => 'LỖI: Bạn chưa Check-in hoặc đã Kết ca rồi!'
         ]);
-    
     }
 }

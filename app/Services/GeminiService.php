@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class GeminiService
 {
@@ -21,9 +22,13 @@ class GeminiService
      */
     public function getAiResponse($chatMessages)
     {
+        // Lấy tin nhắn mới nhất của khách hàng để làm dữ liệu tra cứu fallback
+        $lastMsgObj = is_countable($chatMessages) ? $chatMessages->last() : null;
+        $lastUserMsg = is_object($lastMsgObj) ? $lastMsgObj->message : (is_array($lastMsgObj) ? ($lastMsgObj['message'] ?? '') : '');
+
         if (!$this->apiKey) {
-            Log::warning('Gemini API key is not set.');
-            return 'Dạ, hiện tại trợ lý ảo AI của Chill Chill Coffee đang tạm ngắt kết nối. Bạn vui lòng chờ nhân viên tư vấn trong giây lát nhé! ☕';
+            Log::warning('Gemini API key is not set. Using Smart Local Search Fallback.');
+            return $this->getSmartFallbackResponse($lastUserMsg);
         }
 
         // 1. Xây dựng System Instruction (Menu động từ DB & thông tin khách hàng)
@@ -104,26 +109,26 @@ class GeminiService
                                 ],
                                 'payment_method' => [
                                     'type' => 'STRING',
-                                    'enum' => ['cash', 'qr'],
-                                    'description' => "Phương thức thanh toán: 'cash' (tiền mặt COD) hoặc 'qr' (chuyển khoản ngân hàng qua mã QR)"
+                                    'enum' => ['cod', 'qr'],
+                                    'description' => "Thanh toán: 'cod' (tiền mặt khi nhận), 'qr' (chuyển khoản ngân hàng QR Code)"
                                 ],
                                 'items' => [
                                     'type' => 'ARRAY',
-                                    'description' => 'Danh sách các sản phẩm và toppings kèm theo trong đơn hàng này',
+                                    'description' => 'Danh sách các sản phẩm cần đặt mua',
                                     'items' => [
                                         'type' => 'OBJECT',
                                         'properties' => [
                                             'product_name' => [
                                                 'type' => 'STRING',
-                                                'description' => 'Tên chính xác của sản phẩm trong menu.'
+                                                'description' => 'Tên sản phẩm'
                                             ],
                                             'size' => [
                                                 'type' => 'STRING',
-                                                'description' => "Kích cỡ: 'S', 'M', 'L' hoặc 'Mặc định'."
+                                                'description' => "Size: 'S', 'M', 'L' hoặc 'Mặc định'"
                                             ],
                                             'quantity' => [
                                                 'type' => 'INTEGER',
-                                                'description' => 'Số lượng món này.'
+                                                'description' => 'Số lượng'
                                             ],
                                             'toppings' => [
                                                 'type' => 'ARRAY',
@@ -273,11 +278,11 @@ class GeminiService
                     }
                 }
 
-                return 'Dạ, Chill Chill chưa nghe rõ ý bạn. Bạn có thể nói chi tiết hơn được không?';
+                return $this->getSmartFallbackResponse($lastUserMsg);
             }
 
             Log::error('Gemini API Error: ' . $response->body());
-            return 'Dạ, hiện tại kết nối của trợ lý ảo đang gặp sự cố nhỏ. Xin lỗi bạn vì sự bất tiện này! ☕';
+            return $this->getSmartFallbackResponse($lastUserMsg);
 
         } catch (\Exception $e) {
             Log::error('Gemini Service Exception: ' . $e->getMessage());
@@ -391,29 +396,17 @@ class GeminiService
 " . $userInfo . "
 
 Nhiệm vụ của bạn:
-1. Bạn TUYỆT ĐỐI KHÔNG chào hỏi (như 'Chào bạn', 'Xin chào', 'Chill Chill Coffee xin chào',...) hoặc chúc (như 'Chúc bạn một ngày tốt lành', 'Chúc bạn buổi tối vui vẻ',...) trong bất kỳ tin nhắn phản hồi nào của mình. Lý do là vì tin nhắn mở đầu của cửa sổ chat (do hệ thống hiển thị sẵn) đã chào hỏi và chúc khách hàng theo thời gian thực rồi. Bạn chỉ cần đi thẳng vào việc phản hồi câu hỏi hoặc thực hiện tư vấn món cho khách.
-2. Dựa vào thời gian hiện tại của hệ thống để đề xuất món ăn/thức uống phù hợp nhất cho khách hàng:
-   - Hãy giới thiệu các món có trong menu ở dưới dựa theo danh mục (Cà phê Phin, Trà Trái Cây, Đá Xay, Bánh Ngọt).
-   - Hãy lưu ý rằng các món trong Menu thực tế của quán đang được đặt tên theo định dạng 'Món Ngon Chill Chill X' (X là số, ví dụ: 'Món Ngon Chill Chill 12', 'Món Ngon Chill Chill 3'). Bạn PHẢI sử dụng chính xác các tên này khi gợi ý và gọi hàm. Bạn có thể giải thích thêm loại danh mục của món đó để khách dễ hiểu, ví dụ: 'Món Ngon Chill Chill 12 (Cà phê Phin)' hoặc 'Món Ngon Chill Chill 3 (Bánh Ngọt)'.
-   - Không tự bịa ra các tên món như 'cà phê sữa đá', 'bạc xỉu', 'trà đào', 'bánh sừng bò' để tư vấn vì khách hàng sẽ không tìm thấy.
-3. Hỗ trợ tư vấn tài chính thông minh khi khách hàng đưa ra ngân sách giới hạn hoặc số lượng người (ví dụ: 'tôi có 200k, làm sao cho 4 người có đủ nước và bánh', hoặc 'mình có 100k nên gọi gì'):
-   - Hãy tính toán thông minh dựa vào bảng giá thực tế trong menu bên dưới để chọn ra các món (nước uống/bánh ngọt) phù hợp, đảm bảo tổng giá tiền luôn nhỏ hơn hoặc bằng ngân sách của khách.
-   - Trả lời cụ thể bằng cách liệt kê danh sách món được đề xuất, giá tiền của từng món, và tổng tiền của combo đó để khách hàng dễ dàng theo dõi.
-   - Nếu ngân sách quá ít không đủ chia đều cho tất cả mọi người có cả nước lẫn bánh, hãy tính toán và khuyên khách hàng chọn combo chỉ gồm nước (ví dụ: 4 ly nước hết 120k-140k), hoặc 4 ly nước kèm 2 cái bánh để chia sẻ cùng nhau, đảm bảo tổng tiền không vượt quá ngân sách. Hãy giải thích rõ ràng và khéo léo cho khách.
-4. Trực tiếp gợi ý đồ uống/bánh ngọt từ thực đơn của quán dựa theo nhu cầu, sở thích của khách (như muốn uống thanh mát, ít ngọt, ngọt ngào, đậm vị cà phê, v.v.).
-5. CHỈ gợi ý các món có trong menu được liệt kê ở dưới. Nếu khách hỏi những món không có trong menu, hãy khéo léo nói rằng quán chưa có món đó nhưng gợi ý một món thay thế tương tự có trong menu của quán.
-6. Cung cấp đường link chi tiết của đồ uống dưới dạng link markdown đẹp (ví dụ: [Đặt mua ngay](URL)) để khách có thể click vào xem ngay thông tin biến thể và thêm vào giỏ hàng. Hãy sử dụng chính xác URL tương đối (ví dụ: /san-pham/ten-san-pham) được cung cấp trong danh sách thực đơn bên dưới.
-7. Luôn khuyên khách thêm topping phù hợp (như trân châu, thạch, trân châu trắng, v.v.) để đồ uống ngon hơn.
-8. Trả lời ngắn gọn, có bố cục rõ ràng, sử dụng các icon/emoji liên quan tới cà phê (☕, 🍵, 🍹, 🍰, ✨) để đoạn chat sinh động.
-9. ĐẶC BIỆT - TUÂN THỦ NGHIÊM NGẶT LUỒNG TƯ VẤN VÀ ĐẶT HÀNG THEO ĐÚNG THỨ TỰ SAU:
-   - **Bước 1 (Hỏi món)**: Hỏi nhu cầu/sở thích hoặc ngân sách, số người của khách.
-   - **Bước 2 (Tư vấn món)**: Đề xuất cụ thể các sản phẩm 'Món Ngon Chill Chill X' từ menu bên dưới phù hợp với nhu cầu.
-   - **Bước 3 (Chốt món)**: Khi khách đồng ý với các món gợi ý, hãy xác nhận danh sách và số lượng món cuối cùng, sau đó gọi ngay hàm `addToCart` để thêm các món này vào giỏ hàng cho khách.
-   - **Bước 4 (Hỏi hình thức phục vụ)**: Sau khi chốt món xong, hãy hỏi khách xem họ muốn dùng tại quán hay giao đi: 'Bạn muốn dùng tại quán hay giao đi ạ?'
-   - **Bước 5 (Tạo đơn tương ứng)**:
-     - Nếu khách chọn **dùng tại quán** (order_type là 'at_table'): Hãy hỏi số bàn (bàn số mấy?) và phương thức thanh toán (tiền mặt 'cash' hoặc chuyển khoản 'qr'). Sau đó gọi hàm `createOrder` với `order_type = 'at_table'` và `table_number = [số bàn]`. Bạn tuyệt đối không hỏi thêm họ tên, số điện thoại hay địa chỉ nhận hàng của họ.
-     - Nếu khách chọn **giao hàng** (order_type là 'delivery'): Hãy hỏi thông tin giao nhận: Họ tên, Số điện thoại, Địa chỉ nhận hàng (nếu đã đăng nhập, hỏi xem họ có muốn giao tới địa chỉ đã lưu hay không) và phương thức thanh toán ('cash' hoặc 'qr'). Sau đó gọi hàm `createOrder` với `order_type = 'delivery'`.
-   - Sau khi đơn hàng được tạo thành công, hãy thông báo đơn hàng của họ đang được xử lý và nhắc khách hàng xem màn hình chuyển hướng.
+1. Bạn TUYỆT ĐỐI KHÔNG chào hỏi (như 'Chào bạn', 'Xin chào', 'Chill Chill Coffee xin chào',...) hoặc chúc trong bất kỳ tin nhắn phản hồi nào. Đi thẳng vào việc phản hồi câu hỏi hoặc thực hiện tư vấn món cho khách.
+2. NHẬN BIẾT VÀ XỬ LÝ CÁC TRƯỜNG HỢP CÂU HỎI CỦA KHÁCH HÀNG:
+   - **Trường hợp 1: Hỏi các món theo danh mục (Cà phê Phin, Trà Trái Cây, Đá Xay, Bánh Ngọt, Topping)**: Phân loại các món theo đúng danh mục khách hỏi, báo giá và mô tả ngắn.
+   - **Trường hợp 2: Hỏi chia khẩu phần theo số tiền & số người (Tư vấn Combo ngân sách)**: Ví dụ khách bảo 'tôi có 200k cho 4 người' hoặc 'mình có 100k nên gọi gì', hãy tính toán thông minh các món nước + bánh sao cho tổng giá <= ngân sách khách đưa ra. Liệt kê rõ từng món, giá từng món và tổng tiền combo.
+   - **Trường hợp 3: Hỏi món ngon, món bán chạy nhất (Best Sellers / Hot Items)**: Giới thiệu các sản phẩm hot tiêu biểu nhất từ các danh mục của quán.
+   - **Trường hợp 4: Hỏi theo sở thích / khẩu vị đặc biệt**: Đồ uống thanh mát giải nhiệt (Trà trái cây/Đá xay), đồ uống đậm vị tỉnh táo (Cà phê Phin), món ngọt ngào tráng miệng (Bánh ngọt).
+3. ĐẶC BIỆT: Khi giới thiệu hoặc gợi ý bất kỳ món nào, hãy luôn đính kèm nút hành động theo định dạng Markdown: `[🛒 Thêm vào giỏ](action:add_to_cart?product_id=ID_SAN_PHAM&variant_id=ID_BIEN_THE)` để khách hàng có thể bấm mua trực tiếp ngay trên khung chat.
+4. LUỒNG XÁC NHẬN VÀ ĐẶT HÀNG:
+   - Khi khách đồng ý lấy món/combo, hãy gọi ngay hàm `addToCart` để thêm vào giỏ.
+   - Hỏi hình thức phục vụ: **Dùng tại quán (bàn số mấy?)** hay **Giao hàng (Họ tên, SĐT, Địa chỉ?)**.
+   - Gọi hàm `createOrder` tạo đơn tương ứng.
 
 Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $menuText;
     }
@@ -436,7 +429,7 @@ Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $me
      */
     protected function toolAddToCart($items)
     {
-        $cart = session()->get('cart', []);
+        $cart = \App\Http\Controllers\CartController::getCart();
         $addedCount = 0;
         $details = [];
 
@@ -553,6 +546,7 @@ Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $me
         }
 
         if ($addedCount > 0) {
+            \App\Http\Controllers\CartController::saveCart($cart);
             session()->put('cart', $cart);
             \App\Http\Controllers\CartController::checkAndRecalculateVoucher();
             session()->put('cart_updated_by_bot', true);
@@ -1141,8 +1135,7 @@ Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $me
                     'categories.name as category_name',
                     'product_variants.variant_id',
                     'sizes.name as size_name',
-                    'product_variants.price as variant_price',
-                    'products.price as base_price'
+                    'product_variants.price as variant_price'
                 )
                 ->orderBy('products.product_id')
                 ->get();
@@ -1467,6 +1460,412 @@ Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $me
         } catch (\Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Tra cứu thông minh trực tiếp từ Database khi không có Gemini API key hoặc khi API gián đoạn
+     */
+    protected function getSmartFallbackResponse($userMessage)
+    {
+        $msgRaw = $userMessage ?? '';
+        $msgLower = mb_strtolower(trim($msgRaw));
+
+        if (empty($msgLower)) {
+            return "Dạ, Chill Chill chào bạn! Bạn cần tư vấn món nước hay bánh ngọt gì cứ nhắn Chill Chill nhé! ☕🍰";
+        }
+
+        // Lấy danh sách sản phẩm active từ Cache / DB (sắp xếp theo độ dài tên giảm dần)
+        $allProducts = Cache::remember('active_products_for_bot', 600, function () {
+            return DB::table('products')
+                ->join('categories', 'products.category_id', '=', 'categories.category_id')
+                ->where('products.status', 1)
+                ->select('products.*', 'categories.name as category_name')
+                ->get()
+                ->sortByDesc(function($p) {
+                    return mb_strlen($p->name);
+                });
+        });
+
+        // =========================================================================
+        // CASE 1: HỎI CHIA KHẨU PHẦN THEO SỐ TIỀN VÀ ĐỒ UỐNG, BÁNH NGỌT (COMBO NGÂN SÁCH)
+        // =========================================================================
+        $isBudgetQuery = false;
+        $budget = 0;
+        $peopleCount = 2; // Mặc định 2 người
+
+        // Bắt số tiền (ví dụ: 100k, 200k, 150.000, 50k, 80k)
+        if (preg_match('/(\d+)\s*(k|000|nghìn|đ|d)/iu', $msgLower, $bMatch)) {
+            $val = (int)$bMatch[1];
+            $unit = mb_strtolower($bMatch[2]);
+            if ($unit === 'k' || $unit === 'nghìn') {
+                $budget = $val * 1000;
+            } elseif ($unit === '000' || $unit === 'đ' || $unit === 'd') {
+                $budget = ($val < 1000) ? $val * 1000 : $val;
+            }
+            $isBudgetQuery = true;
+        } elseif (preg_match('/(\d{2,3})\s*(triệu)/iu', $msgLower, $bMatch)) {
+            $budget = (int)$bMatch[1] * 1000000;
+            $isBudgetQuery = true;
+        }
+
+        // Bắt số người (ví dụ: 2 người, 4 bạn, 3 khách)
+        if (preg_match('/(\d+)\s*(người|bạn|khách|suất|khẩu\s*phần|nguoi)/iu', $msgLower, $pMatch)) {
+            $peopleCount = max(1, (int)$pMatch[1]);
+            $isBudgetQuery = true;
+        }
+
+        if (str_contains($msgLower, 'ngân sách') || str_contains($msgLower, 'combo') || str_contains($msgLower, 'chia khẩu phần') || str_contains($msgLower, 'bao nhiêu tiền')) {
+            $isBudgetQuery = true;
+            if ($budget === 0) $budget = 100000;
+        }
+
+        if ($isBudgetQuery && $budget > 0) {
+            $drinkProducts = DB::table('products')
+                ->join('categories', 'products.category_id', '=', 'categories.category_id')
+                ->join('product_variants', 'products.product_id', '=', 'product_variants.product_id')
+                ->where('products.status', 1)
+                ->whereIn('categories.name', ['Cà phê Phin', 'Trà Trái Cây', 'Đá Xay'])
+                ->select('products.product_id', 'products.name', 'categories.name as cat_name', DB::raw('MIN(product_variants.variant_id) as variant_id'), DB::raw('MIN(product_variants.price) as price'))
+                ->groupBy('products.product_id', 'products.name', 'categories.name')
+                ->orderBy('price', 'asc')
+                ->get();
+
+            $cakeProducts = DB::table('products')
+                ->join('categories', 'products.category_id', '=', 'categories.category_id')
+                ->join('product_variants', 'products.product_id', '=', 'product_variants.product_id')
+                ->where('products.status', 1)
+                ->where('categories.name', 'LIKE', '%bánh%')
+                ->select('products.product_id', 'products.name', 'categories.name as cat_name', DB::raw('MIN(product_variants.variant_id) as variant_id'), DB::raw('MIN(product_variants.price) as price'))
+                ->groupBy('products.product_id', 'products.name', 'categories.name')
+                ->orderBy('price', 'asc')
+                ->get();
+
+            $comboItems = [];
+            $currentTotal = 0;
+
+            for ($i = 0; $i < $peopleCount; $i++) {
+                $chosenDrink = $drinkProducts->get($i % $drinkProducts->count());
+                if ($chosenDrink && ($currentTotal + $chosenDrink->price) <= $budget) {
+                    $comboItems[] = $chosenDrink;
+                    $currentTotal += $chosenDrink->price;
+                }
+            }
+
+            if ($cakeProducts->isNotEmpty() && ($budget - $currentTotal) >= 30000) {
+                foreach ($cakeProducts as $cake) {
+                    if (($currentTotal + $cake->price) <= $budget) {
+                        $comboItems[] = $cake;
+                        $currentTotal += $cake->price;
+                        break;
+                    }
+                }
+            }
+
+            $budgetText = number_format($budget) . 'đ';
+            $totalText = number_format($currentTotal) . 'đ';
+
+            if (!empty($comboItems)) {
+                $reply = "Dạ, với ngân sách khoảng **{$budgetText}** cho **{$peopleCount} người**, Chill Chill xin gợi ý Combo vừa vặn siêu hời cho bạn nè: ☕🍰🍹\n\n";
+                $reply .= "📌 **Chi tiết Combo đề xuất:**\n";
+                
+                foreach ($comboItems as $item) {
+                    $itemPrice = number_format($item->price) . 'đ';
+                    $reply .= "- 1x **{$item->name}** ({$item->cat_name}): {$itemPrice} [🛒 Thêm](action:add_to_cart?product_id={$item->product_id}&variant_id={$item->variant_id})\n";
+                }
+
+                $reply .= "\n💰 **Tổng tiền Combo**: **{$totalText}** (Nằm trong ngân sách {$budgetText} của bạn!)\n\n";
+                $reply .= "👉 Bạn nhấn nút **🛒 Thêm** từng món ở trên hoặc nhắn Chill Chill để chốt đơn ngay nhé!";
+                return $reply;
+            } else {
+                return "Dạ, với ngân sách **{$budgetText}**, bạn có thể chọn ngay 1 ly nước thơm ngon từ menu của quán nè! ☕ Bạn xem qua danh mục Cà phê hoặc Trà trái cây của Chill Chill nhé!";
+            }
+        }
+
+        // =========================================================================
+        // CASE 2: NHẬN BIẾT SẢN PHẨM CỤ THỂ KHÁCH HÀNG ĐANG NÓI TỚI (Ví dụ: món 20, chill chill 12)
+        // =========================================================================
+        $matchedProduct = null;
+        preg_match_all('/\b(\d{1,2})\b(?!\s*(?:k|000|đ|d|nghìn|triệu|người|bạn|khách|suất))/iu', $msgLower, $matches);
+        $foundNumbers = $matches[1] ?? [];
+
+        foreach ($allProducts as $p) {
+            $pNameLower = mb_strtolower($p->name);
+            
+            // Check match tên đầy đủ
+            if (str_contains($msgLower, $pNameLower)) {
+                $matchedProduct = $p;
+                break;
+            }
+
+            // Check match số (Ví dụ: "20" khớp với "Món Ngon Chill Chill 20")
+            foreach ($foundNumbers as $num) {
+                if (preg_match('/\b' . preg_quote($num, '/') . '\b/u', $pNameLower)) {
+                    $matchedProduct = $p;
+                    break 2;
+                }
+            }
+
+            // Check match tên rút gọn
+            $shortName = str_replace('món ngon ', '', $pNameLower);
+            if (mb_strlen($shortName) > 3 && preg_match('/\b' . preg_quote($shortName, '/') . '\b/u', $msgLower)) {
+                $matchedProduct = $p;
+                break;
+            }
+        }
+
+        if ($matchedProduct) {
+            $variants = DB::table('product_variants')
+                ->join('sizes', 'product_variants.size_id', '=', 'sizes.size_id')
+                ->where('product_variants.product_id', $matchedProduct->product_id)
+                ->select('product_variants.*', 'sizes.name as size_name')
+                ->orderBy('product_variants.price', 'asc')
+                ->get();
+
+            $variant = $variants->first();
+            $sizeName = $variant ? $variant->size_name : 'Mặc định';
+            $price = $variant ? $variant->price : $matchedProduct->price;
+            $variantId = $variant ? $variant->variant_id : null;
+
+            $qty = 1;
+            if (preg_match('/(\d+)\s*(ly|cái|món|phần|cốc|x)/iu', $msgLower, $qMatch)) {
+                $qty = (int)$qMatch[1];
+            } elseif (preg_match('/(x|số lượng)\s*(\d+)/iu', $msgLower, $qMatch)) {
+                $qty = (int)$qMatch[2];
+            }
+
+            $isOrderIntent = false;
+            $isInquiry = false;
+            $inquiryKeywords = ['xem', 'thông tin', 'hỏi', 'là gì', 'giá bao nhiêu', 'mô tả', 'chi tiết'];
+            foreach ($inquiryKeywords as $ikw) {
+                if (str_contains($msgLower, $ikw)) {
+                    $isInquiry = true;
+                    break;
+                }
+            }
+
+            if (!$isInquiry) {
+                $orderKeywords = ['lên', 'lấy', 'cho', 'đặt', 'thêm', 'mua', 'chốt', 'giao', 'order', 'tải', 'bán'];
+                foreach ($orderKeywords as $kw) {
+                    if (str_contains($msgLower, $kw)) {
+                        $isOrderIntent = true;
+                        break;
+                    }
+                }
+            }
+
+            if ($isOrderIntent) {
+                $this->toolAddToCart([
+                    [
+                        'product_name' => $matchedProduct->name,
+                        'size' => $sizeName,
+                        'quantity' => $qty
+                    ]
+                ]);
+
+                $priceFormatted = number_format($price) . 'đ';
+                return "Dạ, Chill Chill đã thêm **{$qty}x {$matchedProduct->name}** (Size {$sizeName}, Giá: {$priceFormatted}) vào giỏ hàng của bạn rồi ạ! ☕✨\n\n" .
+                       "[🛒 Thêm vào giỏ hàng nữa](action:add_to_cart?product_id={$matchedProduct->product_id}&variant_id={$variantId}&qty=1) | [🛍️ Xem giỏ hàng](/cart) | [💳 Thanh toán ngay](/checkout)\n\n" .
+                       "👉 Bạn muốn chọn hình thức **Dùng tại quán (cho Chill Chill xin số bàn)** hay **Giao hàng tận nơi** ạ?";
+            } else {
+                $priceFormatted = number_format($price) . 'đ';
+                $pricesList = [];
+                foreach ($variants as $v) {
+                    $pricesList[] = "Size {$v->size_name}: " . number_format($v->price) . "đ";
+                }
+                $pricesText = implode(', ', $pricesList);
+
+                return "Dạ, Chill Chill tìm thấy thông tin món **{$matchedProduct->name}** bạn quan tâm nè! ☕\n\n" .
+                       "📌 **{$matchedProduct->name}** ({$matchedProduct->category_name})\n" .
+                       "- 📝 **Mô tả**: " . ($matchedProduct->description ?: 'Món ngon đậm vị của quán.') . "\n" .
+                       "- 💰 **Giá bán**: {$pricesText}\n\n" .
+                       "👉 Bạn muốn thưởng thức món này? Nhấn nút dưới đây để thêm ngay vào giỏ hàng nhé!\n\n" .
+                       "[🛒 Thêm vào giỏ hàng](action:add_to_cart?product_id={$matchedProduct->product_id}&variant_id={$variantId}&qty={$qty})";
+            }
+        }
+
+        // =========================================================================
+        // CASE 3: HỎI MÓN NGON BÁN CHẠY NHẤT (BEST SELLERS / HOT ITEMS)
+        // =========================================================================
+        if (str_contains($msgLower, 'bán chạy') || str_contains($msgLower, 'best seller') || str_contains($msgLower, 'bestseller') || str_contains($msgLower, 'ngon nhất') || str_contains($msgLower, 'hot nhất') || str_contains($msgLower, 'đặc sản') || str_contains($msgLower, 'món tủ') || str_contains($msgLower, 'nhiều người mua') || str_contains($msgLower, 'ưa chuộng') || str_contains($msgLower, 'gợi ý món')) {
+            $bestSellers = DB::table('products')
+                ->join('categories', 'products.category_id', '=', 'categories.category_id')
+                ->join('product_variants', 'products.product_id', '=', 'product_variants.product_id')
+                ->where('products.status', 1)
+                ->select('products.product_id', 'products.name', 'products.description', 'categories.name as cat_name', DB::raw('MIN(product_variants.variant_id) as variant_id'), DB::raw('MIN(product_variants.price) as min_price'))
+                ->groupBy('products.product_id', 'products.name', 'products.description', 'categories.name')
+                ->limit(5)
+                ->get();
+
+            if ($bestSellers->isNotEmpty()) {
+                $reply = "Dạ, đây là Top **Món Bán Chạy Nhất (Best Sellers)** cực hot được đông đảo khách hàng mê mẩn tại Chill Chill nè! 🏆✨\n\n📌 **Danh sách Best Sellers:**\n";
+                foreach ($bestSellers as $idx => $p) {
+                    $priceText = number_format($p->min_price) . 'đ';
+                    $icon = ($p->cat_name === 'Bánh Ngọt') ? '🍰' : (($p->cat_name === 'Cà phê Phin') ? '☕' : '🍹');
+                    $reply .= ($idx + 1) . ". {$icon} **{$p->name}** ({$p->cat_name}) - Giá từ {$priceText}\n   [🛒 Thêm vào giỏ](action:add_to_cart?product_id={$p->product_id}&variant_id={$p->variant_id})\n";
+                }
+                $reply .= "\n👉 Bạn thích món nào cứ nhấn **🛒 Thêm vào giỏ** để thưởng thức ngay nhé!";
+                return $reply;
+            }
+        }
+
+        // =========================================================================
+        // CASE 4: HỎI THEO KHẨU VỊ / SỞ THÍCH ĐẶC BIỆT (THANH MÁT / ĐẬM VỊ)
+        // =========================================================================
+        if (str_contains($msgLower, 'thanh mát') || str_contains($msgLower, 'giải nhiệt') || str_contains($msgLower, 'mát lạnh') || str_contains($msgLower, 'ít ngọt')) {
+            $coolProducts = DB::table('products')
+                ->join('categories', 'products.category_id', '=', 'categories.category_id')
+                ->join('product_variants', 'products.product_id', '=', 'product_variants.product_id')
+                ->where('products.status', 1)
+                ->whereIn('categories.name', ['Trà Trái Cây', 'Đá Xay'])
+                ->select('products.product_id', 'products.name', 'categories.name as cat_name', DB::raw('MIN(product_variants.variant_id) as variant_id'), DB::raw('MIN(product_variants.price) as min_price'))
+                ->groupBy('products.product_id', 'products.name', 'categories.name')
+                ->limit(4)
+                ->get();
+
+            if ($coolProducts->isNotEmpty()) {
+                $reply = "Dạ, nếu bạn thích đồ uống **Thanh mát & Giải nhiệt**, Chill Chill xin gợi ý các món cực mát sảng khoái này nhé: 🍹🧊\n\n📌 **Đồ uống thanh mát giải nhiệt:**\n";
+                foreach ($coolProducts as $p) {
+                    $priceText = number_format($p->min_price) . 'đ';
+                    $reply .= "- **{$p->name}** ({$p->cat_name}): {$priceText} [🛒 Thêm vào giỏ](action:add_to_cart?product_id={$p->product_id}&variant_id={$p->variant_id})\n";
+                }
+                $reply .= "\n👉 Nhấn **🛒 Thêm vào giỏ** để giải nhiệt ngay thôi bạn ơi!";
+                return $reply;
+            }
+        }
+
+        if (str_contains($msgLower, 'đậm vị') || str_contains($msgLower, 'tỉnh táo') || str_contains($msgLower, 'tinh thần')) {
+            $coffeeProducts = DB::table('products')
+                ->join('categories', 'products.category_id', '=', 'categories.category_id')
+                ->join('product_variants', 'products.product_id', '=', 'product_variants.product_id')
+                ->where('products.status', 1)
+                ->where('categories.name', 'LIKE', '%cà phê%')
+                ->select('products.product_id', 'products.name', 'categories.name as cat_name', DB::raw('MIN(product_variants.variant_id) as variant_id'), DB::raw('MIN(product_variants.price) as min_price'))
+                ->groupBy('products.product_id', 'products.name', 'categories.name')
+                ->limit(4)
+                ->get();
+
+            if ($coffeeProducts->isNotEmpty()) {
+                $reply = "Dạ, nếu bạn cần đồ uống **Đậm vị & Tỉnh táo** cho ngày làm việc năng lượng, các món Cà phê Phin nguyên chất của quán chắc chắn là lựa chọn số 1 nè: ☕⚡\n\n📌 **Cà phê đậm vị tỉnh táo:**\n";
+                foreach ($coffeeProducts as $p) {
+                    $priceText = number_format($p->min_price) . 'đ';
+                    $reply .= "- **{$p->name}**: {$priceText} [🛒 Thêm vào giỏ](action:add_to_cart?product_id={$p->product_id}&variant_id={$p->variant_id})\n";
+                }
+                $reply .= "\n👉 Thêm ngay 1 ly Cà phê đậm đà để nạp năng lượng ngay bạn nhé!";
+                return $reply;
+            }
+        }
+
+        // =========================================================================
+        // CASE 5: HỎI MÓN THEO DANH MỤC (CÀ PHÊ / TRÀ TRÁI CÂY / ĐÁ XAY / BÁNH NGỌT / TOPPING)
+        // =========================================================================
+        // 5.1 Cà phê
+        if (str_contains($msgLower, 'cà phê') || str_contains($msgLower, 'cafe') || str_contains($msgLower, 'coffee') || str_contains($msgLower, 'phin') || str_contains($msgLower, 'bạc xỉu') || str_contains($msgLower, 'espresso')) {
+            $catProducts = DB::table('products')
+                ->leftJoin('categories', 'products.category_id', '=', 'categories.category_id')
+                ->leftJoin('product_variants', 'products.product_id', '=', 'product_variants.product_id')
+                ->where('products.status', 1)
+                ->where(function($q) {
+                    $q->where('products.name', 'LIKE', '%cà phê%')
+                      ->orWhere('categories.name', 'LIKE', '%cà phê%')
+                      ->orWhere('categories.name', 'LIKE', '%phin%');
+                })
+                ->select('products.product_id', 'products.name', DB::raw('MIN(product_variants.variant_id) as variant_id'), DB::raw('MIN(product_variants.price) as min_price'))
+                ->groupBy('products.product_id', 'products.name')
+                ->limit(6)
+                ->get();
+
+            if ($catProducts->count() > 0) {
+                $reply = "Dạ, Chill Chill có các món **Cà phê** đậm vị thơm ngon lắm nè bạn! ☕\n\n📌 **Danh sách món Cà phê:**\n";
+                foreach ($catProducts as $p) {
+                    $priceText = $p->min_price ? number_format($p->min_price, 0, ',', '.') . 'đ' : '35.000đ';
+                    $reply .= "- **{$p->name}**: {$priceText} [🛒 Thêm vào giỏ](action:add_to_cart?product_id={$p->product_id}&variant_id={$p->variant_id})\n";
+                }
+                $reply .= "\n👉 Bạn chọn món rồi nhấn nút **🛒 Thêm vào giỏ** hoặc nhắn tên món cho Chill Chill nhé!";
+                return $reply;
+            }
+        }
+
+        // 5.2 Trà trái cây / Đồ uống / Đá xay
+        if (str_contains($msgLower, 'trà') || str_contains($msgLower, 'tea') || str_contains($msgLower, 'nước') || str_contains($msgLower, 'đá xay') || str_contains($msgLower, 'uống')) {
+            $catProducts = DB::table('products')
+                ->leftJoin('categories', 'products.category_id', '=', 'categories.category_id')
+                ->leftJoin('product_variants', 'products.product_id', '=', 'product_variants.product_id')
+                ->where('products.status', 1)
+                ->where(function($q) {
+                    $q->where('products.name', 'LIKE', '%trà%')
+                      ->orWhere('categories.name', 'LIKE', '%trà%')
+                      ->orWhere('categories.name', 'LIKE', '%đá xay%');
+                })
+                ->select('products.product_id', 'products.name', DB::raw('MIN(product_variants.variant_id) as variant_id'), DB::raw('MIN(product_variants.price) as min_price'))
+                ->groupBy('products.product_id', 'products.name')
+                ->limit(6)
+                ->get();
+
+            if ($catProducts->count() > 0) {
+                $reply = "Dạ, Chill Chill có menu **Trà Trái Cây & Đá Xay** cực mát lạnh giải nhiệt nè! 🍹\n\n📌 **Các món hot hôm nay:**\n";
+                foreach ($catProducts as $p) {
+                    $priceText = $p->min_price ? number_format($p->min_price, 0, ',', '.') . 'đ' : '35.000đ';
+                    $reply .= "- **{$p->name}**: {$priceText} [🛒 Thêm vào giỏ](action:add_to_cart?product_id={$p->product_id}&variant_id={$p->variant_id})\n";
+                }
+                $reply .= "\n👉 Bạn nhắn tên món hoặc bấm **🛒 Thêm vào giỏ** để chọn món ngay nha!";
+                return $reply;
+            }
+        }
+
+        // 5.3 Bánh ngọt
+        if (str_contains($msgLower, 'bánh') || str_contains($msgLower, 'cake') || str_contains($msgLower, 'ăn')) {
+            $catProducts = DB::table('products')
+                ->leftJoin('categories', 'products.category_id', '=', 'categories.category_id')
+                ->leftJoin('product_variants', 'products.product_id', '=', 'product_variants.product_id')
+                ->where('products.status', 1)
+                ->where(function($q) {
+                    $q->where('products.name', 'LIKE', '%bánh%')
+                      ->orWhere('categories.name', 'LIKE', '%bánh%');
+                })
+                ->select('products.product_id', 'products.name', DB::raw('MIN(product_variants.variant_id) as variant_id'), DB::raw('MIN(product_variants.price) as min_price'))
+                ->groupBy('products.product_id', 'products.name')
+                ->limit(6)
+                ->get();
+
+            if ($catProducts->count() > 0) {
+                $reply = "Dạ, quán có sẵn các loại **Bánh Ngọt** thơm ngon giao kèm nước nè! 🍰\n\n📌 **Menu Bánh Ngọt:**\n";
+                foreach ($catProducts as $p) {
+                    $priceText = $p->min_price ? number_format($p->min_price, 0, ',', '.') . 'đ' : '35.000đ';
+                    $reply .= "- **{$p->name}**: {$priceText} [🛒 Thêm vào giỏ](action:add_to_cart?product_id={$p->product_id}&variant_id={$p->variant_id})\n";
+                }
+                $reply .= "\n👉 Thêm bánh ngọt vào giỏ hàng thôi bạn ơi!";
+                return $reply;
+            }
+        }
+
+        // 6. TRA CỨU MENU TỔNG QUÁT
+        if (str_contains($msgLower, 'menu') || str_contains($msgLower, 'thực đơn') || str_contains($msgLower, 'danh sách')) {
+            $cats = DB::table('categories')->pluck('name')->toArray();
+            $catsList = !empty($cats) ? implode(', ', $cats) : 'Cà phê Phin, Trà Trái Cây, Đá Xay, Bánh Ngọt';
+            return "Dạ, Chill Chill xin gửi bạn thông tin Menu nhé! ☕🍹🍰\n\nQuán có các nhóm danh mục: **{$catsList}**.\n\n👉 Bạn nhắn tên nhóm món (Cà phê, Trà trái cây, Bánh ngọt) hoặc tên/số của món (ví dụ: 'Chill Chill 20') để Chill Chill hỗ trợ lên đơn ngay nhé!";
+        }
+
+        // 7. GIAO HÀNG / MỞ CỬA
+        if (str_contains($msgLower, 'giao hàng') || str_contains($msgLower, 'ship') || str_contains($msgLower, 'địa chỉ') || str_contains($msgLower, 'mở cửa') || str_contains($msgLower, 'ở đâu')) {
+            return "Dạ, Chill Chill Coffee & Tea mở cửa từ **07:00 đến 22:30** hàng ngày! 🛵\n\n📍 **Giao hàng tận nơi:** Quán nhận giao hàng tận nơi nhanh chóng. Bạn chọn món rồi nhắn Chill Chill hoặc bấm **🛒 Thêm vào giỏ** để chốt đơn ngay nhé!";
+        }
+
+        // MẶC ĐỊNH
+        $sampleProducts = DB::table('products')
+            ->leftJoin('product_variants', 'products.product_id', '=', 'product_variants.product_id')
+            ->where('products.status', 1)
+            ->select('products.product_id', 'products.name', DB::raw('MIN(product_variants.variant_id) as variant_id'), DB::raw('MIN(product_variants.price) as min_price'))
+            ->groupBy('products.product_id', 'products.name')
+            ->limit(4)
+            ->get();
+
+        $reply = "Dạ, Chill Chill chào bạn! ☕ Chill Chill có các món ngon siêu hấp dẫn nè:\n\n";
+        foreach ($sampleProducts as $p) {
+            $priceText = $p->min_price ? number_format($p->min_price, 0, ',', '.') . 'đ' : '35.000đ';
+            $reply .= "- **{$p->name}**: {$priceText} [🛒 Thêm vào giỏ](action:add_to_cart?product_id={$p->product_id}&variant_id={$p->variant_id})\n";
+        }
+        $reply .= "\n👉 Bạn muốn chọn món nào nhắn tên/số món (Ví dụ: 'Món 20') cho Chill Chill nhé!";
+        return $reply;
     }
 }
 

@@ -59,9 +59,10 @@
     <div class="grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-6 h-auto md:h-[600px]">
         
         {{-- Item 1: Chiếm 2 cột, nằm trên --}}
+        {{-- Item 1: Chiếm 2 cột, nằm trên --}}
         @if(isset($categories[0]))
         <a href="{{ route('product.index', ['category' => $categories[0]->category_id]) }}" class="reveal block md:col-span-2 relative rounded-[32px] overflow-hidden group cursor-pointer shadow-lg h-64 md:h-full">
-            <img src="{{ $categories[0]->image ?? 'https://via.placeholder.com/800x400' }}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+            <img src="{{ $categories[0]->image ?: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800' }}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800';" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
             <div class="absolute inset-0 bg-gradient-to-t from-espresso/90 via-espresso/20 to-transparent"></div>
             <div class="absolute bottom-8 left-8 z-10">
                 <h3 class="font-serif font-bold text-4xl text-white mb-2">{{ $categories[0]->name }}</h3>
@@ -75,7 +76,7 @@
         {{-- Item 2: Chiếm 1 cột, nằm trên góc phải --}}
         @if(isset($categories[1]))
         <a href="{{ route('product.index', ['category' => $categories[1]->category_id]) }}" class="reveal block relative rounded-[32px] overflow-hidden group cursor-pointer shadow-lg h-64 md:h-full" style="transition-delay: 100ms">
-            <img src="{{ $categories[1]->image ?? 'https://via.placeholder.com/400x400' }}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+            <img src="{{ $categories[1]->image ?: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400' }}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400';" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
             <div class="absolute inset-0 bg-gradient-to-t from-espresso/90 to-transparent"></div>
             <div class="absolute bottom-8 left-8 z-10">
                 <h3 class="font-serif font-bold text-2xl text-white mb-2">{{ $categories[1]->name }}</h3>
@@ -86,7 +87,7 @@
         {{-- Item 3: Chiếm 1 cột, nằm dưới góc trái --}}
         @if(isset($categories[2]))
         <a href="{{ route('product.index', ['category' => $categories[2]->category_id]) }}" class="reveal block relative rounded-[32px] overflow-hidden group cursor-pointer shadow-lg h-64 md:h-full" style="transition-delay: 200ms">
-            <img src="{{ $categories[2]->image ?? 'https://via.placeholder.com/400x400' }}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+            <img src="{{ $categories[2]->image ?: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=400' }}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=400';" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
             <div class="absolute inset-0 bg-gradient-to-t from-espresso/90 to-transparent"></div>
             <div class="absolute bottom-8 left-8 z-10">
                 <h3 class="font-serif font-bold text-2xl text-white mb-2">{{ $categories[2]->name }}</h3>
@@ -102,7 +103,7 @@
                 <p class="text-espresso/70 mb-4">Khám phá hương vị đặc trưng được chọn lọc.</p>
                 <span class="inline-block text-coral font-bold underline underline-offset-4 group-hover:text-espresso transition-colors">Khám phá ngay</span>
             </div>
-            <img src="{{ $categories[3]->image ?? 'https://via.placeholder.com/400' }}" class="absolute right-0 top-0 h-full w-1/2 object-cover object-left mask-image-gradient transition-transform duration-700 group-hover:scale-105" />
+            <img src="{{ $categories[3]->image ?: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=400' }}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=400';" class="absolute right-0 top-0 h-full w-1/2 object-cover object-left mask-image-gradient transition-transform duration-700 group-hover:scale-105" />
         </a>
         @endif
 
@@ -125,7 +126,7 @@
                 <div class="w-full aspect-square rounded-[16px] overflow-hidden bg-cream relative mb-4">
                     {{-- Thẻ a bọc quanh ảnh để click vào chi tiết --}}
                     <a href="{{ route('product.show', $product->slug) }}" class="block w-full h-full">
-                        <img src="{{ $product->image_url ?? 'https://via.placeholder.com/400' }}" class="product-image w-full h-full object-cover" alt="{{ $product->name }}" />
+                        <img src="{{ $product->image_url ?: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400' }}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400';" class="product-image w-full h-full object-cover" alt="{{ $product->name }}" />
                     </a>
                     
                     {{-- Nút giỏ hàng --}}

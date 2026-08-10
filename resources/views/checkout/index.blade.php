@@ -154,8 +154,8 @@
                                 $subTotal += $itemTotal; 
                             @endphp
                             <div class="flex gap-4 items-start">
-                                <div class="w-16 h-16 rounded-xl bg-cream overflow-hidden shrink-0">
-                                    <img src="{{ $item['image'] ?? 'https://via.placeholder.com/100' }}" class="w-full h-full object-cover">
+                                <div class="w-16 h-16 rounded-xl bg-cream overflow-hidden shrink-0 border border-gray-100">
+                                    <img src="{{ $item['image'] ?: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200' }}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200';" class="w-full h-full object-cover">
                                 </div>
                                 <div class="flex-1">
                                     <h4 class="font-bold text-espresso text-sm line-clamp-1">{{ $item['name'] }}</h4>

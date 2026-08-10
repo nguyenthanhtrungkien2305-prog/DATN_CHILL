@@ -5,33 +5,19 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-<<<<<<< HEAD
-=======
 use Carbon\Carbon;
->>>>>>> main
 
 class DashboardController extends Controller
 {
     public function index()
     {
-<<<<<<< HEAD
-        $totalRevenue = DB::table('orders')->where('status', 'completed')->sum('total_amount');
-        $newOrdersCount = DB::table('orders')->where('status', 'pending')->count();
-        $totalProducts = DB::table('products')->count();
-        $totalCustomers = DB::table('users')->where('role', 'customer')->count();
-
-        return view('admin.dashboard', compact(
-            'totalRevenue',
-            'newOrdersCount',
-            'totalProducts',
-            'totalCustomers'
-=======
         // 1. LẤY DỮ LIỆU THỐNG KÊ (WIDGETS)
         $totalRevenue = DB::table('orders')->where('status', 'completed')->sum('total_amount');
         $newOrders = DB::table('orders')->where('status', 'pending')->count();
+        $newOrdersCount = $newOrders;
         $totalProducts = DB::table('products')->count();
-        // Đếm khách hàng (Giả sử dựa vào role 'user' trong bảng users)
         $totalUsers = DB::table('users')->where('role', 'user')->count();
+        $totalCustomers = $totalUsers;
 
         // 2. LẤY DỮ LIỆU CHO BIỂU ĐỒ (Lọc doanh thu các đơn đã hoàn thành)
         $now = Carbon::now('Asia/Ho_Chi_Minh');
@@ -75,9 +61,8 @@ class DashboardController extends Controller
         }
 
         return view('admin.dashboard', compact(
-            'totalRevenue', 'newOrders', 'totalProducts', 'totalUsers',
+            'totalRevenue', 'newOrders', 'newOrdersCount', 'totalProducts', 'totalUsers', 'totalCustomers',
             'chartDay', 'chartWeek', 'chartMonth', 'chartYear'
->>>>>>> main
         ));
     }
 }

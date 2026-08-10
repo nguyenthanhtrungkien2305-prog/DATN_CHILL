@@ -28,6 +28,7 @@ class ChatController extends Controller
                 'session_token' => $sessionToken,
                 'user_id' => Auth::check() ? Auth::user()->user_id : null,
                 'status' => 'active',
+                'is_bot_enabled' => true,
             ]);
         } else {
             // Cập nhật user_id nếu trước đó là khách vãng lai nay đã đăng nhập
@@ -114,6 +115,7 @@ class ChatController extends Controller
                 'session_token' => $sessionToken,
                 'user_id' => Auth::check() ? Auth::user()->user_id : null,
                 'status' => 'active',
+                'is_bot_enabled' => true,
             ]);
         }
 
@@ -148,6 +150,78 @@ class ChatController extends Controller
                 'message' => $message->message,
                 'created_at' => $message->created_at->format('H:i'),
             ]
+        ]);
+    }
+
+    /**
+     * Nút thêm nhanh vào giỏ hàng từ cửa sổ Chatbot UI.
+     */
+    public function addToCartAction(Request $request)
+    {
+        $productId = $request->input('product_id');
+        $variantId = $request->input('variant_id');
+        $quantity = (int)($request->input('quantity', 1));
+        if ($quantity < 1) $quantity = 1;
+
+        if (!$productId) {
+            return response()->json(['success' => false, 'message' => 'Sản phẩm không hợp lệ.'], 400);
+        }
+
+        $product = \Illuminate\Support\Facades\DB::table('products')->where('product_id', $productId)->first();
+        if (!$product) {
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy sản phẩm.'], 404);
+        }
+
+        $variant = null;
+        if ($variantId) {
+            $variant = \Illuminate\Support\Facades\DB::table('product_variants')->where('variant_id', $variantId)->first();
+        }
+        if (!$variant) {
+            $variant = \Illuminate\Support\Facades\DB::table('product_variants')
+                ->where('product_id', $product->product_id)
+                ->orderBy('price', 'asc')
+                ->first();
+        }
+
+        if (!$variant) {
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy kích cỡ sản phẩm.'], 400);
+        }
+
+        $sizeName = \Illuminate\Support\Facades\DB::table('sizes')->where('size_id', $variant->size_id)->value('name') ?? 'Mặc định';
+
+        $cart = \App\Http\Controllers\CartController::getCart();
+        $cartKey = md5($product->product_id . '_' . $variant->variant_id . '_' . serialize([]));
+
+        if (isset($cart[$cartKey])) {
+            $cart[$cartKey]['quantity'] += $quantity;
+        } else {
+            $cart[$cartKey] = [
+                'product_id' => $product->product_id,
+                'name' => $product->name,
+                'image' => $product->image_url ?? $product->image ?? '',
+                'variant_id' => $variant->variant_id,
+                'size_name' => $sizeName,
+                'price' => $variant->price,
+                'quantity' => $quantity,
+                'toppings' => [],
+                'topping_total' => 0,
+            ];
+        }
+
+        \App\Http\Controllers\CartController::saveCart($cart);
+        session()->put('cart', $cart);
+        \App\Http\Controllers\CartController::checkAndRecalculateVoucher();
+        session()->put('cart_updated_by_bot', true);
+
+        $cartCount = array_sum(array_column($cart, 'quantity'));
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã thêm {$quantity}x {$product->name} (size {$sizeName}) vào giỏ hàng!",
+            'product_name' => $product->name,
+            'size_name' => $sizeName,
+            'quantity' => $quantity,
+            'cart_count' => $cartCount
         ]);
     }
 }

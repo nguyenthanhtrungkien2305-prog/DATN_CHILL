@@ -109,31 +109,6 @@
                                         <span class="font-black text-coral text-sm">x{{ $item['quantity'] }}</span>
                                     </div>
                                     
-<<<<<<< HEAD
-                                    @if(isset($item['toppings']) && is_array($item['toppings']) && count(array_filter($item['toppings'])) > 0)
-                                        <div class="mt-1 flex flex-wrap gap-1">
-                                            @foreach($item['toppings'] as $t_id => $t_data)
-                                                @if(is_array($t_data))
-                                                    {{-- Định dạng từ giỏ hàng online: ['name' => ..., 'price' => ..., 'qty' => ...] --}}
-                                                    @if(isset($t_data['qty']) && $t_data['qty'] > 0)
-                                                        <span class="text-[10px] text-espresso/60 italic bg-white inline-block px-1.5 py-0.5 rounded border border-gray-200">
-                                                            + {{ $t_data['name'] }} (x{{ $t_data['qty'] }})
-                                                        </span>
-                                                    @endif
-                                                @else
-                                                    {{-- Định dạng từ POS: [topping_id => qty] --}}
-                                                    @php
-                                                        $qty = $t_data;
-                                                        $toppingName = isset($toppings[$t_id]) ? $toppings[$t_id]->name : null;
-                                                    @endphp
-                                                    @if($qty > 0 && $toppingName)
-                                                        <span class="text-[10px] text-espresso/60 italic bg-white inline-block px-1.5 py-0.5 rounded border border-gray-200">
-                                                            + {{ $toppingName }} (x{{ $qty }})
-                                                        </span>
-                                                    @endif
-                                                @endif
-                                            @endforeach
-=======
                                     @if((isset($item['toppings']) && count(array_filter($item['toppings'])) > 0) || (isset($item['ice_level']) && $item['ice_level'] !== '100') || (isset($item['sugar_level']) && $item['sugar_level'] !== '100'))
                                         <div class="mt-1 flex flex-wrap gap-1">
                                             @if(isset($item['ice_level']) && $item['ice_level'] !== '100')
@@ -161,7 +136,6 @@
                                                     @endif
                                                 @endforeach
                                             @endif
->>>>>>> main
                                         </div>
                                     @endif
                                 </div>

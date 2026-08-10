@@ -6,10 +6,6 @@
 <div class="bg-[#FAF7F2] py-12 min-h-screen">
     <div class="max-w-7xl mx-auto px-6">
         
-<<<<<<< HEAD
-        {{-- TÍNH TOÁN TỔNG SỐ LƯỢNG VÀ TỔNG TIỀN TỪ CACHE --}}
-=======
->>>>>>> main
         @php
             $totalItems = 0;
             $subTotal = 0;
@@ -24,12 +20,7 @@
             <span class="bg-coral text-white text-sm font-bold px-3 py-1 rounded-full">{{ $totalItems }} món</span>
         </div>
 
-<<<<<<< HEAD
-        {{-- KIỂM TRA NẾU GIỎ HÀNG CÓ SẢN PHẨM --}}
         @if(!empty($cart))
-=======
-        @if(session('cart') && count(session('cart')) > 0)
->>>>>>> main
         
         <div class="flex flex-col lg:flex-row gap-8 items-start">
             
@@ -52,7 +43,7 @@
                     </button>
 
                     <div class="{{ $isStandaloneTopping ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-24 h-24 sm:w-32 sm:h-32' }} rounded-2xl overflow-hidden bg-cream shrink-0">
-                        <img src="{{ $item['image'] ?? 'https://via.placeholder.com/200' }}" class="w-full h-full object-cover">
+                        <img src="{{ $item['image'] ?: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400' }}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400';" class="w-full h-full object-cover">
                     </div>
 
                     <div class="flex-1 flex flex-col justify-center">
@@ -347,7 +338,7 @@
                 } else {
                     data.toppings.forEach(top => {
                         let formattedPrice = new Intl.NumberFormat('vi-VN').format(top.price);
-                        let imgUrl = top.image ? top.image : 'https://via.placeholder.com/200';
+                        let imgUrl = top.image ? top.image : 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=200';
                         html += `
                         <div class="flex items-center justify-between p-3 border border-espresso/10 rounded-xl hover:bg-[#FAF7F2] transition-colors group">
                             <div class="flex items-center gap-3"><img src="${imgUrl}" class="w-12 h-12 rounded-full object-cover">
