@@ -81,10 +81,16 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Giới hạn số lượt dùng (Bỏ trống nếu không giới hạn)</label>
-                        <input type="number" name="usage_limit" value="{{ old('usage_limit', $voucher->usage_limit) }}" placeholder="Ví dụ: 100" min="1" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-[#e8634a]">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tổng số lượt dùng hệ thống</label>
+                        <input type="number" name="usage_limit" value="{{ old('usage_limit', $voucher->usage_limit) }}" placeholder="Ví dụ: 10 (Để trống nếu không giới hạn)" min="1" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-[#e8634a]">
+                        <span class="text-xs text-gray-400 mt-1 block">Tổng số lần dùng cho tất cả khách</span>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-800 mb-2">Giới hạn / 1 khách hàng <span class="text-red-500">*</span></label>
+                        <input type="number" name="usage_per_user" value="{{ old('usage_per_user', $voucher->usage_per_user ?? 1) }}" placeholder="Mặc định: 1" min="1" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-[#e8634a] font-bold">
+                        <span class="text-xs text-orange-600 font-medium mt-1 block">Mỗi khách chỉ dùng tối đa N lần (Chống spam)</span>
                     </div>
                     <div id="points_required_container" class="{{ old('is_points_exchange', $voucher->is_points_exchange ?? 1) == 0 ? 'hidden' : '' }}">
                         <label class="block text-sm font-medium text-gray-700 mb-2">

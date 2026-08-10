@@ -43,39 +43,59 @@
                 <div id="cart-items-container" class="space-y-4 max-h-[620px] overflow-y-auto pr-2 custom-scrollbar">
                     @foreach(session('cart') as $cartKey => $item)
                     @php
-                        $categoryName = \DB::table('products')
+                        $isCombo = !empty($item['is_combo']);
+                        $categoryName = !$isCombo ? \DB::table('products')
                             ->join('categories', 'products.category_id', '=', 'categories.category_id')
                             ->where('products.product_id', $item['product_id'])
-                            ->value('categories.name');
+                            ->value('categories.name') : null;
 
                         $isStandaloneTopping = $categoryName && str_contains(mb_strtolower($categoryName), 'topping');
                     @endphp
 
-                    <div class="cart-item-card {{ $isStandaloneTopping ? 'bg-coral/5 border-coral/20 p-4 rounded-[20px]' : 'bg-white border-espresso/5 p-4 md:p-6 rounded-[24px]' }} shadow-sm border flex flex-col sm:flex-row gap-6 relative group transition-all" data-name="{{ mb_strtolower($item['name']) }}" data-size="{{ mb_strtolower($item['size_name']) }}">
+                    <div class="cart-item-card {{ $isCombo ? 'bg-orange-50/40 border-orange-200 p-4 md:p-6 rounded-[24px]' : ($isStandaloneTopping ? 'bg-coral/5 border-coral/20 p-4 rounded-[20px]' : 'bg-white border-espresso/5 p-4 md:p-6 rounded-[24px]') }} shadow-sm border flex flex-col sm:flex-row gap-6 relative group transition-all" data-name="{{ mb_strtolower($item['name']) }}" data-size="{{ mb_strtolower($item['size_name']) }}">
                         
                         <button type="button" onclick="removeCartItem('{{ $cartKey }}')" class="absolute top-4 right-4 text-espresso/40 hover:text-red-500 transition-colors p-2" title="Xóa món này">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         </button>
 
-                        <div class="{{ $isStandaloneTopping ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-24 h-24 sm:w-32 sm:h-32' }} rounded-2xl overflow-hidden bg-cream shrink-0">
+                        <div class="{{ $isStandaloneTopping ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-24 h-24 sm:w-32 sm:h-32' }} rounded-2xl overflow-hidden bg-cream shrink-0 relative">
                             <img src="{{ $item['image'] ?? 'https://via.placeholder.com/200' }}" class="w-full h-full object-cover">
+                            @if($isCombo)
+                                <span class="absolute bottom-1 right-1 bg-coral text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase shadow-md">Combo</span>
+                            @endif
                         </div>
 
                         <div class="flex-1 flex flex-col justify-center">
-                            @if($isStandaloneTopping)
+                            @if($isCombo)
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-orange-600 bg-orange-100 border border-orange-200 px-2.5 py-0.5 rounded-full w-max mb-1 inline-flex items-center gap-1">
+                                    🎁 Gói Combo Tiết Kiệm
+                                </span>
+                            @elseif($isStandaloneTopping)
                                 <span class="text-[10px] font-bold uppercase tracking-wider text-coral mb-1 w-max">Topping Mua Rời</span>
                             @endif
 
                             <h3 class="font-serif font-bold {{ $isStandaloneTopping ? 'text-lg' : 'text-xl' }} text-espresso mb-1 pr-8">{{ $item['name'] }}</h3>
                             
-                            <p class="text-sm text-espresso/60 mb-1">Kích cỡ: <span class="font-medium text-espresso">{{ $item['size_name'] }}</span></p>
+                            @if($isCombo)
+                                <div class="bg-white/90 p-3 rounded-2xl my-2 border border-orange-200/80 shadow-xs">
+                                    <p class="text-[11px] font-bold text-orange-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                        Các món bao gồm trong Combo:
+                                    </p>
+                                    <p class="text-xs text-espresso font-semibold leading-relaxed">
+                                        {{ $item['size_name'] }}
+                                    </p>
+                                </div>
+                            @else
+                                <p class="text-sm text-espresso/60 mb-1">Kích cỡ: <span class="font-medium text-espresso">{{ $item['size_name'] }}</span></p>
+                            @endif
                             
                             @php
                                 $iceTexts = ['70' => '70% Đá', '50' => '50% Đá', '20' => '20% Đá', '0' => 'Không đá', '0_full' => 'Không đá (Nước đầy ly)'];
                                 $sugarTexts = ['70' => '70% Đường', '50' => '50% Đường', '20' => '20% Đường', '0' => 'Không đường'];
                             @endphp
 
-                            @if((isset($item['ice_level']) && $item['ice_level'] !== '100') || (isset($item['sugar_level']) && $item['sugar_level'] !== '100'))
+                            @if(!$isCombo && ((isset($item['ice_level']) && $item['ice_level'] !== '100') || (isset($item['sugar_level']) && $item['sugar_level'] !== '100')))
                                 <div class="flex flex-wrap gap-1.5 mb-2">
                                     @if(isset($item['ice_level']) && $item['ice_level'] !== '100')
                                         <span class="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 font-medium">
@@ -107,7 +127,7 @@
                                 </div>
                             @endif
 
-                            @if(!$isStandaloneTopping)
+                            @if(!$isStandaloneTopping && !$isCombo)
                             <button onclick="openEditToppingModal('{{ $cartKey }}')" class="text-xs font-medium text-coral hover:text-[#d5523b] hover:underline text-left w-max mb-4 flex items-center gap-1 mt-1">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                 Tùy chỉnh Đồ uống & Topping
@@ -201,6 +221,9 @@
                                                     <div>
                                                         <div class="flex items-center gap-2">
                                                             <span class="font-mono font-black text-espresso uppercase">{{ $v->code }}</span>
+                                                            @if(($v->available_quantity ?? 1) > 1)
+                                                                <span class="bg-[#e8634a] text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-xs">x{{ $v->available_quantity }}</span>
+                                                            @endif
                                                             <span class="text-coral font-extrabold">-{{ number_format($v->discount_amount, 0, ',', '.') }}đ</span>
                                                         </div>
                                                         <span class="text-[10px] text-espresso/50 block">Đơn tối thiểu: {{ number_format($v->min_order, 0, ',', '.') }}đ</span>

@@ -204,6 +204,13 @@ class ProductController extends Controller
         // 6. Phân trang: Tối đa 9 sản phẩm/trang và giữ lại các tham số lọc trên URL
         $products = $query->paginate(9)->appends($request->all());
 
-        return view('product.index', compact('products', 'categories'));
+        // 7. Lấy Banner khuyến mãi Combo năng động từ Database
+        $comboBanner = DB::table('banners')
+            ->where('status', 1)
+            ->where('position', 'combo_banner')
+            ->latest('banner_id')
+            ->first();
+
+        return view('product.index', compact('products', 'categories', 'comboBanner'));
     }
 }

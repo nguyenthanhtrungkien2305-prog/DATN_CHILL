@@ -5,13 +5,26 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
     /**
-     * Xóa file ảnh khỏi Storage/Public để tránh rác bộ nhớ
+     * Tự động đảm bảo bảng categories có cột status (1: Hiển thị, 0: Tạm ẩn)
+     */
+    protected function checkStatusColumn(): void
+    {
+        if (!Schema::hasColumn('categories', 'status')) {
+            Schema::table('categories', function ($table) {
+                $table->integer('status')->default(1)->after('image');
+            });
+        }
+    }
+
+    /**
+     * Xóa file ảnh khỏi Storage/Public khi xóa file
      */
     protected function deleteImageFile(?string $imageUrl): void
     {
@@ -41,6 +54,7 @@ class CategoryController extends Controller
     // 1. Hiển thị danh sách danh mục
     public function index()
     {
+        $this->checkStatusColumn();
         $categories = DB::table('categories')->orderBy('category_id', 'desc')->paginate(10);
         return view('admin.categories.index', compact('categories'));
     }
@@ -51,9 +65,10 @@ class CategoryController extends Controller
         return view('admin.categories.create');
     }
 
-   // 3. Xử lý lưu danh mục mới
+    // 3. Xử lý lưu danh mục mới
     public function store(Request $request)
     {
+        $this->checkStatusColumn();
         $request->validate([
             'name' => 'required|string|max:255',
             'image' => 'nullable|string' 
@@ -72,6 +87,9 @@ class CategoryController extends Controller
             'name' => $request->name,
             'slug' => $slug,
             'image' => $imageUrl,
+            'status' => $request->input('status', 1),
+            'created_at' => now(),
+            'updated_at' => now()
         ]);
 
         return redirect()->route('categories.index')->with('success', 'Thêm danh mục mới thành công!');
@@ -80,6 +98,7 @@ class CategoryController extends Controller
     // 4. Form sửa danh mục
     public function edit($id)
     {
+        $this->checkStatusColumn();
         $category = DB::table('categories')->where('category_id', $id)->first();
         return view('admin.categories.edit', compact('category'));
     }
@@ -87,6 +106,7 @@ class CategoryController extends Controller
     // 5. Xử lý cập nhật danh mục
     public function update(Request $request, $id)
     {
+        $this->checkStatusColumn();
         $request->validate([
             'name' => 'required|string|max:255',
             'image' => 'nullable|string'
@@ -112,28 +132,30 @@ class CategoryController extends Controller
             'name' => $request->name,
             'slug' => $slug,
             'image' => $imageUrl,
+            'status' => $request->input('status', 1),
+            'updated_at' => now()
         ]);
 
         return redirect()->route('categories.index')->with('success', 'Cập nhật danh mục thành công!');
     }
 
-    // 6. Xử lý XÓA danh mục
+    // 6. Xử lý ẨN / KHÔI PHỤC danh mục (Không xóa cứng CSDL)
     public function destroy($id)
     {
-        $productCount = DB::table('products')->where('category_id', $id)->count();
-        
-        if ($productCount > 0) {
-            return back()->with('error', 'Không thể xóa! Danh mục này đang chứa ' . $productCount . ' sản phẩm. Vui lòng chuyển các sản phẩm sang danh mục khác trước.');
-        }
-
+        $this->checkStatusColumn();
         $category = DB::table('categories')->where('category_id', $id)->first();
-        if ($category) {
-            // Xóa file ảnh danh mục
-            $this->deleteImageFile($category->image);
-            // Xóa danh mục trong DB
-            DB::table('categories')->where('category_id', $id)->delete();
+        if (!$category) {
+            return back()->with('error', 'Không tìm thấy danh mục!');
         }
 
-        return redirect()->route('categories.index')->with('success', 'Đã xóa danh mục và ảnh đính kèm thành công!');
+        $newStatus = ($category->status ?? 1) == 1 ? 0 : 1;
+        $statusText = $newStatus == 0 ? 'Tạm ẩn' : 'Kích hoạt hiển thị';
+
+        DB::table('categories')->where('category_id', $id)->update([
+            'status' => $newStatus,
+            'updated_at' => now()
+        ]);
+
+        return redirect()->route('categories.index')->with('success', 'Đã ' . $statusText . ' danh mục thành công!');
     }
 }

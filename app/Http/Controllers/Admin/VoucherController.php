@@ -82,6 +82,7 @@ class VoucherController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'usage_limit' => 'nullable|integer|min:1',
+            'usage_per_user' => 'nullable|integer|min:1',
             'min_order' => 'required|numeric|min:0',
         ], [
             'code.required' => 'Vui lòng nhập mã giảm giá',
@@ -104,6 +105,7 @@ class VoucherController extends Controller
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'usage_limit' => $request->usage_limit,
+            'usage_per_user' => $request->input('usage_per_user', 1),
             'used_count' => 0,
             'min_order' => $request->min_order,
             'created_at' => now(),
@@ -155,6 +157,7 @@ class VoucherController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'usage_limit' => 'nullable|integer|min:1',
+            'usage_per_user' => 'nullable|integer|min:1',
             'min_order' => 'required|numeric|min:0',
         ], [
             'code.required' => 'Vui lòng nhập mã giảm giá',
@@ -177,6 +180,7 @@ class VoucherController extends Controller
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'usage_limit' => $request->usage_limit,
+            'usage_per_user' => $request->input('usage_per_user', 1),
             'min_order' => $request->min_order,
             'updated_at' => now(),
         ]);

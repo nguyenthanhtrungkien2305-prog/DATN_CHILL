@@ -36,6 +36,12 @@
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('products.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
                 <span>Quản lý Sản phẩm</span>
             </a>
+
+            {{-- Quản lý Combo --}}
+            <a href="{{ route('combos.index') }}" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('combos.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
+                <span>Quản lý Combo</span>
+            </a>
             
             {{-- Quản lý Danh mục --}}
             <a href="{{ route('categories.index') }}" 
@@ -53,6 +59,12 @@
             <a href="{{ route('vouchers.index') }}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('vouchers.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
                 <span>Quản lý Voucher</span>
+            </a>
+
+            {{-- Quản lý Banner --}}
+            <a href="{{ route('banners.index') }}" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('banners.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
+                <span>Quản lý Banner</span>
             </a>
             
             {{-- Quản lý Đơn hàng --}}

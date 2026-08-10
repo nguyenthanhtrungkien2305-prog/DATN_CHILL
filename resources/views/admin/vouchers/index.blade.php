@@ -81,8 +81,9 @@
                                 </span>
                             @endif
                         </td>
-                        <td class="p-4 text-gray-600">
-                            {{ $v->usage_limit ? $v->usage_limit . ' lượt' : 'Không giới hạn' }}
+                        <td class="p-4 text-gray-600 text-xs">
+                            <div>Tổng: <strong>{{ $v->usage_limit ? $v->usage_limit . ' lượt' : 'Không giới hạn' }}</strong></div>
+                            <div class="text-orange-600 font-semibold mt-0.5">Tối đa {{ $v->usage_per_user ?? 1 }} lần/khách</div>
                         </td>
                         <td class="p-4 font-medium text-[#e8634a]">{{ $v->used_count }}</td>
                         <td class="p-4 text-xs text-gray-500">

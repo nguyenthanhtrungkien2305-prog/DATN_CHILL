@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Controllers\Admin\ToppingController as AdminToppingController;
 use App\Http\Controllers\Admin\VoucherController as AdminVoucherController;
+use App\Http\Controllers\Admin\ComboController as AdminComboController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\ChatController;
@@ -37,6 +38,8 @@ use App\Http\Controllers\Admin\PostController as AdminPostController;
 |--------------------------------------------------------------------------
 */
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/combo', [HomeController::class, 'comboIndex'])->name('combo.index');
+Route::get('/combo/{id}', [HomeController::class, 'comboShow'])->name('combo.show');
 Route::get('/san-pham/{slug}', [PublicProductController::class, 'show'])->name('product.show');
 Route::get('/thuc-don', [PublicProductController::class, 'index'])->name('product.index');
 Route::get('/chuyen-nha', function () { return view('post.story'); })->name('post.story');
@@ -89,6 +92,7 @@ Route::get('/user/orders/{order_id}', [UserController::class, 'show'])->name('us
 Route::prefix('cart')->group(function () {
     Route::get('/', [CartController::class, 'index'])->name('cart.index');
     Route::post('/add', [CartController::class, 'add'])->name('cart.add');
+    Route::post('/add-combo', [CartController::class, 'addCombo'])->name('cart.addCombo');
     Route::post('/update', [CartController::class, 'update'])->name('cart.update');
     Route::post('/remove', [CartController::class, 'remove'])->name('cart.remove');
     
@@ -173,14 +177,20 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     
     Route::resource('categories', AdminCategoryController::class);
     Route::resource('products', AdminProductController::class);
+    Route::post('products/{id}/toggle-featured', [AdminProductController::class, 'toggleFeatured'])->name('products.toggle_featured');
+    Route::resource('combos', AdminComboController::class);
     Route::resource('posts', AdminPostController::class);
     // Route::resource('toppings', AdminToppingController::class);
     Route::resource('vouchers', AdminVoucherController::class);
+    Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class);
+    Route::post('banners/{id}/toggle-status', [\App\Http\Controllers\Admin\BannerController::class, 'toggleStatus'])->name('banners.toggle_status');
     Route::get('users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.users.index');
     Route::post('users/{id}/update-role', [\App\Http\Controllers\Admin\UserController::class, 'updateRole'])->name('admin.users.update_role');
+    Route::post('users/{id}/toggle-lock', [\App\Http\Controllers\Admin\UserController::class, 'toggleLock'])->name('admin.users.toggle_lock');
     
     // QUẢN LÝ LỊCH LÀM & LƯƠNG NHÂN VIÊN
     Route::get('staff-manager', [\App\Http\Controllers\Admin\StaffManagerController::class, 'index'])->name('admin.staff.manager');
+    Route::get('staff-manager/detail/{id}', [\App\Http\Controllers\Admin\StaffManagerController::class, 'detail'])->name('admin.staff.detail');
     Route::post('staff-manager/shift/{id}', [\App\Http\Controllers\Admin\StaffManagerController::class, 'updateShiftStatus'])->name('admin.staff.update_shift');
     // QUẢN LÝ PHẢN HỒI (FEEDBACK):
     Route::resource('feedbacks', AdminFeedbackController::class)->only(['index', 'show', 'destroy']);

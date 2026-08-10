@@ -88,9 +88,13 @@ class AuthController extends Controller
         if (Auth::attempt([$fieldType => $identity, 'password' => $password], $request->has('remember'))) {
             $user = Auth::user();
 
+            // Kiểm tra nếu tài khoản bị khóa
+            if (!empty($user->is_locked)) {
+                Auth::logout();
+                return back()->withErrors(['login_error' => '🔒 Tài khoản của bạn đã bị KHÓA bởi Quản trị viên! Vui lòng liên hệ hỗ trợ.'])->withInput();
+            }
+
             if ($user->role === 'staff') {
-                // ĐÃ XÓA SẠCH CODE "LÉN" CHECK-IN Ở ĐÂY.
-                // Bây giờ đăng nhập xong sẽ bị đá ra trang Lịch, phải tự tay bấm Check-in!
                 return redirect()->route('staff.shifts')->with('success', 'Đăng nhập thành công! Vui lòng Check-in để mở khóa POS.');
             }
 

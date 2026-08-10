@@ -222,6 +222,53 @@ class CartController extends Controller
         return response()->json(['success' => true, 'message' => 'Đã thêm vào giỏ hàng!', 'cart_count' => $totalItems]);
     }
 
+    public function addCombo(Request $request)
+    {
+        $comboId = (int)$request->input('combo_id');
+        $quantity = (int)$request->input('quantity', 1);
+        if ($quantity < 1) $quantity = 1;
+
+        $combo = \App\Models\Combo::with('products')->find($comboId);
+        if (!$combo || !$combo->status) {
+            return response()->json(['success' => false, 'message' => 'Gói Combo này không tồn tại hoặc đã tạm ngưng!']);
+        }
+
+        $itemsSummary = [];
+        foreach ($combo->products as $p) {
+            $itemsSummary[] = $p->name . ' x' . $p->pivot->quantity;
+        }
+
+        $cartKey = md5('combo_' . $comboId);
+        $cart = session()->get('cart', []);
+
+        if (isset($cart[$cartKey])) {
+            $cart[$cartKey]['quantity'] += $quantity;
+        } else {
+            $cart[$cartKey] = [
+                'product_id' => 0,
+                'combo_id' => $combo->combo_id,
+                'is_combo' => true,
+                'name' => '[COMBO] ' . $combo->name,
+                'image' => $combo->image_url ?? 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=300&auto=format&fit=crop',
+                'variant_id' => 0,
+                'size_name' => implode(' + ', $itemsSummary),
+                'price' => (float) $combo->price,
+                'quantity' => $quantity,
+                'toppings' => [],
+                'topping_total' => 0,
+                'ice_level' => null,
+                'sugar_level' => null,
+            ];
+        }
+
+        session()->put('cart', $cart);
+        self::checkAndRecalculateVoucher();
+        self::syncCartItemsToDatabase();
+
+        $totalItems = array_sum(array_column($cart, 'quantity'));
+        return response()->json(['success' => true, 'message' => 'Đã thêm gói Combo vào giỏ hàng!', 'cart_count' => $totalItems]);
+    }
+
     // 3. Cập nhật số lượng
     public function update(Request $request)
     {
@@ -365,7 +412,6 @@ class CartController extends Controller
         if ($newCartKey === $oldCartKey) {
             return response()->json(['success' => true]);
         }
-
         $newItem = $oldItem;
         $newItem['toppings'] = $toppingDetails;
         $newItem['topping_total'] = $toppingTotal;
@@ -405,6 +451,61 @@ class CartController extends Controller
         if ($voucher->end_date && $now->gt(\Carbon\Carbon::parse($voucher->end_date))) return response()->json(['success' => false, 'message' => 'Mã giảm giá đã hết hạn!']);
         if ($voucher->usage_limit !== null && $voucher->used_count >= $voucher->usage_limit) return response()->json(['success' => false, 'message' => 'Mã đã hết lượt sử dụng!']);
         if ($subTotal < $voucher->min_order) return response()->json(['success' => false, 'message' => 'Đơn hàng chưa đạt tối thiểu ' . number_format($voucher->min_order, 0, ',', '.') . 'đ!']);
+
+        // Kiểm tra xem khách hàng có sở hữu voucher trong kho user_vouchers không
+        $userId = auth()->id();
+        $hasUserVoucherRecords = false;
+        $unusedInWallet = 0;
+
+        if ($userId && \Illuminate\Support\Facades\Schema::hasTable('user_vouchers')) {
+            $userVoucherQuery = DB::table('user_vouchers')
+                ->where('user_id', $userId)
+                ->where('voucher_id', $voucher->voucher_id);
+            
+            $hasUserVoucherRecords = (clone $userVoucherQuery)->exists();
+            if ($hasUserVoucherRecords) {
+                $unusedInWallet = (clone $userVoucherQuery)->where('is_used', 0)->count();
+            }
+        }
+
+        $isPointsExchange = isset($voucher->is_points_exchange) ? (bool)$voucher->is_points_exchange : false;
+
+        if ($hasUserVoucherRecords) {
+            if ($unusedInWallet <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn đã sử dụng hết số lượt của mã giảm giá này!'
+                ]);
+            }
+        } elseif (!$isPointsExchange) {
+            // Kiểm tra giới hạn lượt sử dụng / 1 khách hàng (Chỉ áp dụng cho Mã công khai / Mã tặng riêng, KHÔNG áp dụng cho Mã đổi bằng điểm)
+            $usagePerUser = isset($voucher->usage_per_user) ? $voucher->usage_per_user : 1;
+            if ($usagePerUser !== null && $usagePerUser > 0) {
+                $customerPhone = auth()->check() ? auth()->user()->phone : trim($request->input('phone', ''));
+
+                $userUsedCount = 0;
+                if ($userId) {
+                    $userUsedCount = DB::table('orders')
+                        ->where('voucher_id', $voucher->voucher_id)
+                        ->where('user_id', $userId)
+                        ->where('status', '!=', 'cancelled')
+                        ->count();
+                } elseif (!empty($customerPhone)) {
+                    $userUsedCount = DB::table('orders')
+                        ->where('voucher_id', $voucher->voucher_id)
+                        ->where('customer_phone', $customerPhone)
+                        ->where('status', '!=', 'cancelled')
+                        ->count();
+                }
+
+                if ($userUsedCount >= $usagePerUser) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Mã giảm giá này chỉ áp dụng tối đa {$usagePerUser} lần cho mỗi khách hàng. Bạn đã sử dụng mã này rồi!"
+                    ]);
+                }
+            }
+        }
 
         $discount = $voucher->discount_type === 'percent' ? $subTotal * ($voucher->discount_value / 100) : $voucher->discount_value;
         $discount = min($discount, $subTotal);
@@ -478,7 +579,7 @@ class CartController extends Controller
             DB::table('cart_items')->where('cart_id', $cartId)->delete();
 
             foreach ($cart as $item) {
-                if (isset($item['product_id'])) {
+                if (isset($item['product_id']) && $item['product_id'] > 0 && empty($item['is_combo'])) {
                     DB::table('cart_items')->insert([
                         'cart_id' => $cartId,
                         'product_id' => $item['product_id'],

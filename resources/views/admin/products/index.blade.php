@@ -71,13 +71,22 @@
                             @endif
                         </td>
                         <td class="p-4">
-                            <div class="flex justify-center gap-3">
-                                <a href="{{ route('products.edit', $product->product_id) }}" class="text-blue-500 hover:text-blue-700">Sửa</a>
+                            <div class="flex items-center justify-center gap-3">
+                                <form action="{{ route('products.toggle_featured', $product->product_id) }}" method="POST" class="m-0">
+                                    @csrf
+                                    <button type="submit" 
+                                            class="text-xs font-bold px-2.5 py-1 rounded-lg transition {{ !empty($product->is_featured) ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-700' }}"
+                                            title="Ghim món này hiển thị trên Banner Hero Trang Chủ">
+                                        {{ !empty($product->is_featured) ? '⭐ Đang ghim Banner' : 'Ghim Banner' }}
+                                    </button>
+                                </form>
+
+                                <a href="{{ route('products.edit', $product->product_id) }}" class="text-blue-500 hover:text-blue-700 font-medium">Sửa</a>
                                 
                                 <form action="{{ route('products.destroy', $product->product_id) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-red-500 hover:text-red-700">Xóa</button>
+                                    <button type="submit" class="text-red-500 hover:text-red-700 font-medium">Xóa</button>
                                 </form>
                             </div>
                         </td>

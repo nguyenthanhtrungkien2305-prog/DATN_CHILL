@@ -324,4 +324,33 @@ class ProductController extends Controller
 
         return redirect()->route('products.index')->with('success', 'Đã xóa vĩnh viễn sản phẩm và toàn bộ file ảnh khỏi hệ thống!');
     }
+
+    /**
+     * Ghim món làm Sản phẩm Nổi Bật hiển thị ở Banner Hero Trang Chủ
+     */
+    public function toggleFeatured($id)
+    {
+        if (!Schema::hasColumn('products', 'is_featured')) {
+            Schema::table('products', function ($table) {
+                $table->boolean('is_featured')->default(0)->after('status');
+            });
+        }
+
+        $product = DB::table('products')->where('product_id', $id)->first();
+        if (!$product) abort(404);
+
+        $newStatus = empty($product->is_featured) ? 1 : 0;
+
+        if ($newStatus == 1) {
+            DB::table('products')->update(['is_featured' => 0]);
+        }
+
+        DB::table('products')->where('product_id', $id)->update(['is_featured' => $newStatus]);
+
+        $msg = $newStatus == 1 
+            ? 'Đã ghim món "' . $product->name . '" làm Sản phẩm Nổi Bật trên Banner Hero Trang Chủ!' 
+            : 'Đã bỏ ghim món "' . $product->name . '" trên Banner Hero!';
+
+        return back()->with('success', $msg);
+    }
 }
