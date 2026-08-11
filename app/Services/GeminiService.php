@@ -1493,8 +1493,11 @@ Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $me
         $budget = 0;
         $peopleCount = 2; // Mặc định 2 người
 
+        // Bỏ qua budget detection nếu người dùng đang nói tên sản phẩm cụ thể
+        $isProductNameQuery = preg_match('/\b(chill\s*chill|món\s*ngon|món\s*số|mã\s*số)\b/iu', $msgLower) === 1;
+
         // Bắt số tiền (ví dụ: 100k, 200k, 150.000, 50k, 80k)
-        if (preg_match('/(\d+)\s*(k|000|nghìn|đ|d)/iu', $msgLower, $bMatch)) {
+        if (!$isProductNameQuery && preg_match('/(\d+)\s*(k|000|nghìn|đ|d)/iu', $msgLower, $bMatch)) {
             $val = (int)$bMatch[1];
             $unit = mb_strtolower($bMatch[2]);
             if ($unit === 'k' || $unit === 'nghìn') {
@@ -1565,6 +1568,12 @@ Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $me
             $totalText = number_format($currentTotal) . 'đ';
 
             if (!empty($comboItems)) {
+                // Build comma-separated product_id:variant_id pairs for bulk add
+                $comboItemsParam = implode(',', array_map(
+                    fn($item) => "{$item->product_id}:{$item->variant_id}",
+                    $comboItems
+                ));
+
                 $reply = "Dạ, với ngân sách khoảng **{$budgetText}** cho **{$peopleCount} người**, Chill Chill xin gợi ý Combo vừa vặn siêu hời cho bạn nè: ☕🍰🍹\n\n";
                 $reply .= "📌 **Chi tiết Combo đề xuất:**\n";
                 
@@ -1574,7 +1583,7 @@ Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $me
                 }
 
                 $reply .= "\n💰 **Tổng tiền Combo**: **{$totalText}** (Nằm trong ngân sách {$budgetText} của bạn!)\n\n";
-                $reply .= "👉 Bạn nhấn nút **🛒 Thêm** từng món ở trên hoặc nhắn Chill Chill để chốt đơn ngay nhé!";
+                $reply .= "[🧺 Thêm cả Combo vào giỏ hàng](action:add_combo?items={$comboItemsParam}) | [🛍️ Xem giỏ hàng](/cart)";
                 return $reply;
             } else {
                 return "Dạ, với ngân sách **{$budgetText}**, bạn có thể chọn ngay 1 ly nước thơm ngon từ menu của quán nè! ☕ Bạn xem qua danh mục Cà phê hoặc Trà trái cây của Chill Chill nhé!";
@@ -1585,8 +1594,13 @@ Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $me
         // CASE 2: NHẬN BIẾT SẢN PHẨM CỤ THỂ KHÁCH HÀNG ĐANG NÓI TỚI (Ví dụ: món 20, chill chill 12)
         // =========================================================================
         $matchedProduct = null;
-        preg_match_all('/\b(\d{1,2})\b(?!\s*(?:k|000|đ|d|nghìn|triệu|người|bạn|khách|suất))/iu', $msgLower, $matches);
+        // Loại trừ số đứng sau đơn vị tiền tệ VÀ đơn vị số lượng để tránh nhầm
+        // Ví dụ: "2 cái bánh" hoặc "2 ly" không được hiểu là "Món Ngon Chill Chill 2"
+        preg_match_all('/\b(\d{1,2})\b(?!\s*(?:k|000|đ|d|nghìn|triệu|người|bạn|khách|suất|cái|ly|cốc|phần|miếng|chiếc|chai|hộp|gói))/iu', $msgLower, $matches);
         $foundNumbers = $matches[1] ?? [];
+
+        // Chỉ áp dụng match số nếu trong câu có từ khoá mang tính định danh món
+        $hasProductContext = preg_match('/\b(món|số|chill|chill\s*chill|mã)\b/iu', $msgLower) === 1;
 
         foreach ($allProducts as $p) {
             $pNameLower = mb_strtolower($p->name);
@@ -1597,11 +1611,13 @@ Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $me
                 break;
             }
 
-            // Check match số (Ví dụ: "20" khớp với "Món Ngon Chill Chill 20")
-            foreach ($foundNumbers as $num) {
-                if (preg_match('/\b' . preg_quote($num, '/') . '\b/u', $pNameLower)) {
-                    $matchedProduct = $p;
-                    break 2;
+            // Check match số (Ví dụ: "món 20", "chill chill 12") — chỉ khi có product context
+            if ($hasProductContext) {
+                foreach ($foundNumbers as $num) {
+                    if (preg_match('/\b' . preg_quote($num, '/') . '\b/u', $pNameLower)) {
+                        $matchedProduct = $p;
+                        break 2;
+                    }
                 }
             }
 
@@ -1654,18 +1670,11 @@ Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $me
             }
 
             if ($isOrderIntent) {
-                $this->toolAddToCart([
-                    [
-                        'product_name' => $matchedProduct->name,
-                        'size' => $sizeName,
-                        'quantity' => $qty
-                    ]
-                ]);
-
+                // KHÔNG TỰ ĐỘNG THÊM — Hiển thị nút xác nhận để khách chủ động bấm
                 $priceFormatted = number_format($price) . 'đ';
-                return "Dạ, Chill Chill đã thêm **{$qty}x {$matchedProduct->name}** (Size {$sizeName}, Giá: {$priceFormatted}) vào giỏ hàng của bạn rồi ạ! ☕✨\n\n" .
-                       "[🛒 Thêm vào giỏ hàng nữa](action:add_to_cart?product_id={$matchedProduct->product_id}&variant_id={$variantId}&qty=1) | [🛍️ Xem giỏ hàng](/cart) | [💳 Thanh toán ngay](/checkout)\n\n" .
-                       "👉 Bạn muốn chọn hình thức **Dùng tại quán (cho Chill Chill xin số bàn)** hay **Giao hàng tận nơi** ạ?";
+                return "Dạ, Chill Chill xác nhận bạn muốn đặt **{$qty}x {$matchedProduct->name}** (Size {$sizeName}, Giá: {$priceFormatted}/ly) không ạ? ☕\n\n" .
+                       "👉 Nhấn nút bên dưới để xác nhận thêm vào giỏ hàng:\n\n" .
+                       "[🛒 Xác nhận thêm {$qty}x {$matchedProduct->name}](action:add_to_cart?product_id={$matchedProduct->product_id}&variant_id={$variantId}&qty={$qty})";
             } else {
                 $priceFormatted = number_format($price) . 'đ';
                 $pricesList = [];

@@ -400,6 +400,55 @@
         }
     }
 
+    async function chatQuickAddCombo(itemsParam, btnElement) {
+        if (!itemsParam) return;
+
+        const originalHTML = btnElement ? btnElement.innerHTML : '';
+        if (btnElement) {
+            btnElement.disabled = true;
+            btnElement.innerHTML = `⏳ Đang thêm Combo...`;
+            btnElement.style.opacity = '0.7';
+        }
+
+        try {
+            const response = await fetch('/chat/add-combo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ items: itemsParam })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                if (btnElement) {
+                    btnElement.innerHTML = `✅ Đã thêm cả Combo!`;
+                    btnElement.style.background = '#10b981 !important';
+                    btnElement.style.opacity = '1';
+                }
+                updateHeaderCartBadge(data.cart_count);
+                const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                appendMessageToDOM('admin', `✅ ${data.message} [🛍️ Xem giỏ hàng](/cart) | [💳 Thanh toán ngay](/checkout)`, timeStr);
+                scrollToBottom();
+            } else {
+                alert(data.message || 'Không thể thêm Combo vào giỏ hàng.');
+                if (btnElement) {
+                    btnElement.disabled = false;
+                    btnElement.innerHTML = originalHTML;
+                    btnElement.style.opacity = '1';
+                }
+            }
+        } catch (error) {
+            console.error('Lỗi thêm Combo vào giỏ hàng:', error);
+            if (btnElement) {
+                btnElement.disabled = false;
+                btnElement.innerHTML = originalHTML;
+                btnElement.style.opacity = '1';
+            }
+        }
+    }
+
     function formatMessageText(text) {
         if (!text) return '';
         let escaped = escapeHTML(text);
@@ -417,6 +466,14 @@
             const qty = params.get('qty') || '1';
             
             return `<button type="button" onclick="chatQuickAddToCart('${pId}', '${vId}', '${qty}', this)" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all shadow-xs cursor-pointer hover:scale-105 active:scale-95 my-1" style="background: linear-gradient(135deg, #e8634a 0%, #c84932 100%) !important; color: #ffffff !important;">${label}</button>`;
+        });
+
+        // Match Combo Button: [Label](action:add_combo?items=pid:vid,pid:vid,...)
+        escaped = escaped.replace(/\[([^\]]+)\]\((action:add_combo[^\s)]*)\)/gi, (match, label, actionUrl) => {
+            const urlClean = actionUrl.replace(/&amp;/g, '&');
+            const params = new URLSearchParams(urlClean.replace('action:add_combo?', ''));
+            const items = params.get('items') || '';
+            return `<button type="button" onclick="chatQuickAddCombo('${items}', this)" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-bold transition-all shadow cursor-pointer hover:scale-105 active:scale-95 my-2" style="background: linear-gradient(135deg, #2B2623 0%, #e8634a 100%) !important; color: #ffffff !important; box-shadow: 0 4px 15px rgba(232,99,74,0.4) !important;">${label}</button>`;
         });
 
         // Match normal Markdown links: [Label](URL)

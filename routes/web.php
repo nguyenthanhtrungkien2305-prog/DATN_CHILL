@@ -152,6 +152,7 @@ Route::prefix('chat')->group(function () {
     Route::get('/messages', [ChatController::class, 'getMessages'])->name('chat.messages');
     Route::post('/send', [ChatController::class, 'sendMessage'])->name('chat.send');
     Route::post('/add-to-cart', [ChatController::class, 'addToCartAction'])->name('chat.add_to_cart');
+    Route::post('/add-combo', [ChatController::class, 'addComboAction'])->name('chat.add_combo');
 });
 /*
 |--------------------------------------------------------------------------

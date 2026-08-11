@@ -224,4 +224,80 @@ class ChatController extends Controller
             'cart_count' => $cartCount
         ]);
     }
+
+    /**
+     * Thêm cả Combo (nhiều sản phẩm cùng lúc) vào giỏ hàng từ chatbot.
+     * items = "product_id:variant_id,product_id:variant_id,..."
+     */
+    public function addComboAction(Request $request)
+    {
+        $itemsRaw = $request->input('items', '');
+        if (!$itemsRaw) {
+            return response()->json(['success' => false, 'message' => 'Không có sản phẩm trong combo.'], 400);
+        }
+
+        $pairs = array_filter(explode(',', $itemsRaw));
+        if (empty($pairs)) {
+            return response()->json(['success' => false, 'message' => 'Combo không hợp lệ.'], 400);
+        }
+
+        $cart = \App\Http\Controllers\CartController::getCart();
+        $addedNames = [];
+
+        foreach ($pairs as $pair) {
+            [$productId, $variantId] = array_pad(explode(':', trim($pair), 2), 2, null);
+            $productId = (int)$productId;
+            $variantId = (int)$variantId;
+
+            $product = \Illuminate\Support\Facades\DB::table('products')->where('product_id', $productId)->first();
+            if (!$product) continue;
+
+            $variant = $variantId
+                ? \Illuminate\Support\Facades\DB::table('product_variants')->where('variant_id', $variantId)->first()
+                : null;
+            if (!$variant) {
+                $variant = \Illuminate\Support\Facades\DB::table('product_variants')
+                    ->where('product_id', $productId)
+                    ->orderBy('price', 'asc')
+                    ->first();
+            }
+            if (!$variant) continue;
+
+            $sizeName = \Illuminate\Support\Facades\DB::table('sizes')
+                ->where('size_id', $variant->size_id)->value('name') ?? 'Mặc định';
+
+            $cartKey = md5($product->product_id . '_' . $variant->variant_id . '_' . serialize([]));
+            if (isset($cart[$cartKey])) {
+                $cart[$cartKey]['quantity'] += 1;
+            } else {
+                $cart[$cartKey] = [
+                    'product_id'    => $product->product_id,
+                    'name'          => $product->name,
+                    'image'         => $product->image_url ?? $product->image ?? '',
+                    'variant_id'    => $variant->variant_id,
+                    'size_name'     => $sizeName,
+                    'price'         => $variant->price,
+                    'quantity'      => 1,
+                    'toppings'      => [],
+                    'topping_total' => 0,
+                ];
+            }
+            $addedNames[] = $product->name;
+        }
+
+        \App\Http\Controllers\CartController::saveCart($cart);
+        session()->put('cart', $cart);
+        \App\Http\Controllers\CartController::checkAndRecalculateVoucher();
+        session()->put('cart_updated_by_bot', true);
+
+        $cartCount = array_sum(array_column($cart, 'quantity'));
+        $summary   = implode(', ', $addedNames);
+
+        return response()->json([
+            'success'    => true,
+            'message'    => "Đã thêm toàn bộ Combo ({$summary}) vào giỏ hàng!",
+            'cart_count' => $cartCount,
+        ]);
+    }
 }
+
