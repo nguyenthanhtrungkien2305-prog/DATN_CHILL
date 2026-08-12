@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
@@ -10,13 +11,14 @@ class CheckoutController extends Controller
     // 1. Hiển thị trang Thanh toán
     public function index()
     {
-        $cart = session()->get('cart', []);
+        $cart = Cache::get(CartController::cartKey(), []);
         if (empty($cart)) {
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống!');
         }
 
         $user = auth()->user(); // Lấy thông tin user đang đăng nhập
         if (!$user) {
+            session()->put('url.intended', route('checkout.index'));
             return redirect()->route('cart.index')->with('login_required', 'Vui lòng đăng nhập tài khoản để tiến hành thanh toán và đặt hàng!');
         }
         
@@ -105,10 +107,10 @@ class CheckoutController extends Controller
         return response()->json(['success' => false, 'message' => 'Không thể xóa địa chỉ này!']);
     }
 
-    // 3. Xử lý Đặt hàng (Sẽ code chi tiết ở bước sau)
+    // 3. Xử lý Đặt hàng
     public function process(Request $request)
     {
-        $cart = session()->get('cart', []);
+        $cart = Cache::get(CartController::cartKey(), []);
         if (empty($cart)) {
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống!');
         }
@@ -202,7 +204,7 @@ class CheckoutController extends Controller
         }
 
         // Xóa giỏ hàng và voucher sau khi đặt xong
-        session()->forget('cart');
+        Cache::forget(CartController::cartKey());
         session()->forget('voucher');
 
         // Chuyển hướng nếu là thanh toán QR

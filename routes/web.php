@@ -28,6 +28,9 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\Admin\ChatController as AdminChatController;
+use App\Http\Controllers\Admin\AiAssistantController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+
 
 use App\Http\Controllers\PostController as PublicPostController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
@@ -66,10 +69,6 @@ Route::get('/dang-xuat', [AuthController::class, 'logout'])->name('logout');
 | ROUTES NGƯỜI DÙNG THÀNH VIÊN (ĐÃ ĐĂNG NHẬP)
 |--------------------------------------------------------------------------
 */
-// Trang Liên hệ
-Route::get('/lien-he', function () {
-    return view('contact'); 
-})->name('contact');
 Route::post('/lien-he', [FeedbackController::class, 'store'])->name('contact.submit');
 // ROUTES NGƯỜI DÙNG (Bắt buộc phải đăng nhập)
 Route::middleware(['auth'])->group(function () {
@@ -164,6 +163,8 @@ Route::prefix('chat')->group(function () {
     Route::post('/start', [ChatController::class, 'startSession'])->name('chat.start');
     Route::get('/messages', [ChatController::class, 'getMessages'])->name('chat.messages');
     Route::post('/send', [ChatController::class, 'sendMessage'])->name('chat.send');
+    Route::post('/add-to-cart', [ChatController::class, 'addToCartAction'])->name('chat.add_to_cart');
+    Route::post('/add-combo', [ChatController::class, 'addComboAction'])->name('chat.add_combo');
 });
 /*
 |--------------------------------------------------------------------------
@@ -173,6 +174,7 @@ Route::prefix('chat')->group(function () {
 Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(function () {
     
     Route::get('/', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::get('pos', [\App\Http\Controllers\PosController::class, 'index'])->name('admin.pos');
     
     Route::resource('categories', AdminCategoryController::class);
@@ -182,11 +184,16 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     Route::resource('posts', AdminPostController::class);
     // Route::resource('toppings', AdminToppingController::class);
     Route::resource('vouchers', AdminVoucherController::class);
+    Route::resource('users', AdminUserController::class);
     Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class);
     Route::post('banners/{id}/toggle-status', [\App\Http\Controllers\Admin\BannerController::class, 'toggleStatus'])->name('banners.toggle_status');
     Route::get('users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.users.index');
     Route::post('users/{id}/update-role', [\App\Http\Controllers\Admin\UserController::class, 'updateRole'])->name('admin.users.update_role');
     Route::post('users/{id}/toggle-lock', [\App\Http\Controllers\Admin\UserController::class, 'toggleLock'])->name('admin.users.toggle_lock');
+    
+    // QUẢN LÝ ĐƠN HÀNG (ORDERS):
+    Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->only(['index', 'show']);
+    Route::put('orders/{id}/status', [\App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('orders.update_status');
     
     // QUẢN LÝ LỊCH LÀM & LƯƠNG NHÂN VIÊN
     Route::get('staff-manager', [\App\Http\Controllers\Admin\StaffManagerController::class, 'index'])->name('admin.staff.manager');
@@ -203,4 +210,9 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     Route::post('chats/sessions/{id}/reply', [AdminChatController::class, 'sendReply'])->name('admin.chats.reply');
     Route::get('chats/sessions/{id}/bot-status', [AdminChatController::class, 'getBotStatus'])->name('admin.chats.bot_status');
     Route::post('chats/sessions/{id}/toggle-bot', [AdminChatController::class, 'toggleBot'])->name('admin.chats.toggle_bot');
+
+    // TRỢ LÝ AI QUẢN LÝ (ADMIN AI ASSISTANT):
+    Route::get('ai-assistant', [AiAssistantController::class, 'index'])->name('admin.ai.index');
+    Route::post('ai-assistant/chat', [AiAssistantController::class, 'chat'])->name('admin.ai.chat');
+    Route::post('ai-assistant/clear', [AiAssistantController::class, 'clearHistory'])->name('admin.ai.clear');
 });

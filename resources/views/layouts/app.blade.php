@@ -11,7 +11,6 @@
 
     
     <script src="https://cdn.tailwindcss.com"></script>
-
     <script>
       tailwind.config = {
         theme: {
@@ -22,35 +21,23 @@
             },
             colors: {
               espresso: {
-                DEFAULT: "hsl(16, 23%, 19%)",
-                light: "hsl(16, 20%, 29%)",
+                DEFAULT: "#2B2623",
+                light: "#423B37",
               },
               cream: {
-                DEFAULT: "hsl(45, 100%, 94%)",
-                light: "hsl(45, 100%, 96%)",
+                DEFAULT: "#FAF7F2",
+                light: "#FFF8E7",
               },
               coral: {
-                DEFAULT: "hsl(14, 82%, 65%)",
-                hover: "hsl(14, 82%, 72%)",
+                DEFAULT: "#E8634A",
+                hover: "#D5523B",
               },
             },
-            borderRadius: {
-              card: "20px",
-            },
-            animation: {
-              "bounce-slow": "bounce 3s infinite",
-              float: "float 6s ease-in-out infinite",
-            },
-            keyframes: {
-              float: {
-                "0%, 100%": { transform: "translateY(0)" },
-                "50%": { transform: "translateY(-20px)" },
-              },
-            },
-          },
-        },
-      };
+          }
+        }
+      }
     </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
       /* Tùy chỉnh thanh cuộn */

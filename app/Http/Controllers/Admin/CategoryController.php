@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 class CategoryController extends Controller
 {
@@ -92,6 +93,9 @@ class CategoryController extends Controller
             'updated_at' => now()
         ]);
 
+        Cache::forget('home_categories');
+        Cache::forget('public_categories');
+
         return redirect()->route('categories.index')->with('success', 'Thêm danh mục mới thành công!');
     }
 
@@ -136,6 +140,9 @@ class CategoryController extends Controller
             'updated_at' => now()
         ]);
 
+        Cache::forget('home_categories');
+        Cache::forget('public_categories');
+
         return redirect()->route('categories.index')->with('success', 'Cập nhật danh mục thành công!');
     }
 
@@ -155,6 +162,9 @@ class CategoryController extends Controller
             'status' => $newStatus,
             'updated_at' => now()
         ]);
+
+        Cache::forget('home_categories');
+        Cache::forget('public_categories');
 
         return redirect()->route('categories.index')->with('success', 'Đã ' . $statusText . ' danh mục thành công!');
     }

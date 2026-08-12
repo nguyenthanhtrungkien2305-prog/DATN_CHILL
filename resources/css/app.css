@@ -1,6 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../../tailwind.config.js";
+
+@source "../views/**/*.blade.php";
+@source "../js/**/*.js";
 
 /* Tùy chỉnh thanh cuộn */
 ::-webkit-scrollbar {

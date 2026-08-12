@@ -21,79 +21,127 @@ class OrderController extends Controller
 
         // 2. Xử lý Logic Truy vấn và Sắp xếp
         $query = DB::table('orders');
-        $statusFilter = $request->get('status', 'incomplete'); // Mặc định hiển thị Chưa hoàn thành
+        $statusFilter = $request->get('status', 'all');
 
-        // Lọc theo Tab trạng thái
-        if ($statusFilter === 'incomplete') {
-            // Đơn chưa hoàn thành -> Lọc Pending & Processing -> Xếp Cũ nhất lên trước (asc)
-            $query->whereIn('status', ['pending', 'processing'])
-                  ->orderBy('created_at', 'asc');
-        } elseif ($statusFilter !== 'all') {
-            // Các Tab khác (Đã hoàn thành, Đã hủy) -> Xếp Mới nhất lên trước (desc)
-            $query->where('status', $statusFilter)
-                  ->orderBy('created_at', 'desc');
-        } else {
-            // Tab Tất cả -> Xếp Mới nhất lên trước
-            $query->orderBy('created_at', 'desc');
-        }
-
-        // Tìm kiếm theo ID hoặc Tên khách
-        if ($request->has('search') && $request->search != '') {
-            $searchTerm = $request->search;
-            $query->where(function($q) use ($searchTerm) {
-                $q->where('order_id', 'like', '%' . $searchTerm . '%')
-                  ->orWhere('customer_name', 'like', '%' . $searchTerm . '%');
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('order_id', 'like', "%{$search}%")
+                  ->orWhere('customer_name', 'like', "%{$search}%")
+                  ->orWhere('customer_phone', 'like', "%{$search}%");
             });
         }
 
-        $orders = $query->paginate(20);
+        if ($request->filled('status') && $request->input('status') !== 'all') {
+            if ($request->input('status') === 'incomplete') {
+                $query->whereIn('status', ['pending', 'processing']);
+            } else {
+                $query->where('status', $request->input('status'));
+            }
+        }
+
+        if ($request->filled('order_type')) {
+            $query->where('order_type', $request->input('order_type'));
+        }
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->input('user_id'));
+        }
+
+        $query->orderBy('created_at', 'desc');
+
+        $orders = $query->paginate(15)->withQueryString();
 
         return view('admin.orders.index', compact(
             'orders', 'countPending', 'countProcessing', 'countCompletedToday', 'statusFilter'
         ));
     }
 
-   // Cập nhật tiến độ đơn hàng (Đã khóa quy tắc luồng)
+    public function show($id)
+    {
+        $order = DB::table('orders')
+            ->where('order_id', $id)
+            ->first();
+
+        if (!$order) {
+            abort(404, 'Không tìm thấy đơn hàng!');
+        }
+
+        $order->items = json_decode($order->items, true) ?? [];
+
+        $member = null;
+        $memberOrderCount = 0;
+        $memberTotalSpent = 0;
+
+        if ($order->user_id) {
+            $member = DB::table('users')
+                ->where('user_id', $order->user_id)
+                ->first();
+
+            if ($member) {
+                $memberOrders = DB::table('orders')
+                    ->where('user_id', $order->user_id)
+                    ->get();
+
+                $memberOrderCount = $memberOrders->count();
+                $memberTotalSpent = $memberOrders->where('status', 'completed')->sum('total_amount');
+                
+                if ($member->address) {
+                    $decodedAddr = json_decode($member->address, true);
+                    $member->addresses = is_array($decodedAddr) ? $decodedAddr : [$member->address];
+                } else {
+                    $member->addresses = [];
+                }
+            }
+        }
+
+        $voucher = null;
+        if ($order->voucher_id) {
+            $voucher = DB::table('vouchers')
+                ->where('voucher_id', $order->voucher_id)
+                ->first();
+        }
+
+        return view('admin.orders.show', compact('order', 'member', 'memberOrderCount', 'memberTotalSpent', 'voucher'));
+    }
+
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:pending,processing,completed,cancelled'
+            'status' => 'required|in:pending,processing,completed,canceled,cancelled'
         ]);
 
-        $order = DB::table('orders')->where('order_id', $id)->first();
-        
+        $newStatus = $request->input('status');
+        if ($newStatus === 'cancelled') {
+            $newStatus = 'canceled';
+        }
+
+        $order = DB::table('orders')
+            ->where('order_id', $id)
+            ->first();
+
         if (!$order) {
             return back()->with('error', 'Không tìm thấy đơn hàng!');
         }
 
-        $currentStatus = $order->status;
-        $newStatus = $request->status;
+        $shouldRewardPoints = ($newStatus === 'completed' && $order->status !== 'completed' && $order->user_id);
 
-        // BẢNG QUY TẮC LUỒNG TRẠNG THÁI (State Machine)
-        $validTransitions = [
-            // Từ "Chờ xác nhận": Chỉ được sang "Đang pha chế" hoặc "Hủy"
-            'pending'    => ['processing', 'cancelled'], 
-            
-            // Từ "Đang pha chế": Bắt buộc phải tiến tới "Hoàn thành" (Không được lùi, không được hủy)
-            'processing' => ['completed'],               
-            
-            // Đã "Hoàn thành": Trạng thái đóng băng (Khóa vĩnh viễn)
-            'completed'  => [],                          
-            
-            // Đã "Hủy": Trạng thái đóng băng (Khóa vĩnh viễn)
-            'cancelled'  => []                           
-        ];
+        DB::table('orders')
+            ->where('order_id', $id)
+            ->update([
+                'status' => $newStatus,
+                'updated_at' => now('Asia/Ho_Chi_Minh')
+            ]);
 
-        // Kiểm tra xem trạng thái mới có nằm trong danh sách được phép nhảy tới không
-        if (!in_array($newStatus, $validTransitions[$currentStatus])) {
-            return back()->with('error', 'Thao tác từ chối! Bạn không thể nhảy cóc, lùi bước hoặc tự ý hủy đơn hàng đang xử lý.');
+        if ($shouldRewardPoints) {
+            $pointsEarned = floor($order->total_amount / 10000);
+            if ($pointsEarned > 0) {
+                DB::table('users')
+                    ->where('user_id', $order->user_id)
+                    ->increment('point', $pointsEarned);
+            }
         }
 
-        DB::table('orders')->where('order_id', $id)->update([
-            'status' => $newStatus,
-            'updated_at' => now('Asia/Ho_Chi_Minh')
-        ]);
-
-        return back()->with('success', 'Đã cập nhật tiến độ cho đơn hàng #' . $id);
+        return back()->with('success', 'Cập nhật trạng thái đơn hàng #' . $id . ' thành công!');
     }
 }
