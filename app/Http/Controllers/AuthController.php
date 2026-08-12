@@ -91,9 +91,10 @@ class AuthController extends Controller
         if (Auth::attempt([$fieldType => $identity, 'password' => $password], $request->has('remember'))) {
             $user = Auth::user();
 
-            if ($user->is_locked) {
+            // Kiểm tra nếu tài khoản bị khóa
+            if (!empty($user->is_locked)) {
                 Auth::logout();
-                return back()->withErrors(['login_error' => 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.']);
+                return back()->withErrors(['login_error' => '🔒 Tài khoản của bạn đã bị KHÓA bởi Quản trị viên! Vui lòng liên hệ hỗ trợ.'])->withInput();
             }
 
             $userId = $user->user_id ?? $user->id;

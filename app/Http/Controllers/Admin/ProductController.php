@@ -245,6 +245,32 @@ class ProductController extends Controller
             return redirect()->route('products.index')->with('error', 'Sản phẩm không tồn tại!');
         }
 
+        // 1. Kiểm tra xem sản phẩm có nằm trong GIỎ HÀNG KHÁCH HÀNG (cart_items / carts / session) không
+        $inCart = false;
+        if (Schema::hasTable('cart_items')) {
+            $inCart = DB::table('cart_items')->where('product_id', $id)->exists();
+        }
+        if (!$inCart && Schema::hasTable('carts')) {
+            $variantIds = DB::table('product_variants')->where('product_id', $id)->pluck('variant_id')->toArray();
+            if (!empty($variantIds)) {
+                $inCart = DB::table('carts')->whereIn('variant_id', $variantIds)->exists();
+            }
+        }
+        if (!$inCart) {
+            $sessionCart = session()->get('cart', []);
+            foreach ($sessionCart as $item) {
+                if (isset($item['product_id']) && $item['product_id'] == $id) {
+                    $inCart = true;
+                    break;
+                }
+            }
+        }
+
+        if ($inCart) {
+            return redirect()->route('products.index')->with('error', '⚠️ Không thể xóa vĩnh viễn! Sản phẩm này hiện đang nằm trong GIỎ HÀNG của khách hàng. Vui lòng chuyển trạng thái sản phẩm sang "Ngừng bán" (Xóa mềm) để đảm bảo không làm hỏng giỏ hàng của khách hàng!');
+        }
+
+        // 2. Kiểm tra xem sản phẩm có xuất hiện trong LỊCH SỬ ĐƠN HÀNG không
         $hasOrderHistory = false;
         if (Schema::hasTable('orders')) {
             $hasOrderHistory = DB::table('orders')
@@ -255,6 +281,7 @@ class ProductController extends Controller
                 ->exists();
         }
 
+        // 3. NẾU CÓ TRONG ĐƠN HÀNG -> THỰC HIỆN XÓA MỀM (Chuyển status sang 0: Ngừng bán)
         if ($hasOrderHistory) {
             DB::table('products')->where('product_id', $id)->update([
                 'status' => 0,
@@ -277,5 +304,34 @@ class ProductController extends Controller
         Cache::forget('home_products');
 
         return redirect()->route('products.index')->with('success', 'Đã xóa vĩnh viễn sản phẩm khỏi hệ thống!');
+    }
+
+    /**
+     * Ghim món làm Sản phẩm Nổi Bật hiển thị ở Banner Hero Trang Chủ
+     */
+    public function toggleFeatured($id)
+    {
+        if (!Schema::hasColumn('products', 'is_featured')) {
+            Schema::table('products', function ($table) {
+                $table->boolean('is_featured')->default(0)->after('status');
+            });
+        }
+
+        $product = DB::table('products')->where('product_id', $id)->first();
+        if (!$product) abort(404);
+
+        $newStatus = empty($product->is_featured) ? 1 : 0;
+
+        if ($newStatus == 1) {
+            DB::table('products')->update(['is_featured' => 0]);
+        }
+
+        DB::table('products')->where('product_id', $id)->update(['is_featured' => $newStatus]);
+
+        $msg = $newStatus == 1 
+            ? 'Đã ghim món "' . $product->name . '" làm Sản phẩm Nổi Bật trên Banner Hero Trang Chủ!' 
+            : 'Đã bỏ ghim món "' . $product->name . '" trên Banner Hero!';
+
+        return back()->with('success', $msg);
     }
 }

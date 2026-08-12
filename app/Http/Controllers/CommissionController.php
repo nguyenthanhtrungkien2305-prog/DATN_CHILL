@@ -27,12 +27,10 @@ class CommissionController extends Controller
             ]
         );
         $userId = $user->user_id ?? $user->id;
-        if (!$shift->users->contains($userId)) {
-            $shift->users()->attach($userId);
-        }
 
         $shift->load('users');
         $staffCount = $shift->users->count();
+        $isUserInShift = $shift->users->contains($userId);
 
         // CHỈ LẤY ĐƠN HÀNG CỦA CA HIỆN TẠI
         $totalRevenue = DB::table('orders')
@@ -45,10 +43,10 @@ class CommissionController extends Controller
             ->where('status', 'completed')
             ->count();
 
-        // Tính quỹ hoa hồng 2.0%
+        // Tính quỹ hoa hồng 2.0% (Chỉ những nhân viên đã Check-in ca này mới được chia hoa hồng)
         $commissionRate = 0.02; 
         $shiftCommissionPool = $totalRevenue * $commissionRate;
-        $myCommission = $staffCount > 0 ? ($shiftCommissionPool / $staffCount) : 0;
+        $myCommission = ($isUserInShift && $staffCount > 0) ? ($shiftCommissionPool / $staffCount) : 0;
 
         // Thống kê món
         $orders = DB::table('orders')->where('shift_id', $shift->id)->where('status', 'completed')->get();

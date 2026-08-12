@@ -335,7 +335,25 @@ class AttendanceController extends Controller
             'updated_at' => $now
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Vào ca thành công! Hệ thống đã mở khóa các tính năng Bán hàng.']);
+        // 6. Gắn nhân viên vào ca làm việc để được tính hoa hồng ca này
+        $shiftIndex = floor($now->hour / 4) + 1;
+        $startHour = ($shiftIndex - 1) * 4;
+        $startTime = sprintf('%02d:00:00', $startHour);
+        $endTime = ($startHour + 4 == 24) ? '23:59:59' : sprintf('%02d:00:00', $startHour + 4);
+
+        $shift = \App\Models\Shift::firstOrCreate(
+            ['date' => $now->format('Y-m-d'), 'start_time' => $startTime],
+            [
+                'name' => "Ca $shiftIndex (" . sprintf('%02d:00', $startHour) . " - " . sprintf('%02d:00', $startHour + 4 > 23 ? 0 : $startHour + 4) . ")",
+                'end_time' => $endTime
+            ]
+        );
+
+        if (!$shift->users()->where('users.user_id', $userId)->exists()) {
+            $shift->users()->attach($userId);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Vào ca thành công! Đã ghi nhận lịch làm việc và quyền hưởng hoa hồng ca.']);
     }
 
     // ==========================================

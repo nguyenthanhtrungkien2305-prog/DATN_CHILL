@@ -16,18 +16,17 @@ class ProductController extends Controller
             abort(404);
         }
 
-        // 2. XỬ LÝ ẢNH PHỤ (GALLERY)
+        // 2. XỬ LÝ ẢNH PHỤ (GALLERY SẢN PHẨM)
         $extraImages = [];
         if (\Illuminate\Support\Facades\Schema::hasTable('product_images')) {
             $extraImages = DB::table('product_images')
                 ->where('product_id', $product->product_id)
-                ->limit(3)
+                ->limit(4)
                 ->pluck('image_url')
                 ->toArray();
         }
-            
-        $gallery = array_merge([$product->image_url], $extraImages);
-        $gallery = array_slice($gallery, 0, 4);
+        $gallery = array_values(array_unique(array_filter(array_merge([$product->image_url], $extraImages))));
+        $gallery = array_slice($gallery, 0, 5);
 
         // 3. Lấy biến thể (Size & Giá tương ứng)
         $variants = DB::table('product_variants')
@@ -62,17 +61,107 @@ class ProductController extends Controller
 
         $categoryName = DB::table('categories')->where('category_id', $product->category_id)->value('name');
         $isBanhNgot = $categoryName && (str_contains(mb_strtolower($categoryName), 'bánh') || str_contains(mb_strtolower($categoryName), 'cake'));
-        $isToppingCategory = $categoryName && str_contains(mb_strtolower($categoryName), 'topping');
+        $isToppingCategory = $categoryName && (str_contains(mb_strtolower($categoryName), 'topping') || str_contains(mb_strtolower($categoryName), 'kèm'));
 
         // 6. LẤY TOPPING
         $toppings = collect([]);
+        $rawToppingsList = collect([]);
         if (!$isBanhNgot && !$isToppingCategory) {
-            $toppings = Cache::remember('active_toppings', 3600, function() {
-                return DB::table('toppings')->where('status', 1)->get();
+            
+            // Tìm tất cả ID danh mục thuộc loại Topping (Topping, Toppings, Đồ ăn kèm...)
+            $toppingCategoryIds = DB::table('categories')
+                ->where(function($q) {
+                    $q->where('name', 'LIKE', '%topping%')
+                      ->orWhere('name', 'LIKE', '%Topping%')
+                      ->orWhere('name', 'LIKE', '%kèm%')
+                      ->orWhere('name', 'LIKE', '%thạch%')
+                      ->orWhere('name', 'LIKE', '%trân châu%');
+                })
+                ->pluck('category_id')
+                ->toArray();
+
+            if (!empty($toppingCategoryIds)) {
+                $rawToppingsList = DB::table('products')
+                    ->whereIn('category_id', $toppingCategoryIds)
+                    ->where('status', 1)
+                    ->get();
+            }
+
+            // Gộp thêm từ bảng toppings nếu có
+            if (\Illuminate\Support\Facades\Schema::hasTable('toppings')) {
+                $dbToppings = DB::table('toppings')->get();
+                foreach ($dbToppings as $dt) {
+                    $rawToppingsList->push((object)[
+                        'product_id' => $dt->topping_id,
+                        'name' => $dt->name,
+                        'image_url' => $dt->image ?? 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=200&auto=format&fit=crop',
+                        'price' => (float)$dt->price
+                    ]);
+                }
+            }
+
+            if ($rawToppingsList->isEmpty()) {
+                $toppingCatId = DB::table('categories')->where('name', 'LIKE', '%Topping%')->value('category_id');
+                if (!$toppingCatId) {
+                    $toppingCatId = DB::table('categories')->insertGetId([
+                        'name' => 'Topping',
+                        'description' => 'Topping ăn kèm đồ uống',
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                }
+
+                $sampleToppings = [
+                    ['name' => 'Trân Châu Đen Hoàng Kim', 'price' => 10000, 'image_url' => 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=200&auto=format&fit=crop'],
+                    ['name' => 'Kem Cheese Béo Ngậy', 'price' => 12000, 'image_url' => 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?q=80&w=200&auto=format&fit=crop'],
+                    ['name' => 'Thạch Củ Năng Giòn Rụm', 'price' => 10000, 'image_url' => 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=200&auto=format&fit=crop'],
+                    ['name' => 'Pudding Trứng Mềm Mịn', 'price' => 10000, 'image_url' => 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=200&auto=format&fit=crop'],
+                ];
+
+                foreach ($sampleToppings as $st) {
+                    $pId = DB::table('products')->insertGetId([
+                        'category_id' => $toppingCatId,
+                        'name' => $st['name'],
+                        'price' => $st['price'],
+                        'image_url' => $st['image_url'],
+                        'status' => 1,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                    
+                    $defaultSizeId = DB::table('sizes')->value('size_id') ?? 1;
+                    DB::table('product_variants')->insert([
+                        'product_id' => $pId,
+                        'size_id' => $defaultSizeId,
+                        'price' => $st['price']
+                    ]);
+                }
+
+                $rawToppingsList = DB::table('products')
+                    ->where('category_id', $toppingCatId)
+                    ->where('status', 1)
+                    ->get();
+            }
+
+            // Chuẩn hóa định dạng mảng $toppings cho View
+            $toppings = $rawToppingsList->map(function($t) {
+                $price = 0;
+                if (isset($t->price) && $t->price > 0) {
+                    $price = (float)$t->price;
+                } else {
+                    $minPrice = DB::table('product_variants')->where('product_id', $t->product_id ?? $t->topping_id)->min('price');
+                    $price = $minPrice ? (float)$minPrice : 10000;
+                }
+                return (object)[
+                    'topping_id' => $t->product_id ?? $t->topping_id ?? 1,
+                    'name' => $t->name,
+                    'image' => $t->image_url ?? $t->image ?? 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=200&auto=format&fit=crop',
+                    'price' => $price
+                ];
             });
         }
 
-        return view('product.show', compact('product', 'variants', 'relatedProducts', 'reviews', 'toppings', 'gallery'));
+        return view('product.show', compact('product', 'variants', 'relatedProducts', 'reviews', 'toppings', 'gallery', 'isBanhNgot', 'isToppingCategory'));
     }
 
     public function index(Request $request)
@@ -127,6 +216,13 @@ class ProductController extends Controller
 
         $products = $query->paginate(9)->appends($request->all());
 
-        return view('product.index', compact('products', 'categories'));
+        // 7. Lấy Banner khuyến mãi Combo năng động từ Database
+        $comboBanner = DB::table('banners')
+            ->where('status', 1)
+            ->where('position', 'combo_banner')
+            ->latest('banner_id')
+            ->first();
+
+        return view('product.index', compact('products', 'categories', 'comboBanner'));
     }
 }

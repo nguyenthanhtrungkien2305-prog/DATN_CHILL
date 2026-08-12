@@ -20,7 +20,7 @@
 <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-6">
     <form action="{{ Route::has('admin.users.index') ? route('admin.users.index') : route('users.index') }}" method="GET" class="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
         <div class="flex-1 relative">
-            <input type="text" name="search" value="{{ request('search') }}" 
+            <input type="text" name="search" id="user-search-input" value="{{ request('search') ?? request('keyword') }}" 
                    placeholder="Tìm theo tên, email, số điện thoại..." 
                    class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#e8634a] transition">
         </div>
@@ -39,7 +39,7 @@
             <button type="submit" class="bg-gray-800 hover:bg-gray-700 text-white px-5 py-2 rounded-xl text-sm font-medium transition">
                 Lọc
             </button>
-            @if(request('search') || request('role'))
+            @if(request('search') || request('keyword') || request('role'))
                 <a href="{{ Route::has('admin.users.index') ? route('admin.users.index') : route('users.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-xl text-sm font-medium transition flex items-center">
                     Reset
                 </a>
@@ -62,7 +62,16 @@
             </thead>
             <tbody class="text-gray-700 text-sm divide-y divide-gray-100">
                 @forelse($users as $u)
-                <tr class="hover:bg-gray-50 transition">
+                @php
+                    $isMainAdmin = ($u->user_id == 1);
+                    $isLocked = !empty($u->is_locked);
+                    $lockRoute = Route::has('admin.users.toggle_lock') ? route('admin.users.toggle_lock', $u->user_id) : (Route::has('users.toggle_lock') ? route('users.toggle_lock', $u->user_id) : '#');
+                    $roleRoute = Route::has('admin.users.update_role') ? route('admin.users.update_role', $u->user_id) : (Route::has('users.update_role') ? route('users.update_role', $u->user_id) : '#');
+                @endphp
+                <tr class="hover:bg-gray-50 transition user-row {{ $isLocked ? 'bg-red-50/20' : '' }}"
+                    data-name="{{ mb_strtolower($u->name) }}" 
+                    data-phone="{{ $u->phone }}" 
+                    data-email="{{ mb_strtolower($u->email ?? '') }}">
                     <td class="p-4 text-center font-bold text-gray-500">#{{ $u->user_id }}</td>
                     <td class="p-4">
                         <div class="flex items-center gap-3">
@@ -77,8 +86,12 @@
                     </td>
                     <td class="p-4 text-gray-600 font-mono text-xs">{{ $u->email ?: '-' }}</td>
                     <td class="p-4 text-center">
-                        @if(Route::has('admin.users.update_role'))
-                        <form action="{{ route('admin.users.update_role', $u->user_id) }}" method="POST" class="m-0">
+                        @if($isMainAdmin)
+                            <span class="inline-block px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-gray-700 border border-gray-200">
+                                Admin
+                            </span>
+                        @elseif($roleRoute !== '#')
+                        <form action="{{ $roleRoute }}" method="POST" class="m-0">
                             @csrf
                             <select name="role" onchange="this.form.submit()" 
                                 class="w-full rounded-xl px-3 py-1.5 text-xs font-bold border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#e8634a]/50 transition-colors cursor-pointer text-center
@@ -95,8 +108,10 @@
                         @endif
                     </td>
                     <td class="p-4 text-center">
-                        @if(Route::has('users.toggle_lock') && auth()->id() != $u->user_id)
-                        <form action="{{ route('users.toggle_lock', $u->user_id) }}" method="POST" 
+                        @if($isMainAdmin)
+                            <span class="text-xs font-medium text-gray-400 px-3 py-1 rounded-full inline-block">Cố định</span>
+                        @elseif($lockRoute !== '#' && auth()->id() != $u->user_id)
+                        <form action="{{ $lockRoute }}" method="POST" class="m-0"
                               onsubmit="return confirm('Bạn có chắc chắn muốn {{ $u->is_locked ? 'mở khóa' : 'khóa' }} tài khoản này?');">
                             @csrf
                             <button type="submit" class="px-3 py-1 text-xs font-bold rounded-full transition {{ $u->is_locked ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200' }}">
@@ -120,7 +135,7 @@
             </tbody>
         </table>
     </div>
-    
+
     {{-- Phân trang --}}
     @if(method_exists($users, 'hasPages') && $users->hasPages())
     <div class="p-4 border-t">
@@ -128,4 +143,21 @@
     </div>
     @endif
 </div>
+
+<script>
+    document.getElementById('user-search-input')?.addEventListener('input', function() {
+        const kw = this.value.trim().toLowerCase();
+        const rows = document.querySelectorAll('.user-row');
+        rows.forEach(row => {
+            const name = row.getAttribute('data-name') || '';
+            const phone = row.getAttribute('data-phone') || '';
+            const email = row.getAttribute('data-email') || '';
+            if (name.includes(kw) || phone.includes(kw) || email.includes(kw)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+</script>
 @endsection

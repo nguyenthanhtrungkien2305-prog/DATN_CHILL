@@ -113,13 +113,13 @@
                                         <div class="mt-1 flex flex-wrap gap-1">
                                             @if(isset($item['ice_level']) && $item['ice_level'] !== '100')
                                                 <span class="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 font-medium">
-                                                    🧊 {{ $iceTexts[$item['ice_level']] ?? $item['ice_level'] }}
+                                                    {{ $iceTexts[$item['ice_level']] ?? $item['ice_level'] }}
                                                 </span>
                                             @endif
 
                                             @if(isset($item['sugar_level']) && $item['sugar_level'] !== '100')
                                                 <span class="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 font-medium">
-                                                    🍯 {{ $sugarTexts[$item['sugar_level']] ?? $item['sugar_level'] }}
+                                                    {{ $sugarTexts[$item['sugar_level']] ?? $item['sugar_level'] }}
                                                 </span>
                                             @endif
 

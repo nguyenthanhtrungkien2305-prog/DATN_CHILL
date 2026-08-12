@@ -10,10 +10,12 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    const MAIN_ADMIN_ID = 1;
+
     // 1. Danh sách người dùng
     public function index(Request $request)
     {
-        $search = $request->input('search');
+        $search = $request->input('search', $request->input('keyword'));
         $role = $request->input('role');
 
         $query = User::query();
@@ -31,8 +33,9 @@ class UserController extends Controller
         }
 
         $users = $query->orderBy('user_id', 'desc')->paginate(10)->withQueryString();
+        $mainAdminId = self::MAIN_ADMIN_ID;
 
-        return view('admin.users.index', compact('users', 'search', 'role'));
+        return view('admin.users.index', compact('users', 'search', 'role', 'mainAdminId'));
     }
 
     // 2. Giao diện thêm mới người dùng
@@ -76,9 +79,13 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'Thêm người dùng mới thành công!');
     }
 
-    // Cập nhật vai trò
+    // 4. Cập nhật vai trò
     public function updateRole(Request $request, $id)
     {
+        if ((int)$id === self::MAIN_ADMIN_ID) {
+            return back()->with('error', 'Không thể thay đổi vai trò của tài khoản này!');
+        }
+
         $request->validate([
             'role' => 'required|in:admin,staff,user'
         ]);
@@ -86,12 +93,17 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $user->role = $request->role;
         $user->save();
-        return back()->with('success', 'Đã cập nhật quyền cho ' . $user->name . ' thành công!');
+
+        return back()->with('success', 'Đã cập nhật phân quyền cho tài khoản ' . $user->name . ' thành công!');
     }
 
-    // Xử lý khóa / mở khóa tài khoản
+    // 5. Khóa / mở khóa tài khoản
     public function toggleLock($id)
     {
+        if ((int)$id === self::MAIN_ADMIN_ID) {
+            return back()->with('error', 'Không thể khóa tài khoản này!');
+        }
+
         $currentUser = auth()->user();
         $currentUserId = $currentUser->user_id ?? $currentUser->id;
 
@@ -100,10 +112,10 @@ class UserController extends Controller
         }
 
         $user = User::findOrFail($id);
-        $user->is_locked = !$user->is_locked;
+        $user->is_locked = empty($user->is_locked) ? 1 : 0;
         $user->save();
 
-        $message = $user->is_locked ? 'Đã khóa tài khoản thành công!' : 'Đã mở khóa tài khoản thành công!';
-        return back()->with('success', $message);
+        $actionText = $user->is_locked ? 'khóa' : 'mở khóa';
+        return back()->with('success', 'Đã ' . $actionText . ' tài khoản ' . $user->name . ' thành công!');
     }
 }

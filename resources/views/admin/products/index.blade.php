@@ -6,8 +6,14 @@
 @section('content')
 {{-- Thông báo thành công khi Thêm/Sửa/Xóa --}}
 @if(session('success'))
-    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl relative mb-4">
+    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl relative mb-4 font-medium">
         {{ session('success') }}
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl relative mb-4 font-medium">
+        {{ session('error') }}
     </div>
 @endif
 
@@ -38,7 +44,7 @@
                 <th class="p-4 font-medium">Danh mục</th>
                 <th class="p-4 font-medium">Giá bán</th>
                 <th class="p-4 font-medium">Trạng thái</th>
-                <th class="p-4 font-medium text-center w-36">Hành động</th>
+                <th class="p-4 font-medium text-center">Hành động</th>
             </tr>
         </thead>
         <tbody class="text-gray-700 text-sm">
@@ -59,10 +65,21 @@
                     @endif
                 </td>
                 <td class="p-4">
-                    <div class="flex justify-center gap-3">
+                    <div class="flex items-center justify-center gap-2">
+                        @if(Route::has('products.toggle_featured'))
+                        <form action="{{ route('products.toggle_featured', $product->product_id) }}" method="POST" class="m-0">
+                            @csrf
+                            <button type="submit" 
+                                    class="text-xs font-bold px-2.5 py-1 rounded-lg transition {{ !empty($product->is_featured) ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-700' }}"
+                                    title="Ghim món này hiển thị trên Banner Hero Trang Chủ">
+                                {{ !empty($product->is_featured) ? '⭐ Đang ghim Banner' : 'Ghim Banner' }}
+                            </button>
+                        </form>
+                        @endif
+
                         <a href="{{ route('products.edit', $product->product_id) }}" class="text-blue-600 hover:text-blue-800 font-medium px-3 py-1 bg-blue-50 rounded-lg">Sửa</a>
                         
-                        <form action="{{ route('products.destroy', $product->product_id) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');">
+                        <form action="{{ route('products.destroy', $product->product_id) }}" method="POST" class="m-0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="text-red-600 hover:text-red-800 font-medium px-3 py-1 bg-red-50 rounded-lg">Xóa</button>

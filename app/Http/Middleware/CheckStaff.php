@@ -16,8 +16,8 @@ class CheckStaff
             return redirect()->route('login')->with('error', 'Vui lòng đăng nhập!');
         }
 
-        // 2. Nếu đã đăng nhập NHƯNG role KHÔNG PHẢI là 'staff' -> Đẩy về Trang Chủ
-        if (Auth::user()->role !== 'staff') {
+        // 2. Cho phép cả Nhân viên (staff) và Quản trị viên (admin)
+        if (!in_array(Auth::user()->role, ['staff', 'admin'])) {
             return redirect('/')->with('error', 'Bạn không có quyền vào quầy thu ngân!');
         }
 

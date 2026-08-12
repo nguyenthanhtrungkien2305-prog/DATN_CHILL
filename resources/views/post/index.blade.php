@@ -10,16 +10,25 @@
     {{-- ========================================== --}}
     <section class="relative pt-24 pb-16 bg-gradient-to-b from-[#FFF0D4]/60 to-[#FAF7F2]">
         <div class="max-w-3xl mx-auto text-center px-6 relative z-10 reveal">
-            <h1 class="font-serif font-black text-4xl md:text-5xl lg:text-6xl text-espresso mb-6">Coffeeholic</h1>
+            <h1 class="font-serif font-black text-4xl md:text-5xl lg:text-6xl text-espresso mb-6">Góc Cà Phê & Blog</h1>
             <p class="text-espresso/80 font-medium md:text-lg mb-10 leading-relaxed">
-                Tại chuyên mục Coffeeholic, Chill Chill kể những câu chuyện xoay quanh hạt cà phê – từ hành trình chọn lọc, rang xay đến ly cà phê trọn vị trên tay bạn. Mỗi bài viết là một lát cắt nhỏ trong hành trình mang nụ cười đến từ hương vị nguyên bản.
+                Tại chuyên mục Tin tức & Blog, Chill Chill kể những câu chuyện xoay quanh hạt cà phê – từ hành trình chọn lọc, rang xay đến ly cà phê trọn vị trên tay bạn. Mỗi bài viết là một lát cắt nhỏ trong hành trình mang nụ cười đến từ hương vị nguyên bản.
             </p>
             
-            {{-- Tabs / Bộ lọc --}}
-            <div class="flex flex-wrap justify-center gap-4">
-                <a href="#" class="px-8 py-2.5 rounded-full bg-coral text-white font-bold text-sm tracking-widest uppercase shadow-md hover:bg-[#d5523b] transition-colors">Coffeeholic</a>
-                <a href="#" class="px-8 py-2.5 rounded-full bg-white text-coral border border-coral font-bold text-sm tracking-widest uppercase hover:bg-coral hover:text-white transition-colors">Teaholic</a>
-                <a href="#" class="px-8 py-2.5 rounded-full bg-white text-coral border border-coral font-bold text-sm tracking-widest uppercase hover:bg-coral hover:text-white transition-colors">Blog</a>
+            {{-- Tabs / Bộ lọc Danh mục --}}
+            <div class="flex flex-wrap justify-center gap-3">
+                <a href="{{ route('post.index') }}" 
+                   class="px-7 py-2.5 rounded-full font-bold text-xs tracking-widest uppercase transition-all shadow-xs {{ empty($selectedCatSlug) ? 'bg-coral text-white shadow-md' : 'bg-white text-coral border border-coral hover:bg-coral hover:text-white' }}">
+                    Tất cả
+                </a>
+                @if(isset($categories))
+                    @foreach($categories as $cat)
+                        <a href="{{ route('post.index', ['category' => $cat->slug]) }}" 
+                           class="px-7 py-2.5 rounded-full font-bold text-xs tracking-widest uppercase transition-all shadow-xs {{ ($selectedCatSlug ?? '') === $cat->slug ? 'bg-coral text-white shadow-md' : 'bg-white text-coral border border-coral hover:bg-coral hover:text-white' }}">
+                            {{ $cat->name }}
+                        </a>
+                    @endforeach
+                @endif
             </div>
         </div>
 
@@ -33,70 +42,76 @@
     {{-- LƯỚI BÀI VIẾT (ASYMMETRIC GRID) --}}
     {{-- ========================================== --}}
     <section class="max-w-7xl mx-auto px-6 py-8">
-        {{-- Sử dụng grid 4 cột. Bài to chiếm 2 cột, 2 bài nhỏ mỗi bài chiếm 1 cột --}}
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            
-            {{-- Bài viết nổi bật (Lớn, bên trái) --}}
-            <article class="reveal lg:col-span-2 bg-[#FFF9ED] rounded-[32px] overflow-hidden group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-400 border border-espresso/5 flex flex-col">
-                <div class="w-full aspect-[16/10] overflow-hidden relative">
-                    <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Sài Gòn Xưa">
-                </div>
-                <div class="p-8 md:p-10 flex-1 flex flex-col">
-                    <div class="flex justify-between items-center mb-4 text-xs font-bold uppercase tracking-widest">
-                        <span class="text-coral">Coffeeholic</span>
-                        <span class="text-espresso/40">06/12/2026</span>
-                    </div>
-                    <h3 class="font-serif font-bold text-3xl md:text-4xl text-espresso mb-4 group-hover:text-coral transition-colors leading-snug">
-                        BẮT GẶP SÀI GÒN XƯA TRONG MÓN UỐNG HIỆN ĐẠI CỦA GIỚI TRẺ
-                    </h3>
-                    <p class="text-espresso/70 leading-relaxed line-clamp-3 mt-auto">
-                        Dẫu qua bao nhiêu lớp sóng thời gian, người ta vẫn có thể tìm lại những dấu ấn thăng trầm của một Sài Gòn xưa cũ. Trên những góc phố, trong các bức ảnh, trong vô số tác phẩm văn chương... và dĩ nhiên trong cả những hương vị cà phê thân thuộc.
-                    </p>
-                </div>
-            </article>
+        @if(!isset($posts) || $posts->isEmpty())
+            <div class="bg-white rounded-[32px] p-12 text-center shadow-sm border border-espresso/5 max-w-xl mx-auto">
+                <span class="text-4xl mb-4 block">📰</span>
+                <h3 class="font-serif font-bold text-2xl text-espresso mb-2">Chưa có bài viết nào</h3>
+                <p class="text-espresso/60 text-sm">Các bài viết mới nhất sẽ sớm được cập nhật tại chuyên mục này!</p>
+            </div>
+        @else
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                @foreach($posts as $index => $p)
+                    {{-- Bài viết thứ nhất (index 0) tạo điểm nhấn nổi bật trên khung lớn --}}
+                    @if($index === 0 && $posts->currentPage() == 1 && empty($selectedCatSlug))
+                        <article class="reveal lg:col-span-3 bg-[#FFF9ED] rounded-[32px] overflow-hidden group shadow-sm hover:shadow-xl transition-all duration-400 border border-espresso/5 grid grid-cols-1 lg:grid-cols-12">
+                            <a href="{{ route('post.show', $p->slug) }}" class="lg:col-span-7 aspect-[16/10] overflow-hidden relative block">
+                                <img src="{{ $p->thumbnail ?: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=800&auto=format&fit=crop' }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="{{ $p->title }}">
+                            </a>
+                            <div class="lg:col-span-5 p-8 md:p-10 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-center mb-4 text-xs font-bold uppercase tracking-widest">
+                                        <span class="text-coral bg-coral/10 px-3 py-1 rounded-full border border-coral/20">{{ $p->category_name ?? 'Blog' }}</span>
+                                        <span class="text-espresso/40">{{ \Carbon\Carbon::parse($p->created_at)->format('d/m/Y') }}</span>
+                                    </div>
+                                    <h3 class="font-serif font-bold text-2xl md:text-3xl text-espresso mb-4 group-hover:text-coral transition-colors leading-snug">
+                                        <a href="{{ route('post.show', $p->slug) }}">{{ $p->title }}</a>
+                                    </h3>
+                                    <p class="text-espresso/70 text-sm leading-relaxed line-clamp-4">
+                                        {{ Str::limit(strip_tags($p->content), 200) }}
+                                    </p>
+                                </div>
+                                <div class="mt-6 pt-6 border-t border-espresso/10 flex justify-between items-center">
+                                    <span class="text-xs font-medium text-espresso/60">Tác giả: <strong class="text-espresso">{{ $p->author_name ?? 'Chill Chill' }}</strong></span>
+                                    <a href="{{ route('post.show', $p->slug) }}" class="inline-flex items-center gap-1 text-xs font-extrabold text-coral uppercase tracking-wider group-hover:translate-x-1 transition-transform">
+                                        Đọc tiếp →
+                                    </a>
+                                </div>
+                            </div>
+                        </article>
+                    @else
+                        {{-- Thẻ bài viết chuẩn --}}
+                        <article class="reveal bg-[#FFF9ED] rounded-[32px] overflow-hidden group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-400 border border-espresso/5 flex flex-col">
+                            <a href="{{ route('post.show', $p->slug) }}" class="w-full aspect-[4/3] overflow-hidden relative block">
+                                <img src="{{ $p->thumbnail ?: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600&auto=format&fit=crop' }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="{{ $p->title }}">
+                            </a>
+                            <div class="p-6 md:p-8 flex-1 flex flex-col">
+                                <div class="flex justify-between items-center mb-3 text-xs font-bold uppercase tracking-widest">
+                                    <span class="text-coral">{{ $p->category_name ?? 'Blog' }}</span>
+                                    <span class="text-espresso/40">{{ \Carbon\Carbon::parse($p->created_at)->format('d/m/Y') }}</span>
+                                </div>
+                                <h3 class="font-serif font-bold text-lg md:text-xl text-espresso mb-3 group-hover:text-coral transition-colors leading-tight line-clamp-2">
+                                    <a href="{{ route('post.show', $p->slug) }}">{{ $p->title }}</a>
+                                </h3>
+                                <p class="text-espresso/70 text-xs md:text-sm leading-relaxed line-clamp-3 mb-6">
+                                    {{ Str::limit(strip_tags($p->content), 120) }}
+                                </p>
+                                <div class="mt-auto pt-4 border-t border-espresso/5 flex justify-between items-center">
+                                    <span class="text-[11px] text-espresso/50">Tác giả: {{ $p->author_name ?? 'Chill Chill' }}</span>
+                                    <a href="{{ route('post.show', $p->slug) }}" class="text-xs font-bold text-coral hover:underline">Chi tiết →</a>
+                                </div>
+                            </div>
+                        </article>
+                    @endif
+                @endforeach
+            </div>
 
-            {{-- Bài viết nhỏ 1 (Bên phải) --}}
-            <article class="reveal lg:col-span-1 bg-[#FFF9ED] rounded-[32px] overflow-hidden group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-400 border border-espresso/5 flex flex-col" style="transition-delay: 100ms;">
-                <div class="w-full aspect-[4/3] overflow-hidden relative">
-                    <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Signature">
-                </div>
-                <div class="p-6 md:p-8 flex-1 flex flex-col">
-                    <div class="flex justify-between items-center mb-3 text-[10px] md:text-xs font-bold uppercase tracking-widest">
-                        <span class="text-coral">Coffeeholic</span>
-                        <span class="text-espresso/40">05/12/2026</span>
-                    </div>
-                    <h3 class="font-serif font-bold text-xl md:text-2xl text-espresso mb-3 group-hover:text-coral transition-colors leading-tight">
-                        UỐNG GÌ KHI TỚI SIGNATURE BY CHILL CHILL?
-                    </h3>
-                    <p class="text-espresso/70 text-sm leading-relaxed line-clamp-4 mt-auto">
-                        Vừa qua, Chill Chill chính thức khai trương cửa hàng SIGNATURE chuyên phục vụ cà phê đặc sản. Cùng khám phá ngay menu độc đáo đang gây bão giới trẻ Sài Thành nhé.
-                    </p>
-                </div>
-            </article>
-
-            {{-- Bài viết nhỏ 2 (Bên phải) --}}
-            <article class="reveal lg:col-span-1 bg-[#FFF9ED] rounded-[32px] overflow-hidden group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-400 border border-espresso/5 flex flex-col" style="transition-delay: 200ms;">
-                <div class="w-full aspect-[4/3] overflow-hidden relative">
-                    <img src="https://images.unsplash.com/photo-1572490122747-3968b75cc699?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Espresso">
-                </div>
-                <div class="p-6 md:p-8 flex-1 flex flex-col">
-                    <div class="flex justify-between items-center mb-3 text-[10px] md:text-xs font-bold uppercase tracking-widest">
-                        <span class="text-coral">Coffeeholic</span>
-                        <span class="text-espresso/40">01/12/2026</span>
-                    </div>
-                    <h3 class="font-serif font-bold text-xl md:text-2xl text-espresso mb-3 group-hover:text-coral transition-colors leading-tight">
-                        CÀ PHÊ SỮA ESPRESSO CHILL CHILL - RẤT LỚN RẤT VỊ NGON
-                    </h3>
-                    <p class="text-espresso/70 text-sm leading-relaxed line-clamp-4 mt-auto">
-                        Cà phê sữa Espresso là một lon cà phê sữa giải khát với hương vị cà phê đậm đà từ 100% cà phê Robusta cùng vị sữa béo ngậy tuyệt hảo.
-                    </p>
-                </div>
-            </article>
-            
-        </div>
+            {{-- Phân trang --}}
+            <div class="mt-12 flex justify-center">
+                {{ $posts->links() }}
+            </div>
+        @endif
     </section>
 
-    {{-- Kéo thêm style nhỏ cho sticker xoay tròn --}}
     <style>
         .rotate-animation {
             animation: slowSpin 10s linear infinite;

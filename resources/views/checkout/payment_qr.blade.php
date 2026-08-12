@@ -85,7 +85,7 @@
 
             {{-- Lưu ý --}}
             <div class="mt-10 p-5 bg-yellow-50/50 border border-yellow-200/50 rounded-2xl text-left text-sm text-espresso/80 leading-relaxed">
-                <span class="font-bold text-yellow-700">⚠️ Lưu ý quan trọng:</span> Bạn cần ghi chính xác nội dung chuyển khoản là <strong class="text-coral">CHILLCHILL {{ $order->order_id }}</strong> để hệ thống tự động xác nhận đơn hàng nhanh nhất. Sau khi chuyển tiền, vui lòng bấm nút xác nhận bên dưới.
+                <span class="font-bold text-yellow-700">Lưu ý quan trọng:</span> Bạn cần ghi chính xác nội dung chuyển khoản là <strong class="text-coral">CHILLCHILL {{ $order->order_id }}</strong> để hệ thống tự động xác nhận đơn hàng nhanh nhất. Sau khi chuyển tiền, vui lòng bấm nút xác nhận bên dưới.
             </div>
 
             {{-- Nút xác nhận --}}

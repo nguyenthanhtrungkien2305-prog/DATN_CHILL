@@ -10,7 +10,7 @@
         ->whereNull('check_out')
         ->first();
 
-    $hasActiveShift = !empty($activeAttendance);
+    $hasActiveShift = !empty($activeAttendance) || (auth()->check() && auth()->user()->role === 'admin');
 
     $shiftEndTimeIso = null;
     if ($hasActiveShift && !empty($activeAttendance->scheduled_end_time)) {
@@ -31,38 +31,38 @@
     
     <div class="flex-1 overflow-y-auto py-4">
         
-        {{-- NHÓM 1: CÁC CHỨC NĂNG BỊ KHÓA NẾU CHƯA CHECK-IN --}}
+        {{-- NHÓM 1: CÁC CHỨC NĂNG BÁN HÀNG (YÊU CẦU CHECK-IN) --}}
         <div class="{{ !$hasActiveShift ? 'opacity-50 grayscale pointer-events-none' : '' }}">
             @if(!$hasActiveShift)
-                <div class="px-6 py-2 text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-1">
-                    🔒 Cần Check-in để mở khóa
-                </div>
+                <!-- <div class="px-6 py-2 text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-1">
+                    🔒 Cần Check-in để bán hàng
+                </div> -->
             @endif
 
             <a href="{{ route('staff.new_orders') }}" class="flex items-center justify-between px-6 py-4 whitespace-nowrap transition-colors {{ request()->routeIs('staff.new_orders') ? 'bg-coral/10 text-coral border-r-4 border-coral font-bold' : 'hover:bg-coral/10 hover:text-coral text-espresso border-b border-gray-50 font-bold' }}">
-                <div class="flex items-center gap-4"><span class="text-xl">📥</span><span>Đơn hàng mới</span></div>
+                <span>Đơn hàng mới</span>
                 <span id="new-order-badge" class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-        {{ $pendingOrders->count() }}
-    </span>
+                    {{ $pendingOrders->count() }}
+                </span>
             </a>
             
             <a href="{{ route('staff.pos') }}" class="flex items-center gap-4 px-6 py-4 whitespace-nowrap transition-colors {{ request()->routeIs('staff.pos') ? 'bg-coral/10 text-coral border-r-4 border-coral font-bold' : 'hover:bg-coral/10 hover:text-coral text-espresso/80 border-b border-gray-50 font-medium' }}">
-                <span class="text-xl">🛒</span> Bán hàng (POS)
-            </a>
-
-            <a href="{{ route('staff.commission') }}" class="flex items-center gap-4 px-6 py-4 whitespace-nowrap transition-colors {{ request()->routeIs('staff.commission') ? 'bg-coral/10 text-coral border-r-4 border-coral font-bold' : 'hover:bg-coral/10 hover:text-coral text-espresso/80 border-b border-gray-50 font-medium' }}">
-                <span class="text-xl">💰</span> Báo cáo Hoa hồng
+                <span>Bán hàng (POS)</span>
             </a>
             <div class="my-2 border-t-2 border-gray-100 mx-4"></div>
         </div>
         
-        {{-- NHÓM 2: CÁC CHỨC NĂNG TỰ DO --}}
+        {{-- NHÓM 2: CÁC CHỨC NĂNG CÁ NHÂN (TỰ DO XEM) --}}
         <a href="{{ route('staff.shifts') }}" class="flex items-center gap-4 px-6 py-4 whitespace-nowrap transition-colors {{ request()->routeIs('staff.shifts') ? 'bg-coral/10 text-coral border-r-4 border-coral font-bold' : 'hover:bg-coral/10 hover:text-coral text-espresso/80 border-b border-gray-50 font-medium' }}">
-            <span class="text-xl">📋</span> Quản lý Ca làm
+            <span>Quản lý Ca làm</span>
+        </a>
+
+        <a href="{{ route('staff.commission') }}" class="flex items-center gap-4 px-6 py-4 whitespace-nowrap transition-colors {{ request()->routeIs('staff.commission') ? 'bg-coral/10 text-coral border-r-4 border-coral font-bold' : 'hover:bg-coral/10 hover:text-coral text-espresso/80 border-b border-gray-50 font-medium' }}">
+            <span>Báo cáo Hoa hồng</span>
         </a>
 
         <a href="{{ route('staff.salary') }}" class="flex items-center gap-4 px-6 py-4 whitespace-nowrap transition-colors {{ request()->routeIs('staff.salary') ? 'bg-coral/10 text-coral border-r-4 border-coral font-bold' : 'hover:bg-coral/10 hover:text-coral text-espresso/80 border-b border-gray-50 font-medium' }}">
-            <span class="text-xl">💳</span> Bảng lương
+            <span>Bảng lương</span>
         </a>
     </div>
 

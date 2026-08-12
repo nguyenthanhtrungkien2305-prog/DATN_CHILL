@@ -26,11 +26,33 @@ class CheckoutController extends Controller
         $addresses = [];
         if ($user && $user->address) {
             $decoded = json_decode($user->address, true);
-            // Nếu parse JSON thành công thì lấy, không thì coi như nó là 1 chuỗi text bình thường
             $addresses = is_array($decoded) ? $decoded : [$user->address];
         }
 
-        return view('checkout.index', compact('cart', 'user', 'addresses'));
+        $subTotal = 0;
+        foreach ($cart as $item) {
+            $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
+        }
+
+        $availableVouchers = (new CartController())->getApplicableVouchers($subTotal);
+
+        // Tự động chọn và áp dụng mã hời nhất ĐỦ ĐIỀU KIỆN nếu chưa chọn mã nào VÀ chưa bấm hủy voucher
+        if (!session()->has('voucher') && !session()->get('voucher_opt_out', false) && $subTotal > 0) {
+            $bestEligible = $availableVouchers->firstWhere('is_eligible', true);
+            if ($bestEligible) {
+                session()->put('voucher', [
+                    'voucher_id' => $bestEligible->voucher_id,
+                    'code' => $bestEligible->code,
+                    'discount_type' => $bestEligible->discount_type,
+                    'discount_value' => $bestEligible->discount_value,
+                    'discount_amount' => $bestEligible->discount_amount,
+                    'min_order' => $bestEligible->min_order,
+                    'auto_applied' => true
+                ]);
+            }
+        }
+
+        return view('checkout.index', compact('cart', 'user', 'addresses', 'availableVouchers'));
     }
 
     // 2. Thêm địa chỉ mới trực tiếp tại trang Checkout (AJAX)
@@ -110,6 +132,41 @@ class CheckoutController extends Controller
         if ($voucher) {
             $voucherId = $voucher['voucher_id'];
             $discountAmount = $voucher['discount_amount'];
+
+            // Re-verify per-user usage limit right before order creation to prevent bypass
+            $vDb = \DB::table('vouchers')->where('voucher_id', $voucherId)->first();
+            if ($vDb) {
+                $isPointsExchange = isset($vDb->is_points_exchange) ? (bool)$vDb->is_points_exchange : false;
+
+                // Chỉ kiểm tra giới hạn lượt dùng usage_per_user cho mã công khai / mã tặng riêng (KHÔNG áp dụng cho Mã đổi điểm)
+                if (!$isPointsExchange) {
+                    $usagePerUser = isset($vDb->usage_per_user) ? $vDb->usage_per_user : 1;
+                    if ($usagePerUser !== null && $usagePerUser > 0) {
+                        $userId = auth()->id();
+                        $customerPhone = $request->customer_phone ?? (auth()->check() ? auth()->user()->phone : '');
+                        
+                        $usedCount = 0;
+                        if ($userId) {
+                            $usedCount = \DB::table('orders')
+                                ->where('voucher_id', $voucherId)
+                                ->where('user_id', $userId)
+                                ->where('status', '!=', 'cancelled')
+                                ->count();
+                        } elseif (!empty($customerPhone)) {
+                            $usedCount = \DB::table('orders')
+                                ->where('voucher_id', $voucherId)
+                                ->where('customer_phone', $customerPhone)
+                                ->where('status', '!=', 'cancelled')
+                                ->count();
+                        }
+
+                        if ($usedCount >= $usagePerUser) {
+                            session()->forget('voucher');
+                            return redirect()->route('cart.index')->with('error', "Mã giảm giá này chỉ áp dụng tối đa {$usagePerUser} lần cho mỗi khách hàng. Bạn đã sử dụng mã này rồi!");
+                        }
+                    }
+                }
+            }
         }
 
         $finalAmount = max(0, $totalAmount - $discountAmount);
@@ -132,9 +189,18 @@ class CheckoutController extends Controller
             'updated_at' => now(),
         ]);
 
-        // Tăng lượt sử dụng của voucher
+        // Tăng lượt sử dụng của voucher & đánh dấu đã dùng trong user_vouchers
         if ($voucherId) {
             \DB::table('vouchers')->where('voucher_id', $voucherId)->increment('used_count');
+
+            if (auth()->check() && \Illuminate\Support\Facades\Schema::hasTable('user_vouchers')) {
+                \DB::table('user_vouchers')
+                    ->where('user_id', auth()->id())
+                    ->where('voucher_id', $voucherId)
+                    ->where('is_used', 0)
+                    ->limit(1)
+                    ->update(['is_used' => true, 'updated_at' => now()]);
+            }
         }
 
         // Xóa giỏ hàng và voucher sau khi đặt xong
