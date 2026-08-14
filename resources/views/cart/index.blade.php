@@ -27,7 +27,7 @@
             <div class="w-full lg:w-2/3 flex flex-col space-y-4">
                 
                 {{-- Thanh Tìm Kiếm Món Trong Giỏ Hàng --}}
-                @if(count(session('cart')) > 1)
+                @if(count($cart) > 1)
                     <div class="relative w-full bg-white rounded-2xl p-2.5 border border-espresso/10 shadow-sm flex items-center gap-3">
                         <div class="pl-2 text-espresso/40">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -39,7 +39,7 @@
 
                 {{-- Container Giới Hạn Chiều Cao Có Thanh Cuộn (Scrollbar) --}}
                 <div id="cart-items-container" class="space-y-4 max-h-[620px] overflow-y-auto pr-2 custom-scrollbar">
-                    @foreach(session('cart') as $cartKey => $item)
+                    @foreach($cart as $cartKey => $item)
                     @php
                         $isCombo = !empty($item['is_combo']);
                         $categoryName = !$isCombo ? \DB::table('products')

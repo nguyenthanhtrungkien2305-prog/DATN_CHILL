@@ -25,7 +25,7 @@
                 {{-- Mã QR --}}
                 <div class="bg-cream/30 p-4 rounded-3xl border border-espresso/5 shadow-inner shrink-0">
                     @php
-                        $qrUrl = "https://img.vietqr.io/image/mbbank-0385792442-compact2.png?amount=" . (int)$order->total_amount . "&addInfo=CHILLCHILL%20" . $order->order_id . "&accountName=NGUYEN%20THANH%20TRUNG%20KIEN";
+                        $qrUrl = "https://img.vietqr.io/image/MB-0385792442-compact2.png?amount=" . (int)$order->total_amount . "&addInfo=CHILLCHILL%20" . $order->order_id . "&accountName=TRUNG%20KIEN";
                     @endphp
                     <img src="{{ $qrUrl }}" alt="VietQR" class="w-64 h-64 md:w-72 md:h-72 object-contain rounded-xl">
                     <p class="text-center text-[10px] text-espresso/40 mt-2 font-bold tracking-wider uppercase">Quét mã bằng App Ngân hàng</p>
@@ -55,7 +55,7 @@
                     {{-- Tên người nhận --}}
                     <div>
                         <span class="text-xs text-espresso/50 block font-medium">Chủ tài khoản</span>
-                        <span class="text-espresso font-bold text-sm">NGUYEN THANH TRUNG KIEN</span>
+                        <span class="text-espresso font-bold text-sm">Trung Kiên</span>
                     </div>
 
                     {{-- Số tiền --}}
@@ -83,8 +83,25 @@
 
             </div>
 
+            @if(!empty($sepayFormHtml))
+                <div class="mt-8 p-6 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/80 rounded-3xl text-left shadow-sm">
+                    <div class="flex items-center justify-between gap-4 mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">💳</span>
+                            <h3 class="font-extrabold text-espresso text-base">Thanh toán qua cổng SePay Checkout</h3>
+                        </div>
+                        <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-full border border-emerald-200">Tự động xác nhận 24/7</span>
+                    </div>
+                    <p class="text-xs text-espresso/70 mb-4">Bạn có thể bấm nút bên dưới để thanh toán trực tiếp qua Cổng SePay Gateway của ngân hàng.</p>
+                    
+                    <div id="sepay-checkout-form">
+                        {!! $sepayFormHtml !!}
+                    </div>
+                </div>
+            @endif
+
             {{-- Lưu ý --}}
-            <div class="mt-10 p-5 bg-yellow-50/50 border border-yellow-200/50 rounded-2xl text-left text-sm text-espresso/80 leading-relaxed">
+            <div class="mt-8 p-5 bg-yellow-50/50 border border-yellow-200/50 rounded-2xl text-left text-sm text-espresso/80 leading-relaxed">
                 <span class="font-bold text-yellow-700">Lưu ý quan trọng:</span> Bạn cần ghi chính xác nội dung chuyển khoản là <strong class="text-coral">CHILLCHILL {{ $order->order_id }}</strong> để hệ thống tự động xác nhận đơn hàng nhanh nhất. Sau khi chuyển tiền, vui lòng bấm nút xác nhận bên dưới.
             </div>
 
