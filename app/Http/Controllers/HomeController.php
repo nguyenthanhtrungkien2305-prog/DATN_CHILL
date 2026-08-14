@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Combo;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
 class HomeController extends Controller
@@ -11,7 +13,9 @@ class HomeController extends Controller
     public function index()
     {
         // 1. Lấy 4 danh mục
-        $categories = DB::table('categories')->limit(4)->get();
+        $categories = Cache::remember('home_categories', 600, function () {
+            return DB::table('categories')->limit(4)->get();
+        });
 
         // 2. Lấy MÓN BÁN CHẠY (Kiểm tra an toàn cấu trúc CSDL)
         $hasOrderItems = Schema::hasTable('order_items');

@@ -161,23 +161,5 @@
             .catch(err => console.error('Lỗi kiểm tra trạng thái:', err));
     }, 3000);
 
-    // === GIẢ LẬP THANH TOÁN SAU 10 GIÂY ===
-    setTimeout(() => {
-        console.log('Đang chạy giả lập thanh toán...');
-        fetch('{{ route('checkout.mock_pay', $order->order_id) }}', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log('Giả lập thanh toán thành công!');
-            }
-        })
-        .catch(err => console.error('Lỗi chạy giả lập thanh toán:', err));
-    }, 10000);
 </script>
 @endsection

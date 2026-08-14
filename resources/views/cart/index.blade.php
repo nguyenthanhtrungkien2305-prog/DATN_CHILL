@@ -9,11 +9,9 @@
         @php
             $totalItems = 0;
             $subTotal = 0;
-            if(session()->has('cart')) {
-                foreach(session('cart') as $item) {
-                    $totalItems += $item['quantity'];
-                    $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
-                }
+            foreach($cart as $item) {
+                $totalItems += $item['quantity'];
+                $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
             }
         @endphp
 
@@ -22,7 +20,7 @@
             <span class="bg-coral text-white text-sm font-bold px-3 py-1 rounded-full">{{ $totalItems }} món</span>
         </div>
 
-        @if(session('cart') && count(session('cart')) > 0)
+        @if(!empty($cart))
         
         <div class="flex flex-col lg:flex-row gap-8 items-start">
             
@@ -451,7 +449,7 @@
                 } else {
                     data.toppings.forEach(top => {
                         let formattedPrice = new Intl.NumberFormat('vi-VN').format(top.price);
-                        let imgUrl = top.image ? top.image : 'https://via.placeholder.com/200';
+                        let imgUrl = top.image ? top.image : 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=200';
                         html += `
                         <div class="flex items-center justify-between p-3 border border-espresso/10 rounded-xl hover:bg-[#FAF7F2] transition-colors group">
                             <div class="flex items-center gap-3"><img src="${imgUrl}" class="w-12 h-12 rounded-full object-cover">

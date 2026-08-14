@@ -44,7 +44,7 @@
 
                         <div>
                             <a href="{{ route('combo.show', $combo->combo_id) }}" class="block relative overflow-hidden rounded-2xl mb-5 h-56 bg-cream">
-                                <img src="{{ asset($combo->image_url ?? 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600&auto=format&fit=crop') }}"
+                                <img src="{{ !empty($combo->image_url) ? (\Illuminate\Support\Str::startsWith($combo->image_url, ['http://', 'https://']) ? $combo->image_url : asset($combo->image_url)) : 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600&auto=format&fit=crop' }}"
                                      alt="{{ $combo->name }}"
                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                             </a>

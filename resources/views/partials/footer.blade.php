@@ -33,7 +33,6 @@
                 <a href="{{ url('/') }}" class="text-xs text-espresso/70 hover:text-coral transition-colors font-medium">Trang chủ</a>
                 <a href="{{ route('product.index') }}" class="text-xs text-espresso/70 hover:text-coral transition-colors font-medium">Thực đơn</a>
                 <a href="{{ url('/#best-sellers') }}" class="text-xs text-espresso/70 hover:text-coral transition-colors font-medium">Món bán chạy</a>
-                <a href="{{ route('post.story') }}" class="text-xs text-espresso/70 hover:text-coral transition-colors font-medium">Về chúng tôi</a>
             </div>
 
             {{-- Cột 3: GIỜ MỞ CỬA --}}

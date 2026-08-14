@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 class ProductController extends Controller
 {
@@ -20,12 +21,10 @@ class ProductController extends Controller
             return;
         }
 
-        // Không xóa ảnh placeholder hoặc domain bên ngoài
         if (Str::startsWith($imageUrl, ['http://', 'https://']) && !Str::contains($imageUrl, request()->getHost())) {
             return;
         }
 
-        // Đường dẫn tương đối trong disk 'public'
         $relativePath = ltrim($imageUrl, '/');
         if (Str::startsWith($relativePath, 'storage/')) {
             $relativePath = Str::after($relativePath, 'storage/');
@@ -46,8 +45,31 @@ class ProductController extends Controller
         $query = DB::table('products')
             ->leftJoin('categories', 'products.category_id', '=', 'categories.category_id')
             ->leftJoin('product_variants', 'products.product_id', '=', 'product_variants.product_id')
-            ->select('products.*', 'categories.name as category_name', DB::raw('MIN(product_variants.price) as price'))
-            ->groupBy('products.product_id', 'products.name', 'products.slug', 'products.description', 'products.status', 'products.image_url', 'products.category_id', 'products.created_at', 'products.updated_at', 'categories.name');
+            ->select(
+                'products.product_id', 
+                'products.name', 
+                'products.slug', 
+                'products.description', 
+                'products.status', 
+                'products.image_url', 
+                'products.category_id', 
+                'products.created_at', 
+                'products.updated_at',
+                'categories.name as category_name',
+                DB::raw('MIN(product_variants.price) as price')
+            )
+            ->groupBy(
+                'products.product_id', 
+                'products.name', 
+                'products.slug', 
+                'products.description', 
+                'products.status', 
+                'products.image_url', 
+                'products.category_id', 
+                'products.created_at', 
+                'products.updated_at',
+                'categories.name'
+            );
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -65,8 +87,7 @@ class ProductController extends Controller
         $categories = DB::table('categories')->get();
         $sizes = Schema::hasTable('sizes') ? DB::table('sizes')->get() : collect([]);
 
-        $toppingCategory = DB::table('categories')->where('name', 'LIKE', '%topping%')->orWhere('name', 'LIKE', '%Topping%')->first();
-        $allToppings = $toppingCategory ? DB::table('products')->where('category_id', $toppingCategory->category_id)->select('product_id as topping_id', 'name')->get() : collect([]);
+        $allToppings = DB::table('toppings')->where('status', 1)->get();
 
         return view('admin.products.create', compact('categories', 'sizes', 'allToppings'));
     }
@@ -79,14 +100,22 @@ class ProductController extends Controller
             'status' => 'required',
         ]);
 
-        // XỬ LÝ ẢNH CHÍNH (Ưu tiên File Upload, nếu không có thì lấy Link URL)
         $mainImageUrl = $request->image_url;
         if ($request->hasFile('image_file')) {
             $mainImageUrl = '/storage/' . $request->file('image_file')->store('products', 'public');
         }
 
+        $price = $request->price ?? 0;
+        if ($request->has('prices') && is_array($request->prices)) {
+            $validPrices = array_filter($request->prices);
+            if (!empty($validPrices)) {
+                $price = min($validPrices);
+            }
+        }
+
         $productId = DB::table('products')->insertGetId([
             'name' => $request->name,
+            'price' => $price,
             'slug' => Str::slug($request->name) . '-' . time(),
             'category_id' => $request->category_id,
             'status' => $request->status,
@@ -96,41 +125,32 @@ class ProductController extends Controller
             'updated_at' => now()
         ]);
 
-        // Lưu Giá Size
-        if ($request->has('prices')) {
-            foreach ($request->prices as $sizeId => $price) {
-                if (!empty($price)) {
+        if ($request->has('prices') && is_array($request->prices)) {
+            foreach ($request->prices as $sizeId => $p) {
+                if (!empty($p)) {
                     DB::table('product_variants')->insert([
                         'product_id' => $productId, 
                         'size_id' => $sizeId, 
-                        'price' => $price
+                        'price' => $p
                     ]);
                 }
             }
         }
 
-        // XỬ LÝ ẢNH PHỤ
-        if (Schema::hasTable('product_images')) {
-            for ($i = 0; $i < 3; $i++) {
-                $extraUrl = $request->extra_images[$i] ?? null;
-                if ($request->hasFile("extra_image_files.$i")) {
-                    $extraUrl = '/storage/' . $request->file("extra_image_files.$i")->store('products', 'public');
-                }
-                
-                if (!empty($extraUrl)) {
-                    DB::table('product_images')->insert([
-                        'product_id' => $productId, 'image_url' => $extraUrl, 'created_at' => now(), 'updated_at' => now()
-                    ]);
-                }
-            }
-        }
-
-        // Lưu Topping
-        if (Schema::hasTable('product_toppings') && $request->has('toppings')) {
+        if ($request->has('toppings')) {
+            $insertData = [];
             foreach ($request->toppings as $toppingId) {
-                DB::table('product_toppings')->insert(['product_id' => $productId, 'topping_id' => $toppingId]);
+                $insertData[] = [
+                    'product_id' => $productId,
+                    'topping_id' => $toppingId
+                ];
+            }
+            if (Schema::hasTable('product_topping')) {
+                DB::table('product_topping')->insert($insertData);
             }
         }
+
+        Cache::forget('home_products');
 
         return redirect()->route('products.index')->with('success', 'Đã thêm sản phẩm thành công!');
     }
@@ -143,20 +163,16 @@ class ProductController extends Controller
         $categories = DB::table('categories')->get();
         $sizes = Schema::hasTable('sizes') ? DB::table('sizes')->get() : collect([]);
 
-        // Lấy danh sách Giá/Size đang có
         $variants = DB::table('product_variants')
             ->join('sizes', 'product_variants.size_id', '=', 'sizes.size_id')
             ->where('product_id', $id)
             ->select('product_variants.*', 'sizes.name as size_name')
             ->get();
 
-        $extraImages = Schema::hasTable('product_images') ? DB::table('product_images')->where('product_id', $id)->limit(3)->get() : collect([]);
+        $allToppings = DB::table('toppings')->where('status', 1)->get();
+        $selectedToppings = Schema::hasTable('product_topping') ? DB::table('product_topping')->where('product_id', $id)->pluck('topping_id')->toArray() : [];
 
-        $toppingCategory = DB::table('categories')->where('name', 'LIKE', '%topping%')->orWhere('name', 'LIKE', '%Topping%')->first();
-        $allToppings = $toppingCategory ? DB::table('products')->where('category_id', $toppingCategory->category_id)->select('product_id as topping_id', 'name')->get() : collect([]);
-        $selectedToppings = Schema::hasTable('product_toppings') ? DB::table('product_toppings')->where('product_id', $id)->pluck('topping_id')->toArray() : [];
-
-        return view('admin.products.edit', compact('product', 'categories', 'variants', 'extraImages', 'allToppings', 'selectedToppings', 'sizes'));
+        return view('admin.products.edit', compact('product', 'categories', 'variants', 'allToppings', 'selectedToppings', 'sizes'));
     }
 
     public function update(Request $request, $id)
@@ -166,7 +182,6 @@ class ProductController extends Controller
         $product = DB::table('products')->where('product_id', $id)->first();
         if (!$product) abort(404);
 
-        // XỬ LÝ CẬP NHẬT ẢNH CHÍNH & XÓA ẢNH CŨ NẾU THAY ĐỔI
         $mainImageUrl = $request->image_url;
         if ($request->hasFile('image_file')) {
             $this->deleteImageFile($product->image_url);
@@ -175,17 +190,25 @@ class ProductController extends Controller
             $this->deleteImageFile($product->image_url);
         }
 
+        $price = $request->price ?? $product->price ?? 0;
+        if ($request->has('variants') && is_array($request->variants)) {
+            $validPrices = array_filter($request->variants);
+            if (!empty($validPrices)) {
+                $price = min($validPrices);
+            }
+        }
+
         DB::table('products')->where('product_id', $id)->update([
             'name' => $request->name, 
+            'price' => $price,
             'category_id' => $request->category_id, 
             'status' => $request->status,
-            'image_url' => $mainImageUrl, 
+            'image_url' => $mainImageUrl ?: $product->image_url, 
             'description' => $request->description, 
             'updated_at' => now()
         ]);
 
-        // XỬ LÝ CẬP NHẬT VÀ THÊM MỚI GIÁ (THEO SIZE ID)
-        if ($request->has('variants')) {
+        if ($request->has('variants') && is_array($request->variants)) {
             foreach ($request->variants as $sizeId => $newPrice) {
                 if ($newPrice !== null && $newPrice !== '') {
                     DB::table('product_variants')->updateOrInsert(
@@ -196,50 +219,21 @@ class ProductController extends Controller
             }
         }
 
-        // XỬ LÝ CẬP NHẬT ẢNH PHỤ & XÓA ẢNH CŨ
-        if (Schema::hasTable('product_images')) {
-            $extraImageIds = $request->extra_image_ids ?? [];
-            for ($i = 0; $i < 3; $i++) {
-                $imageId = $extraImageIds[$i] ?? null;
-                $extraUrl = $request->extra_images[$i] ?? null;
-                $oldImage = $imageId ? DB::table('product_images')->where('id', $imageId)->first() : null;
-                
-                if ($request->hasFile("extra_image_files.$i")) {
-                    if ($oldImage) {
-                        $this->deleteImageFile($oldImage->image_url);
-                    }
-                    $extraUrl = '/storage/' . $request->file("extra_image_files.$i")->store('products', 'public');
-                }
-
-                if ($imageId) {
-                    if (empty($extraUrl)) {
-                        if ($oldImage) {
-                            $this->deleteImageFile($oldImage->image_url);
-                        }
-                        DB::table('product_images')->where('id', $imageId)->delete();
-                    } else {
-                        if ($oldImage && $oldImage->image_url !== $extraUrl && !$request->hasFile("extra_image_files.$i")) {
-                            $this->deleteImageFile($oldImage->image_url);
-                        }
-                        DB::table('product_images')->where('id', $imageId)->update(['image_url' => $extraUrl, 'updated_at' => now()]);
-                    }
-                } else {
-                    if (!empty($extraUrl)) {
-                        DB::table('product_images')->insert(['product_id' => $id, 'image_url' => $extraUrl, 'created_at' => now(), 'updated_at' => now()]);
-                    }
-                }
-            }
-        }
-
-        // XỬ LÝ CẬP NHẬT TOPPING
-        if (Schema::hasTable('product_toppings')) {
-            DB::table('product_toppings')->where('product_id', $id)->delete();
+        if (Schema::hasTable('product_topping')) {
+            DB::table('product_topping')->where('product_id', $id)->delete();
             if ($request->has('toppings')) {
+                $insertData = [];
                 foreach ($request->toppings as $toppingId) {
-                    DB::table('product_toppings')->insert(['product_id' => $id, 'topping_id' => $toppingId]);
+                    $insertData[] = [
+                        'product_id' => $id,
+                        'topping_id' => $toppingId
+                    ];
                 }
+                DB::table('product_topping')->insert($insertData);
             }
         }
+
+        Cache::forget('home_products');
 
         return redirect()->route('products.index')->with('success', 'Cập nhật sản phẩm thành công!');
     }
@@ -278,12 +272,7 @@ class ProductController extends Controller
 
         // 2. Kiểm tra xem sản phẩm có xuất hiện trong LỊCH SỬ ĐƠN HÀNG không
         $hasOrderHistory = false;
-
-        if (Schema::hasTable('order_items')) {
-            $hasOrderHistory = DB::table('order_items')->where('product_id', $id)->exists();
-        }
-
-        if (!$hasOrderHistory && Schema::hasTable('orders')) {
+        if (Schema::hasTable('orders')) {
             $hasOrderHistory = DB::table('orders')
                 ->where('items', 'LIKE', '%"product_id":' . $id . '%')
                 ->orWhere('items', 'LIKE', '%"product_id":"' . $id . '"%')
@@ -299,30 +288,22 @@ class ProductController extends Controller
                 'updated_at' => now()
             ]);
 
-            return redirect()->route('products.index')->with('success', 'Sản phẩm đã nằm trong lịch sử đơn hàng của khách! Hệ thống đã chuyển trạng thái sang "Ngừng bán" (Xóa mềm) để bảo toàn dữ liệu lịch sử đơn hàng.');
+            return redirect()->route('products.index')->with('success', 'Sản phẩm đã nằm trong lịch sử đơn hàng! Hệ thống đã chuyển trạng thái sang "Ngừng bán".');
         }
 
-        // 3. NẾU CHƯA TỪNG CÓ TRONG ĐƠN HÀNG NÀO -> XÓA VĨNH VIỄN & GIẢI PHÓNG BỘ NHỚ FILE ẢNH
         $this->deleteImageFile($product->image_url);
-
-        if (Schema::hasTable('product_images')) {
-            $extraImages = DB::table('product_images')->where('product_id', $id)->get();
-            foreach ($extraImages as $img) {
-                $this->deleteImageFile($img->image_url);
-            }
-            DB::table('product_images')->where('product_id', $id)->delete();
-        }
 
         if (Schema::hasTable('product_variants')) {
             DB::table('product_variants')->where('product_id', $id)->delete();
         }
-        if (Schema::hasTable('product_toppings')) {
-            DB::table('product_toppings')->where('product_id', $id)->delete();
+        if (Schema::hasTable('product_topping')) {
+            DB::table('product_topping')->where('product_id', $id)->delete();
         }
 
         DB::table('products')->where('product_id', $id)->delete();
+        Cache::forget('home_products');
 
-        return redirect()->route('products.index')->with('success', 'Đã xóa vĩnh viễn sản phẩm và toàn bộ file ảnh khỏi hệ thống!');
+        return redirect()->route('products.index')->with('success', 'Đã xóa vĩnh viễn sản phẩm khỏi hệ thống!');
     }
 
     /**

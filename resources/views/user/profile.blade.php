@@ -4,10 +4,8 @@
 
 @section('content')
 <style>
-    /* CHỈ ẨN FOOTER, MỞ KHÓA LẠI BODY ĐỂ TRÁNH LỖI CẮT LAYOUT */
     footer, #footer, .footer { display: none !important; }
 
-    /* Chỉnh dung nhan cho thanh cuộn */
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #ff7043; border-radius: 20px; }

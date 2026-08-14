@@ -56,7 +56,7 @@ class CommissionController extends Controller
             $items = json_decode($order->items, true);
             if(is_array($items)) {
                 foreach($items as $item) {
-                    $pId = $item['productId'] ?? 0;
+                    $pId = $item['productId'] ?? $item['product_id'] ?? 0;
                     if(!isset($productsSold[$pId])) {
                         $productsSold[$pId] = ['name' => $item['name'] ?? 'Sản phẩm', 'quantity' => 0, 'total' => 0];
                     }
