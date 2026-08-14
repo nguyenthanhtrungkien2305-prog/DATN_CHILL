@@ -37,11 +37,11 @@ class PaymentWebhookController extends Controller
         $transaction = $request->all();
         Log::info('SePay Webhook Payload Received:', $transaction);
 
-        // Các trường dữ liệu chuẩn từ SePay Webhook:
-        // - code / content: Nội dung chuyển khoản
+        // Các trường dữ liệu từ SePay Webhook:
+        // - content / code / description: Nội dung chuyển khoản (chứa CHILLCHILL <order_id>)
         // - transferAmount: Số tiền chuyển khoản
         // - transferType: "in" (tiền vào) hoặc "out" (tiền ra)
-        $code = $transaction['code'] ?? $transaction['content'] ?? '';
+        $rawPayloadText = json_encode($transaction);
         $amount = (float)($transaction['transferAmount'] ?? $transaction['amount'] ?? 0);
         $transferType = strtolower($transaction['transferType'] ?? 'in');
 
@@ -53,8 +53,8 @@ class PaymentWebhookController extends Controller
             ], 200);
         }
 
-        // Tách mã đơn hàng từ nội dung chuyển khoản sử dụng Regex (Ví dụ: "CHILLCHILL 12" hoặc "CHILLCHILL12")
-        if (preg_match('/CHILLCHILL\s*(\d+)/i', $code, $matches)) {
+        // Tách mã đơn hàng từ nội dung chuyển khoản (Ví dụ: "CHILLCHILL 12" hoặc "CHILLCHILL12")
+        if (preg_match('/CHILLCHILL\s*(\d+)/i', $rawPayloadText, $matches)) {
             $orderId = $matches[1];
 
             // Tìm đơn hàng trong DB
@@ -101,7 +101,7 @@ class PaymentWebhookController extends Controller
             ], 200);
         }
 
-        Log::warning('SePay Webhook: Không tìm thấy mã đơn hàng CHILLCHILL trong nội dung chuyển khoản:', ['code' => $code]);
+        Log::warning('SePay Webhook: Không tìm thấy mã đơn hàng CHILLCHILL trong nội dung chuyển khoản:', ['payload' => $rawPayloadText]);
         return response()->json([
             'success' => false,
             'message' => 'Invalid transaction code format'

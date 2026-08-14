@@ -59,7 +59,7 @@
                     @if(isset($featuredProduct) && $featuredProduct)
                         <div class="relative bg-white/90 backdrop-blur-md p-5 rounded-[40px] shadow-2xl max-w-md w-full border border-coral/15 group">
                             <a href="{{ route('product.show', $featuredProduct->slug) }}" class="block overflow-hidden rounded-[32px] h-80 bg-cream">
-                                <img src="{{ asset($featuredProduct->image_url ?? 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=800&auto=format&fit=crop') }}"
+                                <img src="{{ !empty($featuredProduct->image_url) ? (\Illuminate\Support\Str::startsWith($featuredProduct->image_url, ['http://', 'https://']) ? $featuredProduct->image_url : asset($featuredProduct->image_url)) : 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=800&auto=format&fit=crop' }}"
                                      alt="{{ $featuredProduct->name }}"
                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                             </a>
@@ -127,7 +127,7 @@
                         <div>
                             <div class="relative overflow-hidden rounded-2xl mb-4 h-48 bg-cream">
                                 <a href="{{ route('product.show', $product->slug) }}" class="block w-full h-full">
-                                    <img src="{{ asset($product->image_url ?? 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=600&auto=format&fit=crop') }}"
+                                    <img src="{{ !empty($product->image_url) ? (\Illuminate\Support\Str::startsWith($product->image_url, ['http://', 'https://']) ? $product->image_url : asset($product->image_url)) : 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=600&auto=format&fit=crop' }}"
                                          alt="{{ $product->name }}"
                                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                                 </a>
@@ -253,7 +253,7 @@
 
                         <div>
                             <a href="{{ route('combo.show', $combo->combo_id) }}" class="block relative overflow-hidden rounded-2xl mb-4 h-52 bg-cream">
-                                <img src="{{ asset($combo->image_url ?? 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600&auto=format&fit=crop') }}"
+                                <img src="{{ !empty($combo->image_url) ? (\Illuminate\Support\Str::startsWith($combo->image_url, ['http://', 'https://']) ? $combo->image_url : asset($combo->image_url)) : 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600&auto=format&fit=crop' }}"
                                      alt="{{ $combo->name }}"
                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                             </a>
@@ -483,7 +483,7 @@
     @if(isset($promoBanner) && $promoBanner)
         <section class="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
             <div class="rounded-[32px] overflow-hidden shadow-2xl relative bg-espresso">
-                <img src="{{ asset($promoBanner->image_url ?? 'https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=1000&auto=format&fit=crop') }}" class="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay" />
+                <img src="{{ !empty($promoBanner->image_url) ? (\Illuminate\Support\Str::startsWith($promoBanner->image_url, ['http://', 'https://']) ? $promoBanner->image_url : asset($promoBanner->image_url)) : 'https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=1000&auto=format&fit=crop' }}" class="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay" />
                 <div class="relative z-10 p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-8">
                     <div class="text-white text-center md:text-left">
                         @if($promoBanner->badge)

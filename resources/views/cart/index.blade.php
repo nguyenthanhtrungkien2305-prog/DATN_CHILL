@@ -36,8 +36,6 @@
                         <button type="button" onclick="clearCartSearch()" id="btn-clear-cart-search" class="hidden pr-2 text-espresso/40 hover:text-coral font-bold text-xs">✕ Xóa</button>
                     </div>
                 @endif
-                    </div>
-                @endif
 
                 {{-- Container Giới Hạn Chiều Cao Có Thanh Cuộn (Scrollbar) --}}
                 <div id="cart-items-container" class="space-y-4 max-h-[620px] overflow-y-auto pr-2 custom-scrollbar">
