@@ -3,6 +3,9 @@
 @section('title', 'Thanh toán qua mã QR - Chill Chill')
 
 @section('content')
+{{-- Khung hiển thị thông báo nổi bật đầu trang --}}
+<div id="top-success-banner-area"></div>
+
 <div class="bg-[#FAF7F2] py-16 min-h-screen">
     <div class="max-w-3xl mx-auto px-6">
         
@@ -164,19 +167,72 @@
         });
     }
 
-    // === POLLING STATUS CHECK ===
+    // === POLLING STATUS CHECK (HIỂN THỊ THÔNG BÁO ĐẦU TRANG VÀ CUỘN TOP KHI THÀNH CÔNG) ===
+    let isSuccessHandled = false;
     const checkInterval = setInterval(() => {
+        if (isSuccessHandled) return;
+
         fetch('{{ route('checkout.check_status', $order->order_id) }}')
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'processing' || data.status === 'completed') {
+                    isSuccessHandled = true;
                     clearInterval(checkInterval);
-                    alert('🎉 Thanh toán thành công! Hệ thống đang chuẩn bị đơn hàng cho bạn.');
-                    window.location.href = '{{ route('user.orders') }}';
+
+                    // 1. Tự động cuộn mượt lên ĐẦU TRANG
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                    // 2. Chèn Banner thông báo màu xanh lá ĐẦU TRANG
+                    const topBannerArea = document.getElementById('top-success-banner-area');
+                    if (topBannerArea) {
+                        topBannerArea.innerHTML = `
+                            <div class="fixed top-0 left-0 right-0 z-[9999] bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white py-4 px-6 shadow-2xl transition-all duration-500">
+                                <div class="max-w-6xl mx-auto flex items-center justify-between gap-4">
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-black text-2xl shadow-inner shrink-0">✓</span>
+                                        <div>
+                                            <p class="font-extrabold text-base md:text-xl tracking-wide">🎉 THANH TOÁN THÀNH CÔNG ĐƠN HÀNG #{{ $order->order_id }}!</p>
+                                            <p class="text-xs md:text-sm text-emerald-100 font-medium">SePay đã tự động xác nhận tiền về. Đang chuyển đến trang Đơn hàng của tôi...</p>
+                                        </div>
+                                    </div>
+                                    <a href="{{ route('user.orders') }}" class="bg-white text-emerald-800 hover:bg-emerald-50 px-5 py-2.5 rounded-full font-black text-xs md:text-sm shadow-md transition-all shrink-0">
+                                        Xem đơn hàng &rarr;
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // 3. Cập nhật thẻ hiển thị chính giữa trang
+                    const qrCardContainer = document.querySelector('.max-w-3xl');
+                    if (qrCardContainer) {
+                        qrCardContainer.innerHTML = `
+                            <div class="bg-white rounded-[40px] shadow-2xl border-2 border-emerald-300 p-8 md:p-12 text-center transition-all duration-500 scale-105 mt-6">
+                                <div class="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner text-5xl font-black">
+                                    ✓
+                                </div>
+                                <h1 class="font-serif font-black text-3xl md:text-4xl text-espresso mb-3">Thanh toán thành công!</h1>
+                                <p class="text-espresso/70 text-base mb-6">Hệ thống SePay đã tự động xác nhận đơn hàng <strong class="text-coral">#{{ $order->order_id }}</strong> của bạn.</p>
+                                <div class="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-4 mb-8 inline-block">
+                                    <span class="text-emerald-800 font-bold text-sm">🎉 Quán đã nhận tiền và đang chuẩn bị món cho bạn nhé!</span>
+                                </div>
+                                <div>
+                                    <a href="{{ route('user.orders') }}" class="py-4 px-8 bg-coral text-white hover:bg-[#d5523b] rounded-full font-bold text-lg shadow-lg shadow-coral/20 transition-all inline-block">
+                                        Xem đơn hàng của tôi
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // 4. Chuyển hướng tự động sau 3 giây
+                    setTimeout(() => {
+                        window.location.href = '{{ route('user.orders') }}';
+                    }, 3000);
                 }
             })
             .catch(err => console.error('Lỗi kiểm tra trạng thái:', err));
-    }, 3000);
+    }, 2000);
 
 </script>
 @endsection

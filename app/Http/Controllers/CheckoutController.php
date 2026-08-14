@@ -264,21 +264,24 @@ class CheckoutController extends Controller
     // 5. Kiểm tra trạng thái đơn hàng (cho AJAX Polling)
     public function checkStatus($id)
     {
-        $user = auth()->user();
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+        $userId = auth()->id() ?? (auth()->check() ? (auth()->user()->user_id ?? auth()->user()->id) : null);
 
         $order = \DB::table('orders')
             ->where('order_id', $id)
-            ->where('user_id', $user->user_id)
             ->first();
 
         if (!$order) {
             return response()->json(['error' => 'Order not found'], 404);
         }
 
-        return response()->json(['status' => $order->status]);
+        if ($userId && $order->user_id && $order->user_id != $userId) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        return response()->json([
+            'success' => true,
+            'status'  => $order->status
+        ]);
     }
 
     // 6. Giả lập thanh toán thành công
