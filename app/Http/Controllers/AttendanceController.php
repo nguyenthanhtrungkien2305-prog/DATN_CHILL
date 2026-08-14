@@ -355,7 +355,6 @@ class AttendanceController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Vào ca thành công! Đã ghi nhận lịch làm việc và quyền hưởng hoa hồng ca.']);
     }
-
     // ==========================================
     // 4. API XỬ LÝ CHECK-OUT (Kết ca) - BẢN QUÉT SẠCH LỖI
     // ==========================================
@@ -386,5 +385,6 @@ class AttendanceController extends Controller
             'success' => false, 
             'message' => 'LỖI: Bạn chưa Check-in hoặc đã Kết ca rồi!'
         ]);
+    
     }
 }

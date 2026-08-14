@@ -36,7 +36,7 @@
             {{-- KHU VỰC ẢNH SẢN PHẨM & ẢNH PHỤ (CĂN GIỮA NẰM TRONG KHU VỰC ẢNH) --}}
             <div class="order-1 md:order-1 md:col-span-5 flex flex-col items-center gap-4 w-full">
                 <div class="bg-cream rounded-[28px] overflow-hidden w-full max-w-[380px] aspect-square relative shadow-inner group border border-espresso/5">
-                    <img id="main-image" src="{{ $gallery[0] ?? $product->image_url }}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=600&auto=format&fit=crop';" alt="{{ $product->name }}" class="w-full h-full object-cover mix-blend-multiply transition-all duration-300 group-hover:scale-105" />
+                    <img id="main-image" src="{{ $gallery[0] ?? $product->image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover mix-blend-multiply transition-all duration-300 group-hover:scale-105" />
                 </div>
 
                 {{-- DANH SÁCH ẢNH PHỤ CĂN GIỮA BÊN DƯỚI ẢNH CHÍNH (TỐI ĐA 4 ẢNH PHỤ) --}}

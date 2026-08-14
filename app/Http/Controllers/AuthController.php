@@ -4,12 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -53,14 +50,14 @@ class AuthController extends Controller
             Auth::login($user, $request->has('remember'));
             
             if ($user->role === 'staff') {
-                return redirect()->route('staff.shifts');
+                return redirect()->route('staff.shifts'); // Đổi hướng về trang Lịch để họ tự Check-in
             }
 
             if ($user->role === 'admin') {
                 return redirect()->route('admin.dashboard');
             }
             
-            return redirect()->intended('/')->with('success', 'Đăng nhập thành công!');
+            return redirect('/')->with('success', 'Đăng nhập thành công!');
         }
         return redirect('/')->with('show_welcome_modal', 'Đăng ký thành công!');
     }
@@ -97,28 +94,6 @@ class AuthController extends Controller
                 return back()->withErrors(['login_error' => '🔒 Tài khoản của bạn đã bị KHÓA bởi Quản trị viên! Vui lòng liên hệ hỗ trợ.'])->withInput();
             }
 
-            $userId = $user->user_id ?? $user->id;
-
-            // Merge giỏ hàng khách vãng lai vào giỏ hàng tài khoản (Cache-based, 24h TTL)
-            $guestToken = $request->cookie('cart_token');
-            if ($guestToken) {
-                $guestCartKey = 'cart:g:' . $guestToken;
-                $guestCart    = Cache::get($guestCartKey, []);
-                if (!empty($guestCart)) {
-                    $userCartKey = 'cart:u:' . $userId;
-                    $userCart    = Cache::get($userCartKey, []);
-                    foreach ($guestCart as $key => $item) {
-                        if (isset($userCart[$key])) {
-                            $userCart[$key]['quantity'] += $item['quantity'];
-                        } else {
-                            $userCart[$key] = $item;
-                        }
-                    }
-                    Cache::put($userCartKey, $userCart, now()->addHours(24));
-                    Cache::forget($guestCartKey);
-                }
-            }
-
             if ($user->role === 'staff') {
                 return redirect()->route('staff.shifts')->with('success', 'Đăng nhập thành công! Vui lòng Check-in để mở khóa POS.');
             }
@@ -127,7 +102,7 @@ class AuthController extends Controller
                 return redirect()->route('admin.dashboard');
             }
             
-            return redirect()->intended('/')->with('success', 'Đăng nhập thành công!');
+            return redirect('/')->with('success', 'Đăng nhập thành công!');
         }
 
         return back()->withErrors(['login_error' => 'Tài khoản hoặc mật khẩu không chính xác.']);
@@ -136,15 +111,15 @@ class AuthController extends Controller
     // ==========================================
     // 3. XỬ LÝ ĐĂNG XUẤT (CÓ TỰ ĐỘNG CHỐT CA)
     // ==========================================
-    public function logout(Request $request)
+    public function logout(\Illuminate\Http\Request $request)
     {
         if (Auth::check()) {
             $userId = Auth::user()->user_id ?? Auth::id();
             
-            if (class_exists('\App\Http\Controllers\AttendanceController') && method_exists('\App\Http\Controllers\AttendanceController', 'autoCheckOutExpiredShifts')) {
-                \App\Http\Controllers\AttendanceController::autoCheckOutExpiredShifts($userId);
-            }
+            // 1. Tự động kết ca nếu ca đã quá giờ làm quy định
+            \App\Http\Controllers\AttendanceController::autoCheckOutExpiredShifts($userId);
 
+            // 2. Ép Check-out an toàn các ca còn lại nếu người dùng chủ động đăng xuất
             \Illuminate\Support\Facades\DB::table('attendances')
                 ->where('user_id', $userId)
                 ->whereNull('check_out')
@@ -154,19 +129,10 @@ class AuthController extends Controller
                 ]);
         }
 
-        $userId   = Auth::id();
-        $userCart = $userId ? Cache::get('cart:u:' . $userId, []) : [];
-
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        if (!empty($userCart)) {
-            $guestToken = $request->cookie('cart_token') ?: Str::uuid()->toString();
-            Cache::put('cart:g:' . $guestToken, $userCart, now()->addHours(24));
-            Cookie::queue('cart_token', $guestToken, 60 * 24);
-        }
-
-        return redirect('/dang-nhap')->with('success', 'Bạn đã đăng xuất an toàn!');
+        return redirect('/dang-nhap')->with('success', 'Đã đăng xuất và hệ thống đã tự động chốt ca an toàn!');
     }
 }

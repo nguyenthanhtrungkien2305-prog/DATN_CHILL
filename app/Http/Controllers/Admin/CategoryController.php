@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Cache;
 
 class CategoryController extends Controller
 {
@@ -93,9 +92,6 @@ class CategoryController extends Controller
             'updated_at' => now()
         ]);
 
-        Cache::forget('home_categories');
-        Cache::forget('public_categories');
-
         return redirect()->route('categories.index')->with('success', 'Thêm danh mục mới thành công!');
     }
 
@@ -140,9 +136,6 @@ class CategoryController extends Controller
             'updated_at' => now()
         ]);
 
-        Cache::forget('home_categories');
-        Cache::forget('public_categories');
-
         return redirect()->route('categories.index')->with('success', 'Cập nhật danh mục thành công!');
     }
 
@@ -163,9 +156,21 @@ class CategoryController extends Controller
             'updated_at' => now()
         ]);
 
-        Cache::forget('home_categories');
-        Cache::forget('public_categories');
-
         return redirect()->route('categories.index')->with('success', 'Đã ' . $statusText . ' danh mục thành công!');
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids)) {
+            return back()->with('error', 'Vui lòng chọn ít nhất một danh mục!');
+        }
+
+        DB::table('categories')->whereIn('category_id', $ids)->update([
+            'status' => 0,
+            'updated_at' => now()
+        ]);
+
+        return back()->with('success', 'Đã tạm ẩn ' . count($ids) . ' danh mục đã chọn thành công!');
     }
 }

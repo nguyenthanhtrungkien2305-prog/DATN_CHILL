@@ -4,15 +4,20 @@
 
 @section('content')
 <style>
+    /* CHỈ ẨN FOOTER, MỞ KHÓA LẠI BODY ĐỂ TRÁNH LỖI CẮT LAYOUT */
     footer, #footer, .footer { display: none !important; }
 
+    /* Chỉnh dung nhan cho thanh cuộn */
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #ff7043; border-radius: 20px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #d5523b; }
 </style>
 
+{{-- Tính toán trừ đi chiều cao của Header (khoảng 100px) để không bị đẩy tràn xuống dưới --}}
 <div class="bg-[#FAF7F2] min-h-[calc(100vh-100px)] w-full flex items-center justify-center py-10 px-4">
+    
+    {{-- Cửa sổ App: Ép chiều cao tối đa 800px và 80% màn hình để luôn vừa vặn --}}
     <div class="w-full max-w-5xl bg-white rounded-[40px] shadow-2xl border border-espresso/5 overflow-hidden flex flex-col md:flex-row h-[80vh] min-h-[550px] max-h-[800px]">
         
         {{-- Cột Trái: Menu Điều hướng (Cố định) --}}
@@ -21,7 +26,7 @@
             <nav class="space-y-2 flex-1">
                 <a href="{{ route('user.profile') }}" class="block px-4 py-3 rounded-xl bg-white/10 text-white font-medium transition-colors">Thông tin cá nhân</a>
                 <a href="{{ route('user.orders') }}" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white transition-colors">Đơn hàng của tôi</a>
-                <a href="{{ Route::has('user.points') ? route('user.points') : '#' }}" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white transition-colors flex items-center justify-between">
+                <a href="{{ route('user.points') }}" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white transition-colors flex items-center justify-between">
                     <span>Tích điểm & Ưu đãi</span>
                     <span class="bg-coral/20 text-coral text-xs font-black px-2 py-0.5 rounded-full">{{ auth()->user()->point ?? 0 }}p</span>
                 </a>
@@ -31,7 +36,7 @@
             </a>
         </div>
 
-        {{-- Cột Phải: Form Cập nhật --}}
+        {{-- Cột Phải: Form Cập nhật (Cho phép cuộn dọc) --}}
         <div class="w-full md:w-2/3 p-8 md:p-12 h-full overflow-y-auto custom-scrollbar">
             <h3 class="font-serif font-bold text-3xl text-espresso mb-2">Hồ sơ của bạn</h3>
             <p class="text-espresso/60 mb-8">Quản lý thông tin cá nhân và địa chỉ giao hàng</p>

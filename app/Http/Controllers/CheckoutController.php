@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
@@ -11,14 +10,13 @@ class CheckoutController extends Controller
     // 1. Hiển thị trang Thanh toán
     public function index()
     {
-        $cart = Cache::get(CartController::cartKey(), []);
+        $cart = session()->get('cart', []);
         if (empty($cart)) {
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống!');
         }
 
         $user = auth()->user(); // Lấy thông tin user đang đăng nhập
         if (!$user) {
-            session()->put('url.intended', route('checkout.index'));
             return redirect()->route('cart.index')->with('login_required', 'Vui lòng đăng nhập tài khoản để tiến hành thanh toán và đặt hàng!');
         }
         
@@ -107,10 +105,10 @@ class CheckoutController extends Controller
         return response()->json(['success' => false, 'message' => 'Không thể xóa địa chỉ này!']);
     }
 
-    // 3. Xử lý Đặt hàng
+    // 3. Xử lý Đặt hàng (Sẽ code chi tiết ở bước sau)
     public function process(Request $request)
     {
-        $cart = Cache::get(CartController::cartKey(), []);
+        $cart = session()->get('cart', []);
         if (empty($cart)) {
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống!');
         }
@@ -204,7 +202,7 @@ class CheckoutController extends Controller
         }
 
         // Xóa giỏ hàng và voucher sau khi đặt xong
-        Cache::forget(CartController::cartKey());
+        session()->forget('cart');
         session()->forget('voucher');
 
         // Chuyển hướng nếu là thanh toán QR
@@ -216,7 +214,7 @@ class CheckoutController extends Controller
         return redirect()->route('user.orders')->with('success', '🎉 Đặt hàng thành công! Vui lòng chờ quán xác nhận nhé.');
     }
 
-    // 4. Hiển thị trang thanh toán QR & Cổng SePay
+    // 4. Hiển thị trang thanh toán QR
     public function paymentQr($id)
     {
         $user = auth()->user();
@@ -234,31 +232,7 @@ class CheckoutController extends Controller
             abort(404, 'Không tìm thấy đơn hàng!');
         }
 
-        $sepayFormHtml = null;
-        try {
-            $merchantId = config('services.sepay.merchant_id', 'SP-LIVE-TK373453');
-            $secretKey  = config('services.sepay.secret_key', 'spsk_live_RT9jvczJjS821HAQchQ7vE5pMPBHBkwr');
-            $sepayEnv   = config('services.sepay.env', 'production');
-
-            if ($merchantId && $secretKey) {
-                $sepay = new \SePay\SePayClient($merchantId, $secretKey, $sepayEnv);
-
-                $checkoutData = \SePay\Builders\CheckoutBuilder::make()
-                    ->paymentMethod('BANK_TRANSFER')
-                    ->currency('VND')
-                    ->orderInvoiceNumber('CHILLCHILL_' . $order->order_id)
-                    ->orderAmount((int)$order->total_amount)
-                    ->operation('PURCHASE')
-                    ->orderDescription('Thanh toan don hang CHILLCHILL #' . $order->order_id)
-                    ->build();
-
-                $sepayFormHtml = $sepay->checkout()->generateFormHtml($checkoutData);
-            }
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('SePay Checkout Builder Error: ' . $e->getMessage());
-        }
-
-        return view('checkout.payment_qr', compact('order', 'sepayFormHtml'));
+        return view('checkout.payment_qr', compact('order'));
     }
 
     // 5. Kiểm tra trạng thái đơn hàng (cho AJAX Polling)

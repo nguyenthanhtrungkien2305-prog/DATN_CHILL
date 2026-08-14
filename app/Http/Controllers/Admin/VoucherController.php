@@ -214,4 +214,19 @@ class VoucherController extends Controller
         }
         return redirect()->route('vouchers.index')->with('success', 'Đã xóa mã giảm giá thành công!');
     }
+
+    public function bulkDelete(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids)) {
+            return back()->with('error', 'Vui lòng chọn ít nhất một mã giảm giá!');
+        }
+
+        DB::table('vouchers')->whereIn('voucher_id', $ids)->delete();
+        if (Schema::hasTable('user_vouchers')) {
+            DB::table('user_vouchers')->whereIn('voucher_id', $ids)->delete();
+        }
+
+        return back()->with('success', 'Đã xóa ' . count($ids) . ' mã giảm giá đã chọn thành công!');
+    }
 }

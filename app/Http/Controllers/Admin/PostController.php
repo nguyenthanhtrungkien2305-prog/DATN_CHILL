@@ -208,4 +208,16 @@ class PostController extends Controller
         DB::table('posts')->where('post_id', $id)->delete();
         return redirect()->route('posts.index')->with('success', 'Xóa bài viết thành công!');
     }
+
+    public function bulkDelete(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids)) {
+            return back()->with('error', 'Vui lòng chọn ít nhất một bài viết!');
+        }
+
+        DB::table('posts')->whereIn('post_id', $ids)->delete();
+
+        return back()->with('success', 'Đã xóa ' . count($ids) . ' bài viết đã chọn thành công!');
+    }
 }

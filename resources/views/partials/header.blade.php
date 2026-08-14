@@ -1,23 +1,23 @@
 <header id="navbar" class="fixed top-3 left-0 right-0 z-50 transition-all duration-300 px-3 sm:px-6">
     <div class="max-w-7xl mx-auto">
-        {{-- Glass Floating Header Container --}}
-        <div class="bg-white/90 backdrop-blur-xl border border-white/70 shadow-[0_10px_30px_rgba(0,0,0,0.08)] rounded-full px-4 sm:px-6 py-2 flex items-center justify-between">
+        {{-- Transparent Floating Header Container --}}
+        <div class="bg-transparent px-1 sm:px-2 py-1 flex items-center justify-between transition-all duration-300">
             
             {{-- ========================================== --}}
-            {{-- BÊN TRÁI: Logo & Brand Name --}}
+            {{-- BÊN TRÁI: Logo & Tên thương hiệu Nghệ thuật (Nằm ngoài box) --}}
             {{-- ========================================== --}}
-            <div class="shrink-0 flex items-center gap-2">
-                <a href="/" class="flex items-center gap-2 group">
-                    <img src="https://i.ibb.co/30XNqj5/chill-chill-logo-no-bg.png" alt="Chill Chill Logo" class="h-9 md:h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
-                    <span class="font-serif font-black text-xl text-espresso tracking-tight hidden sm:inline">Chill Chill</span>
+            <div class="shrink-0 flex items-center">
+                <a href="/" class="flex items-center gap-3 group">
+                    <img src="/images/logo1.png" alt="Chill Chill Logo" class="h-14 sm:h-[72px] md:h-[82px] w-auto object-contain rounded-full border-2 border-white/90 shadow-md group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='/images/logo1.jpg';" />
+                    <span class="font-script font-bold text-3xl sm:text-4xl text-espresso tracking-wide hidden sm:inline group-hover:text-coral transition-colors drop-shadow-[0_2px_10px_rgba(255,255,255,0.95)]">Chill Chill</span>
                 </a>
             </div>
 
             {{-- ========================================== --}}
             {{-- Ở GIỮA: Floating Nav Bar (Menu Đồ Uống) --}}
             {{-- ========================================== --}}
-            <div class="hidden lg:flex items-center bg-[#FAF7F2]/90 backdrop-blur-md rounded-full p-1 border border-espresso/5 shadow-xs">
-                <nav class="flex items-center gap-1">
+            <div class="hidden lg:flex items-center bg-white/90 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/80 shadow-md">
+                <nav class="flex items-center gap-1 sm:gap-1.5">
                     {{-- Trang chủ --}}
                     <a href="/" 
                        class="whitespace-nowrap transition-all duration-300 text-xs uppercase tracking-wider inline-block px-4 py-2 rounded-full
@@ -63,12 +63,12 @@
             </div>
 
             {{-- ========================================== --}}
-            {{-- BÊN PHẢI: Nút Giỏ hàng, Tài khoản & Đặt hàng --}}
+            {{-- BÊN PHẢI: Nút Giỏ hàng & Đăng nhập --}}
             {{-- ========================================== --}}
-            <div class="flex items-center gap-2 shrink-0">
+            <div class="flex items-center gap-2 sm:gap-2.5 shrink-0 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/80 shadow-md">
                 
                 {{-- Nút Giỏ hàng --}}
-                <a href="{{ route('cart.index') }}" class="w-9 h-9 shrink-0 rounded-full bg-white border border-gray-200 flex items-center justify-center text-espresso hover:text-coral hover:border-coral transition-colors relative shadow-2xs">
+                <a href="{{ route('cart.index') }}" class="w-9 h-9 shrink-0 rounded-full bg-white border border-gray-200/80 flex items-center justify-center text-espresso hover:text-coral hover:border-coral transition-colors relative shadow-2xs">
                     @php
                         $cartCount = 0;
                         $cartItems = session('cart');
@@ -92,7 +92,7 @@
 
                 {{-- Nút Tài Khoản --}}
                 @auth
-                    <a href="{{ route('user.profile') }}" title="Tài khoản của tôi" class="hidden sm:flex shrink-0 items-center gap-2 px-3 py-1 rounded-full bg-white border border-gray-200 text-espresso hover:border-coral transition-all shadow-2xs text-xs font-semibold">
+                    <a href="{{ route('user.profile') }}" title="Tài khoản của tôi" class="hidden sm:flex shrink-0 items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-gray-200/80 text-espresso hover:border-coral transition-all shadow-2xs text-xs font-semibold">
                         <div class="w-6 h-6 rounded-full bg-coral/20 text-coral flex items-center justify-center text-[10px] font-bold overflow-hidden">
                             @if(Auth::user()->avatar)
                                 <img src="{{ Auth::user()->avatar }}" alt="Avatar" class="w-full h-full object-cover">
@@ -100,19 +100,14 @@
                                 {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
                             @endif
                         </div>
-                        <span class="max-w-[80px] truncate text-espresso font-bold">{{ Auth::user()->name }}</span>
+                        <span class="max-w-[85px] truncate text-espresso font-bold">{{ Auth::user()->name }}</span>
                     </a>
                 @else
-                    <a href="{{ route('login') }}" title="Đăng nhập tài khoản" class="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full bg-white border border-gray-200 text-espresso text-xs font-bold hover:border-coral transition-all shadow-2xs">
-                        <svg class="w-3.5 h-3.5 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    <a href="{{ route('login') }}" title="Đăng nhập tài khoản" class="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-gray-200/80 text-espresso text-xs font-bold hover:border-coral transition-all shadow-2xs">
+                        <svg class="w-4 h-4 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                         <span>Đăng nhập</span>
                     </a>
                 @endauth
-
-                {{-- Nút Đặt hàng ngay (Pill Nổi bật) --}}
-                <a href="{{ route('product.index') }}" class="hidden sm:inline-flex bg-coral text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-full hover:bg-[#d5523b] shadow-md shadow-coral/30 hover:scale-105 transition-all whitespace-nowrap">
-                    Đặt hàng ngay
-                </a>
 
                 {{-- Nút Admin (nếu có quyền Admin) --}}
                 @if(Auth::check() && Auth::user()->role === 'admin')
