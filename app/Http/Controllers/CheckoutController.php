@@ -235,7 +235,7 @@ class CheckoutController extends Controller
         return redirect()->route('user.orders')->with('success', '🎉 Đặt hàng thành công! Vui lòng chờ quán xác nhận nhé.');
     }
 
-    // 4. Hiển thị trang thanh toán QR
+    // 4. Hiển thị trang thanh toán QR & Cổng SePay
     public function paymentQr($id)
     {
         $user = auth()->user();
@@ -253,7 +253,31 @@ class CheckoutController extends Controller
             abort(404, 'Không tìm thấy đơn hàng!');
         }
 
-        return view('checkout.payment_qr', compact('order'));
+        $sepayFormHtml = null;
+        try {
+            $merchantId = config('services.sepay.merchant_id', 'SP-LIVE-TK373453');
+            $secretKey  = config('services.sepay.secret_key', 'spsk_live_RT9jvczJjS821HAQchQ7vE5pMPBHBkwr');
+            $sepayEnv   = config('services.sepay.env', 'production');
+
+            if ($merchantId && $secretKey) {
+                $sepay = new \SePay\SePayClient($merchantId, $secretKey, $sepayEnv);
+
+                $checkoutData = \SePay\Builders\CheckoutBuilder::make()
+                    ->paymentMethod('BANK_TRANSFER')
+                    ->currency('VND')
+                    ->orderInvoiceNumber('CHILLCHILL_' . $order->order_id)
+                    ->orderAmount((int)$order->total_amount)
+                    ->operation('PURCHASE')
+                    ->orderDescription('Thanh toan don hang CHILLCHILL #' . $order->order_id)
+                    ->build();
+
+                $sepayFormHtml = $sepay->checkout()->generateFormHtml($checkoutData);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('SePay Checkout Builder Error: ' . $e->getMessage());
+        }
+
+        return view('checkout.payment_qr', compact('order', 'sepayFormHtml'));
     }
 
     // 5. Kiểm tra trạng thái đơn hàng (cho AJAX Polling)
