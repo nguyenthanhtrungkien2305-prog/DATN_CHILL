@@ -88,7 +88,6 @@
 
                         <div class="flex border-b border-gray-200 mb-4 mt-4 shrink-0">
                             <button type="button" onclick="switchPosTab('products')" id="btn-tab-products" class="flex-1 py-2 text-sm font-black uppercase tracking-wider text-coral border-b-2 border-coral transition-colors flex items-center justify-center gap-2">Sản phẩm</button>
-                            <button type="button" onclick="switchPosTab('combos')" id="btn-tab-combos" class="flex-1 py-2 text-sm font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-amber-600 transition-colors flex items-center justify-center gap-2">Combo</button>
                             <button type="button" onclick="switchPosTab('toppings')" id="btn-tab-toppings" class="flex-1 py-2 text-sm font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-coral transition-colors flex items-center justify-center gap-2">Topping</button>
                         </div>
 
@@ -108,41 +107,6 @@
                                     <button class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-espresso font-bold group-hover:bg-coral group-hover:text-white transition-all shrink-0">+</button>
                                 </div>
                             @endforeach
-                        </div>
-
-                        {{-- TAB COMBO --}}
-                        <div id="content-tab-combos" class="flex-1 min-h-0 overflow-y-auto pr-2 space-y-2 custom-scrollbar p-2 rounded-xl hidden">
-                            @if(isset($combos) && count($combos) > 0)
-                                @foreach($combos as $combo)
-                                    <div onclick="addDirectItem('combo_{{ $combo->combo_id }}', '[COMBO] {{ $combo->name }}', {{ $combo->price }})" class="product-item flex items-center justify-between p-3 bg-white border border-amber-200 rounded-xl hover:border-amber-500 hover:shadow-md transition-all group cursor-pointer" data-category-id="" data-name="{{ $combo->name }}">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-12 h-12 bg-amber-50 rounded-lg flex items-center justify-center overflow-hidden shrink-0">
-                                                @if($combo->image_url) 
-                                                    <img src="{{ asset($combo->image_url) }}" class="w-full h-full object-cover">
-                                                @else
-                                                    <span class="text-xl">🎁</span>
-                                                @endif
-                                            </div>
-                                            <div>
-                                                <div class="flex items-center gap-1.5">
-                                                    <span class="bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded uppercase">COMBO</span>
-                                                    <h4 class="font-bold text-espresso text-sm group-hover:text-amber-600 transition-colors line-clamp-1">{{ $combo->name }}</h4>
-                                                </div>
-                                                <p class="text-xs text-amber-600 font-extrabold mt-0.5">{{ number_format($combo->price, 0, ',', '.') }}đ 
-                                                    @if(!empty($combo->original_price) && $combo->original_price > $combo->price)
-                                                        <span class="text-[10px] text-gray-400 line-through font-normal ml-1">{{ number_format($combo->original_price, 0, ',', '.') }}đ</span>
-                                                    @endif
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <button class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 font-bold group-hover:bg-amber-500 group-hover:text-white transition-all shrink-0">+</button>
-                                    </div>
-                                @endforeach
-                            @else
-                                <div class="p-6 text-center text-gray-400 text-sm italic">
-                                    Chưa có gói Combo nào khả dụng.
-                                </div>
-                            @endif
                         </div>
 
                         <div id="content-tab-toppings" class="flex-1 min-h-0 overflow-y-auto pr-2 space-y-2 custom-scrollbar p-2 rounded-xl hidden">
@@ -409,15 +373,10 @@
         function switchPosTab(tab) {
             document.getElementById('content-tab-products').classList.toggle('hidden', tab !== 'products');
             document.getElementById('content-tab-products').classList.toggle('block', tab === 'products');
-
-            document.getElementById('content-tab-combos').classList.toggle('hidden', tab !== 'combos');
-            document.getElementById('content-tab-combos').classList.toggle('block', tab === 'combos');
-
             document.getElementById('content-tab-toppings').classList.toggle('hidden', tab !== 'toppings');
             document.getElementById('content-tab-toppings').classList.toggle('block', tab === 'toppings');
             
             document.getElementById('btn-tab-products').className = tab === 'products' ? "flex-1 py-2 text-sm font-black uppercase tracking-wider text-coral border-b-2 border-coral transition-colors flex items-center justify-center gap-2" : "flex-1 py-2 text-sm font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-coral transition-colors flex items-center justify-center gap-2";
-            document.getElementById('btn-tab-combos').className = tab === 'combos' ? "flex-1 py-2 text-sm font-black uppercase tracking-wider text-amber-600 border-b-2 border-amber-600 transition-colors flex items-center justify-center gap-2" : "flex-1 py-2 text-sm font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-amber-600 transition-colors flex items-center justify-center gap-2";
             document.getElementById('btn-tab-toppings').className = tab === 'toppings' ? "flex-1 py-2 text-sm font-black uppercase tracking-wider text-emerald-500 border-b-2 border-emerald-500 transition-colors flex items-center justify-center gap-2" : "flex-1 py-2 text-sm font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-coral transition-colors flex items-center justify-center gap-2";
         }
         function switchInnerTab(tabId) {

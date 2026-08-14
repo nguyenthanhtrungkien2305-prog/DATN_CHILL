@@ -7,37 +7,66 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Dancing+Script:wght@700&family=Pacifico&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
-    
     <script src="https://cdn.tailwindcss.com"></script>
+
     <script>
       tailwind.config = {
         theme: {
           extend: {
             fontFamily: {
-              sans: ["Poppins", "sans-serif"],
-              serif: ["Playfair Display", "serif"],
+              sans: ["Plus Jakarta Sans", "Be Vietnam Pro", "Poppins", "sans-serif"],
+              serif: ["Playfair Display", "Georgia", "serif"],
+              script: ["Dancing Script", "Pacifico", "cursive"],
             },
             colors: {
               espresso: {
-                DEFAULT: "#2B2623",
-                light: "#423B37",
+                DEFAULT: "hsl(16, 23%, 19%)",
+                light: "hsl(16, 20%, 29%)",
               },
               cream: {
-                DEFAULT: "#FAF7F2",
-                light: "#FFF8E7",
+                DEFAULT: "hsl(45, 100%, 94%)",
+                light: "hsl(45, 100%, 96%)",
               },
               coral: {
-                DEFAULT: "#E8634A",
-                hover: "#D5523B",
+                DEFAULT: "hsl(14, 82%, 65%)",
+                hover: "hsl(14, 82%, 72%)",
               },
             },
-          }
-        }
-      }
+            borderRadius: {
+              card: "20px",
+            },
+            animation: {
+              "bounce-slow": "bounce 3s infinite",
+              float: "float 6s ease-in-out infinite",
+              "float-slow": "float 8s ease-in-out infinite",
+              "spin-slow": "spin 15s linear infinite",
+              "pulse-glow": "pulseGlow 2.5s ease-in-out infinite",
+              "shimmer": "shimmer 2s infinite",
+              "wiggle": "wiggle 1s ease-in-out infinite",
+            },
+            keyframes: {
+              float: {
+                "0%, 100%": { transform: "translateY(0)" },
+                "50%": { transform: "translateY(-15px)" },
+              },
+              pulseGlow: {
+                "0%, 100%": { opacity: "1", filter: "drop-shadow(0 0 12px rgba(255, 112, 67, 0.4))" },
+                "50%": { opacity: "0.8", filter: "drop-shadow(0 0 4px rgba(255, 112, 67, 0.1))" },
+              },
+              shimmer: {
+                "100%": { transform: "translateX(100%)" },
+              },
+              wiggle: {
+                "0%, 100%": { transform: "rotate(-3deg)" },
+                "50%": { transform: "rotate(3deg)" },
+              }
+            },
+          },
+        },
+      };
     </script>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
       /* Tùy chỉnh thanh cuộn */
@@ -67,15 +96,112 @@
         transform: scale(1.08);
       }
 
-      /* Lớp Reveal */
-      .reveal {
-        opacity: 1;
+      /* ========================================== */
+      /* HỆ THỐNG ANIMATION REVEAL & MICRO-INTERACTION */
+      /* ========================================== */
+      .reveal, .reveal-up {
+        opacity: 0;
         transform: translateY(40px);
-        transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
+        transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: opacity, transform;
       }
-      .reveal.visible {
+      .reveal-down {
+        opacity: 0;
+        transform: translateY(-40px);
+        transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: opacity, transform;
+      }
+      .reveal-left {
+        opacity: 0;
+        transform: translateX(-50px);
+        transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: opacity, transform;
+      }
+      .reveal-right {
+        opacity: 0;
+        transform: translateX(50px);
+        transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: opacity, transform;
+      }
+      .reveal-zoom {
+        opacity: 0;
+        transform: scale(0.85);
+        transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: opacity, transform;
+      }
+      .reveal-flip {
+        opacity: 0;
+        transform: rotateX(15deg) translateY(30px);
+        transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: opacity, transform;
+      }
+
+      .reveal.visible, .reveal-up.visible, .reveal-down.visible, .reveal-left.visible, .reveal-right.visible, .reveal-zoom.visible, .reveal-flip.visible {
         opacity: 1;
-        transform: translateY(0);
+        transform: translate(0, 0) scale(1) rotateX(0deg);
+      }
+
+      /* Delay Staggering */
+      .stagger-1 { transition-delay: 0.1s; }
+      .stagger-2 { transition-delay: 0.2s; }
+      .stagger-3 { transition-delay: 0.3s; }
+      .stagger-4 { transition-delay: 0.4s; }
+
+      /* Interactive Micro-Animations */
+      .hover-lift {
+        transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.35s ease;
+      }
+      .hover-lift:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.12);
+      }
+
+      .hover-scale {
+        transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      .hover-scale:hover {
+        transform: scale(1.05);
+      }
+
+      .hover-rotate {
+        transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      .hover-rotate:hover {
+        transform: scale(1.06) rotate(3deg);
+      }
+
+      .hover-glow {
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      }
+      .hover-glow:hover {
+        border-color: rgba(255, 112, 67, 0.5);
+        box-shadow: 0 0 25px rgba(255, 112, 67, 0.25);
+      }
+
+      .btn-pulse {
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+      }
+      .btn-pulse:hover {
+        transform: scale(1.03);
+        box-shadow: 0 8px 25px rgba(255, 112, 67, 0.35);
+      }
+      .btn-pulse:active {
+        transform: scale(0.96);
+      }
+
+      .img-zoom {
+        transition: transform 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+      }
+      .group:hover .img-zoom, a:hover .img-zoom {
+        transform: scale(1.08);
+      }
+
+      .rotate-animation {
+        animation: slowSpin 16s linear infinite;
+      }
+      @keyframes slowSpin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
       }
 
       /* Header Glassmorphism */
@@ -116,12 +242,49 @@
     
     @include('partials.header')
 
-    <main class="pt-24 md:pt-28">
+    <main class="{{ request()->is('/') ? 'pt-0' : 'pt-24 md:pt-28' }}">
         @yield('content')
     </main>
 
     @include('partials.footer')
+{{-- POP-UP CHÀO MỪNG THÀNH VIÊN MỚI --}}
+@if(session('show_welcome_modal'))
+<div id="welcome-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    {{-- Lớp nền mờ --}}
+    <div class="absolute inset-0 bg-espresso/60 backdrop-blur-sm" onclick="closeWelcomeModal()"></div>
+    
+    {{-- Nội dung thẻ Pop-up --}}
+    <div class="relative bg-white rounded-[32px] shadow-2xl w-full max-w-md p-8 md:p-10 text-center transform transition-all scale-100 opacity-100 animate-[float_3s_ease-in-out_infinite]">
+        
+        {{-- Icon pháo hoa / Cà phê --}}
+        <div class="w-24 h-24 mx-auto mb-6 bg-[#FFF0D4] rounded-full flex items-center justify-center">
+            <svg class="w-12 h-12 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </div>
+        
+        <h2 class="font-serif font-black text-3xl text-espresso mb-3">Chào mừng bạn!</h2>
+        <p class="text-espresso/70 mb-8 leading-relaxed">
+            Tuyệt vời! Bạn đã chính thức trở thành thành viên của gia đình <strong>Chill Chill</strong>. Hãy cập nhật thêm thông tin để chúng tôi phục vụ bạn chu đáo hơn nhé.
+        </p>
+        
+        <div class="flex flex-col gap-3">
+            {{-- Nút Cập nhật ngay (Sang trang Tài khoản) --}}
+            <a href="{{ route('user.profile') }}" class="w-full py-4 bg-coral text-white font-bold rounded-full hover:bg-[#d5523b] transition-colors shadow-lg shadow-coral/30">
+                Cập nhật thông tin ngay
+            </a>
+            {{-- Nút Để sau (Đóng pop-up ở lại trang chủ) --}}
+            <button onclick="closeWelcomeModal()" class="w-full py-4 bg-transparent text-espresso/60 font-medium hover:text-espresso transition-colors">
+                Để sau nhé
+            </button>
+        </div>
+    </div>
+</div>
 
+<script>
+    function closeWelcomeModal() {
+        document.getElementById('welcome-modal').style.display = 'none';
+    }
+</script>
+@endif
 {{-- THÔNG BÁO CẢNH BÁO TRUY CẬP TRÁI PHÉP --}}
     @if(session('access_denied'))
         <div id="alert-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -316,6 +479,27 @@
                 showToast('Có lỗi xảy ra, vui lòng thử lại sau!', 'error');
             });
         }
+
+        // === INTERSECTION OBSERVER BẬT ANIMATION REVEAL TỰ ĐỘNG KHI CUỘN TRANG ===
+        document.addEventListener('DOMContentLoaded', function() {
+            const observerOptions = {
+                threshold: 0.08,
+                rootMargin: '0px 0px -30px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries, obs) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        obs.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            const revealSelector = '.reveal, .reveal-up, .reveal-down, .reveal-left, .reveal-right, .reveal-zoom, .reveal-flip';
+            const revealElements = document.querySelectorAll(revealSelector);
+            revealElements.forEach(el => observer.observe(el));
+        });
     </script>
     
     @if(session('success'))

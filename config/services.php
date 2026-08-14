@@ -31,10 +31,4 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'sepay' => [
-        'merchant_id' => env('SEPAY_MERCHANT_ID', 'SP-LIVE-TK373453'),
-        'secret_key'  => env('SEPAY_SECRET_KEY', 'spsk_live_RT9jvczJjS821HAQchQ7vE5pMPBHBkwr'),
-        'env'         => env('SEPAY_ENV', 'production'),
-    ],
-
 ];

@@ -170,7 +170,7 @@
                             <div class="review-item border-b border-gray-100 pb-6 last:border-0 last:pb-0" data-rating="{{ $review->rating }}">
                                 <div class="flex items-start gap-4">
                                     <div class="w-12 h-12 rounded-full overflow-hidden bg-gray-100 shadow-sm shrink-0">
-                                        <img src="{{ !empty($review->user_avatar) ? (\Illuminate\Support\Str::startsWith($review->user_avatar, ['http://', 'https://']) ? $review->user_avatar : asset($review->user_avatar)) : 'https://ui-avatars.com/api/?name='.urlencode($review->user_name ?? 'User').'&background=ff7043&color=ffffff' }}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($review->user_name ?? 'User') }}&background=ff7043&color=ffffff';">
+                                        <img src="{{ $review->user_avatar ? asset($review->user_avatar) : 'https://i.pravatar.cc/150?u=' . ($review->user_id ?? 1) }}" class="w-full h-full object-cover">
                                     </div>
                                     <div class="flex-1">
                                         <div class="flex items-center justify-between">

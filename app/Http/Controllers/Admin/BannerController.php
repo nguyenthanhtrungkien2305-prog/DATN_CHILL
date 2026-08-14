@@ -167,4 +167,22 @@ class BannerController extends Controller
         $statusText = $banner->status ? 'Hiển thị' : 'Ẩn';
         return redirect()->back()->with('success', "Đã đổi trạng thái Banner sang: {$statusText}");
     }
+
+    public function bulkDelete(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids)) {
+            return back()->with('error', 'Vui lòng chọn ít nhất một Banner!');
+        }
+
+        $banners = Banner::whereIn('banner_id', $ids)->get();
+        foreach ($banners as $banner) {
+            if ($banner->image_url && File::exists(public_path($banner->image_url))) {
+                File::delete(public_path($banner->image_url));
+            }
+            $banner->delete();
+        }
+
+        return back()->with('success', 'Đã xóa ' . count($ids) . ' Banner đã chọn thành công!');
+    }
 }

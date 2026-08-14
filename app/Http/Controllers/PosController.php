@@ -33,14 +33,8 @@ class PosController extends Controller
                 ->groupBy('products.product_id')
                 ->get();
         }
-
-        $combos = DB::table('combos')
-            ->where(function ($q) {
-                $q->where('status', 1)->orWhere('status', 'active')->orWhereNull('status');
-            })
-            ->get();
         
-        return view('staff.pos', compact('products', 'categories', 'toppings', 'combos'));
+        return view('staff.pos', compact('products', 'categories', 'toppings'));
     }
 
     public function searchCustomers(Request $request)
@@ -93,35 +87,24 @@ class PosController extends Controller
             'items'          => 'required|array',
         ]);
 
-        // 👉 TỰ ĐỘNG XÁC ĐỊNH CA LÀM VIỆC THEO GIỜ HIỆN TẠI ĐỂ GẮN VÀO ĐƠN HÀNG
-        $now = now('Asia/Ho_Chi_Minh');
-        $shiftIndex = floor($now->hour / 4) + 1;
-        $startHour = ($shiftIndex - 1) * 4;
-        $endHour = $shiftIndex * 4;
-        
-        $startTime = sprintf('%02d:00:00', $startHour);
-        $endTime = $endHour == 24 ? '23:59:59' : sprintf('%02d:00:00', $endHour);
-        
-        $shift = \App\Models\Shift::firstOrCreate(
-            ['date' => $now->format('Y-m-d'), 'start_time' => $startTime],
-            [
-                'name' => "Ca $shiftIndex (" . sprintf('%02d:00', $startHour) . " - " . sprintf('%02d:00', $endHour == 24 ? 0 : $endHour) . ")",
-                'end_time' => $endTime
-            ]
-        );
+        // 👉 TỰ ĐỘNG TÌM CA LÀM VIỆC CỦA NGÀY HÔM NAY ĐỂ GẮN VÀO ĐƠN HÀNG
+        $today = now()->format('Y-m-d');
+        $shift = \App\Models\Shift::where('date', $today)->first();
+        $shiftId = $shift ? $shift->id : null;
 
         $orderId = DB::table('orders')->insertGetId([
             'user_id'          => $data['user_id'] ?? null,
+            'customer_name'    => $data['customer_name'] ?? 'Khách Vãng Lai',
             'customer_phone'   => $data['customer_phone'] ?? null,
-            'shift_id'         => $shift->id ?? null, // LƯU VÀO CA LÀM VIỆC CHÍNH XÁC
+            'shift_id'         => $shiftId, // LƯU VÀO CA LÀM VIỆC
             'shipping_address' => $data['order_note'] ?? null,
             'order_type'       => 'pos',
             'payment_method'   => 'cash',
             'total_amount'     => $data['total_amount'],
             'status'           => 'pending',
             'items'            => json_encode($data['items'], JSON_UNESCAPED_UNICODE),
-            'created_at'       => $now,
-            'updated_at'       => $now,
+            'created_at'       => now(),
+            'updated_at'       => now(),
         ]);
 
         return response()->json([
