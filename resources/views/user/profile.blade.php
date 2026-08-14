@@ -78,7 +78,7 @@
                 {{-- Avatar --}}
                 <div class="flex items-center gap-6 mb-8 pb-8 border-b border-espresso/10">
                     <div class="w-24 h-24 rounded-full border-4 border-[#FAF7F2] shadow-sm overflow-hidden bg-gray-100 relative group shrink-0">
-                        <img id="avatarPreview" src="{{ $user->avatar ? asset($user->avatar) : 'https://i.pravatar.cc/150?u='.$user->user_id }}" class="w-full h-full object-cover">
+                        <img id="avatarPreview" src="{{ $user->avatar ? (\Illuminate\Support\Str::startsWith($user->avatar, ['http://', 'https://']) ? $user->avatar : asset($user->avatar)) : 'https://ui-avatars.com/api/?name='.urlencode($user->name ?? 'User').'&background=ff7043&color=ffffff' }}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($user->name ?? 'User') }}&background=ff7043&color=ffffff';">
                         <label class="absolute inset-0 bg-black/40 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             <input type="file" name="avatar" class="hidden" accept="image/*" onchange="previewImage(event)">

@@ -411,7 +411,7 @@
                                 </p>
                             </div>
                             <div class="flex items-center gap-3 mt-6 pt-4 border-t border-espresso/10">
-                                <img src="{{ $review->avatar ?? 'https://i.pravatar.cc/150' }}" alt="User Avatar" class="w-10 h-10 rounded-full object-cover">
+                                <img src="{{ !empty($review->avatar) ? (\Illuminate\Support\Str::startsWith($review->avatar, ['http://', 'https://']) ? $review->avatar : asset($review->avatar)) : 'https://ui-avatars.com/api/?name='.urlencode($review->user_name ?? 'User').'&background=ff7043&color=ffffff' }}" alt="User Avatar" class="w-10 h-10 rounded-full object-cover" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($review->user_name ?? 'User') }}&background=ff7043&color=ffffff';">
                                 <div>
                                     <h4 class="text-sm font-bold text-espresso">{{ $review->name }}</h4>
                                     <span class="text-xs text-espresso/50">Khách hàng thân thiết</span>

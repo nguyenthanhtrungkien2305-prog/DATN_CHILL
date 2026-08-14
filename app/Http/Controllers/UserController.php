@@ -52,13 +52,27 @@ class UserController extends Controller
         // 3. XỬ LÝ LƯU ẢNH AVATAR VĨNH VIỄN
         if ($request->hasFile('avatar')) {
             $file = $request->file('avatar');
-            // Tạo tên file ngẫu nhiên để không bị trùng (vd: 1690000000_avatar.jpg)
-            $filename = time() . '_' . $file->getClientOriginalName();
+            $uploadPath = public_path('uploads/avatars');
+            if (!file_exists($uploadPath)) {
+                mkdir($uploadPath, 0777, true);
+            }
+
+            // Tạo tên file an toàn để tránh ký tự đặc biệt hoặc tiếng Việt trong tên file
+            $extension = $file->getClientOriginalExtension() ?: 'jpg';
+            $filename = time() . '_' . uniqid() . '.' . $extension;
+
+            // Xóa avatar cũ nếu có trên ổ đĩa
+            if (!empty($user->avatar) && !\Illuminate\Support\Str::startsWith($user->avatar, ['http://', 'https://'])) {
+                $oldPath = public_path($user->avatar);
+                if (file_exists($oldPath) && is_file($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            // Di chuyển file mới vào thư mục public/uploads/avatars
+            $file->move($uploadPath, $filename);
             
-            // Di chuyển file ảnh vào thư mục public/uploads/avatars
-            $file->move(public_path('uploads/avatars'), $filename);
-            
-            // Cập nhật đường dẫn vào mảng để lưu xuống Database
+            // Cập nhật đường dẫn tương đối để lưu DB
             $updateData['avatar'] = 'uploads/avatars/' . $filename;
         }
 

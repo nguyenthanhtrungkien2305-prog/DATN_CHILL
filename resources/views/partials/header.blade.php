@@ -95,7 +95,7 @@
                     <a href="{{ route('user.profile') }}" title="Tài khoản của tôi" class="hidden sm:flex shrink-0 items-center gap-2 px-3 py-1 rounded-full bg-white border border-gray-200 text-espresso hover:border-coral transition-all shadow-2xs text-xs font-semibold">
                         <div class="w-6 h-6 rounded-full bg-coral/20 text-coral flex items-center justify-center text-[10px] font-bold overflow-hidden">
                             @if(Auth::user()->avatar)
-                                <img src="{{ Auth::user()->avatar }}" alt="Avatar" class="w-full h-full object-cover">
+                                <img src="{{ \Illuminate\Support\Str::startsWith(Auth::user()->avatar, ['http://', 'https://']) ? Auth::user()->avatar : asset(Auth::user()->avatar) }}" alt="Avatar" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='{{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}';">
                             @else
                                 {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
                             @endif
