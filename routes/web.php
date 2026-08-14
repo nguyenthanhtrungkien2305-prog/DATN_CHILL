@@ -56,6 +56,12 @@ Route::middleware(['guest'])->group(function () {
     Route::get('/dang-nhap', function () { return view('auth.login'); })->name('login');
     Route::post('/dang-nhap', [AuthController::class, 'login'])->name('login.post');
     Route::post('/dang-ky', [AuthController::class, 'register'])->name('register.post');
+
+    // ROUTES QUÊN & ĐẶT LẠI MẬT KHẨU
+    Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
+    Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
+    Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 });
 
 // Route đăng xuất (Ai đăng nhập rồi cũng dùng được)
@@ -78,6 +84,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/tai-khoan/don-hang', [UserController::class, 'orders'])->name('user.orders');
     Route::get('/tai-khoan/tich-diem', [UserController::class, 'points'])->name('user.points');
     Route::post('/tai-khoan/tich-diem/doi-voucher', [UserController::class, 'redeemVoucher'])->name('user.points.redeem');
+    Route::get('/tai-khoan/doi-mat-khau', [UserController::class, 'changePasswordForm'])->name('user.change_password');
+    Route::post('/tai-khoan/doi-mat-khau', [UserController::class, 'updatePassword'])->name('user.update_password');
+    Route::post('/tai-khoan/gui-otp-sdt', [UserController::class, 'sendPhoneOtp'])->name('user.send_phone_otp');
+    Route::post('/tai-khoan/xac-nhan-otp-sdt', [UserController::class, 'verifyPhoneOtp'])->name('user.verify_phone_otp');
     // QUẢN LÝ ĐƠN HÀNG
     Route::get('orders', [\App\Http\Controllers\Admin\OrderController::class, 'index'])->name('admin.orders.index');
     Route::post('orders/{id}/status', [\App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('admin.orders.update_status');
@@ -108,6 +118,7 @@ Route::prefix('checkout')->group(function () {
     Route::get('/', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/add-address', [CheckoutController::class, 'addAddress'])->name('checkout.addAddress');
     Route::post('/delete-address', [CheckoutController::class, 'deleteAddress'])->name('checkout.deleteAddress');
+    Route::post('/calculate-shipping', [CheckoutController::class, 'calculateShipping'])->name('checkout.calculate_shipping');
     Route::post('/process', [CheckoutController::class, 'process'])->name('checkout.process');
     Route::get('/payment-qr/{id}', [CheckoutController::class, 'paymentQr'])->name('checkout.payment_qr');
     Route::get('/check-status/{id}', [CheckoutController::class, 'checkStatus'])->name('checkout.check_status');

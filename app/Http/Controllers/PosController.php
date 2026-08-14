@@ -33,8 +33,14 @@ class PosController extends Controller
                 ->groupBy('products.product_id')
                 ->get();
         }
+
+        $combos = DB::table('combos')
+            ->where(function ($q) {
+                $q->where('status', 1)->orWhere('status', 'active')->orWhereNull('status');
+            })
+            ->get();
         
-        return view('staff.pos', compact('products', 'categories', 'toppings'));
+        return view('staff.pos', compact('products', 'categories', 'toppings', 'combos'));
     }
 
     public function searchCustomers(Request $request)

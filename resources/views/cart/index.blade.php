@@ -221,9 +221,7 @@
                                                     <div>
                                                         <div class="flex items-center gap-2">
                                                             <span class="font-mono font-black text-espresso uppercase">{{ $v->code }}</span>
-                                                            @if(($v->available_quantity ?? 1) > 1)
-                                                                <span class="bg-[#e8634a] text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-xs">x{{ $v->available_quantity }}</span>
-                                                            @endif
+                                                            <span class="bg-[#e8634a] text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">x{{ $v->available_quantity ?? 1 }}</span>
                                                             <span class="text-coral font-extrabold">-{{ number_format($v->discount_amount, 0, ',', '.') }}đ</span>
                                                         </div>
                                                         <span class="text-[10px] text-espresso/50 block">Đơn tối thiểu: {{ number_format($v->min_order, 0, ',', '.') }}đ</span>
@@ -239,8 +237,9 @@
                                                     <div>
                                                         <div class="flex items-center gap-2">
                                                             <span class="font-mono font-black text-gray-500 uppercase">{{ $v->code }}</span>
+                                                            <span class="bg-gray-400 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">x{{ $v->available_quantity ?? 1 }}</span>
                                                             <span class="text-xs text-amber-700 font-bold">
-                                                                ({{ $v->discount_type === 'percent' ? 'Giảm '.$v->discount_value.'%' : 'Giảm '.number_format($v->discount_value, 0, ',', '.').'đ' }})
+                                                                ({{ $v->discount_type === 'percent' ? 'Giảm '.(float)$v->discount_value.'%' : 'Giảm '.number_format($v->discount_value, 0, ',', '.').'đ' }})
                                                             </span>
                                                         </div>
                                                         <span class="text-[10px] text-amber-700 font-bold block mt-0.5">Cần mua thêm {{ number_format($v->missing_amount, 0, ',', '.') }}đ</span>

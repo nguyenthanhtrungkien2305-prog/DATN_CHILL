@@ -33,71 +33,6 @@ class CartController extends Controller
         return $clean;
     }
 
-    public function getApplicableVouchers($subTotal)
-    {
-        \App\Http\Controllers\Admin\VoucherController::cleanupExpiredVouchers();
-
-        $vouchers = collect();
-
-        // 1. Lấy mã công khai
-        $publicVouchers = DB::table('vouchers')
-            ->where(function ($q) {
-                $q->whereNull('end_date')->orWhere('end_date', '>=', now());
-            })
-            ->where(function ($q) {
-                $q->whereNull('start_date')->orWhere('start_date', '<=', now());
-            })
-            ->where(function ($q) {
-                $q->whereNull('usage_limit')->orWhereRaw('used_count < usage_limit');
-            })
-            ->whereNull('assigned_user_id')
-            ->get();
-
-        foreach ($publicVouchers as $v) {
-            $vouchers->push($v);
-        }
-
-        // 2. Lấy mã cá nhân của user đang đăng nhập
-        if (auth()->check()) {
-            $userId = auth()->id() ?? auth()->user()->user_id;
-
-            $myVouchers = DB::table('user_vouchers')
-                ->join('vouchers', 'user_vouchers.voucher_id', '=', 'vouchers.voucher_id')
-                ->where('user_vouchers.user_id', $userId)
-                ->where('user_vouchers.is_used', 0)
-                ->where(function ($q) {
-                    $q->whereNull('vouchers.end_date')->orWhere('vouchers.end_date', '>=', now());
-                })
-                ->select('vouchers.*')
-                ->get();
-
-            foreach ($myVouchers as $mv) {
-                if (!$vouchers->contains('voucher_id', $mv->voucher_id)) {
-                    $vouchers->push($mv);
-                }
-            }
-        }
-
-        // Tính toán tính khả dụng cho mỗi voucher
-        $vouchers->transform(function ($v) use ($subTotal) {
-            $v->is_eligible = ($subTotal >= $v->min_order);
-            $v->missing_amount = max(0, $v->min_order - $subTotal);
-
-            $discount = $v->discount_type === 'percent' 
-                ? $subTotal * ($v->discount_value / 100) 
-                : $v->discount_value;
-            $v->discount_amount = min($discount, $subTotal);
-            return $v;
-        });
-
-        // Sắp xếp: Mã đủ điều kiện lên trên (giảm nhiều nhất lên đầu), mã chưa đủ điều kiện xuống dưới
-        return $vouchers->sortBy([
-            ['is_eligible', 'desc'],
-            ['discount_amount', 'desc'],
-            ['missing_amount', 'asc']
-        ])->values();
-    }
-
     // 1. Hiển thị trang Giỏ hàng
     public function index()
     {
@@ -431,6 +366,104 @@ class CartController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function getApplicableVouchers($subTotal)
+    {
+        \App\Http\Controllers\Admin\VoucherController::cleanupExpiredVouchers();
+
+        $vouchers = collect();
+
+        // 1. Lấy mã công khai (Không phải mã đổi bằng điểm & Không gán riêng cho user khác)
+        $publicVouchers = DB::table('vouchers')
+            ->where(function ($q) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', now());
+            })
+            ->where(function ($q) {
+                $q->whereNull('start_date')->orWhere('start_date', '<=', now());
+            })
+            ->where(function ($q) {
+                $q->whereNull('usage_limit')->orWhereRaw('used_count < usage_limit');
+            })
+            ->whereNull('assigned_user_id')
+            ->where(function ($q) {
+                $q->whereNull('is_points_exchange')->orWhere('is_points_exchange', 0);
+            })
+            ->get();
+
+        foreach ($publicVouchers as $v) {
+            $vouchers->push($v);
+        }
+
+        // 2. Lấy mã cá nhân trong kho của user đang đăng nhập (gồm mã đổi điểm đã đổi + mã tặng riêng)
+        if (auth()->check()) {
+            $userId = auth()->id() ?? auth()->user()->user_id;
+
+            $myVouchers = DB::table('user_vouchers')
+                ->join('vouchers', 'user_vouchers.voucher_id', '=', 'vouchers.voucher_id')
+                ->where('user_vouchers.user_id', $userId)
+                ->where('user_vouchers.is_used', 0)
+                ->where(function ($q) {
+                    $q->whereNull('vouchers.end_date')->orWhere('vouchers.end_date', '>=', now());
+                })
+                ->select('vouchers.*')
+                ->get();
+
+            foreach ($myVouchers as $mv) {
+                if (!$vouchers->contains('voucher_id', $mv->voucher_id)) {
+                    $vouchers->push($mv);
+                }
+            }
+        }
+
+        // Tính toán tính khả dụng và đếm số lượng lượt dùng còn lại cho từng mã
+        $vouchers->transform(function ($v) use ($subTotal) {
+            $v->is_eligible = ($subTotal >= $v->min_order);
+            $v->missing_amount = max(0, $v->min_order - $subTotal);
+
+            $discount = $v->discount_type === 'percent' 
+                ? $subTotal * ($v->discount_value / 100) 
+                : $v->discount_value;
+            $v->discount_amount = min($discount, $subTotal);
+
+            $isPointsExchange = isset($v->is_points_exchange) ? (bool)$v->is_points_exchange : false;
+
+            if (auth()->check() && \Illuminate\Support\Facades\Schema::hasTable('user_vouchers')) {
+                $userVoucherCount = DB::table('user_vouchers')
+                    ->where('user_id', auth()->id())
+                    ->where('voucher_id', $v->voucher_id)
+                    ->where('is_used', 0)
+                    ->count();
+
+                if ($isPointsExchange || $v->assigned_user_id) {
+                    $v->available_quantity = $userVoucherCount;
+                } else {
+                    $usagePerUser = isset($v->usage_per_user) ? $v->usage_per_user : 1;
+                    $usedInOrders = DB::table('orders')
+                        ->where('voucher_id', $v->voucher_id)
+                        ->where('user_id', auth()->id())
+                        ->where('status', '!=', 'cancelled')
+                        ->count();
+                    $v->available_quantity = max(0, $usagePerUser - $usedInOrders);
+                }
+            } else {
+                $v->available_quantity = 1;
+            }
+
+            return $v;
+        });
+
+        // Loại bỏ những mã mà người dùng đã dùng hết lượt khả dụng (available_quantity <= 0)
+        $vouchers = $vouchers->filter(function($v) {
+            return ($v->available_quantity ?? 0) > 0;
+        });
+
+        // Sắp xếp: Mã đủ điều kiện lên trên (giảm nhiều nhất lên đầu), mã chưa đủ điều kiện xuống dưới
+        return $vouchers->sortBy([
+            ['is_eligible', 'desc'],
+            ['discount_amount', 'desc'],
+            ['missing_amount', 'asc']
+        ])->values();
+    }
+
     // 7. Áp dụng mã giảm giá
     public function applyVoucher(Request $request)
     {
@@ -452,33 +485,35 @@ class CartController extends Controller
         if ($voucher->usage_limit !== null && $voucher->used_count >= $voucher->usage_limit) return response()->json(['success' => false, 'message' => 'Mã đã hết lượt sử dụng!']);
         if ($subTotal < $voucher->min_order) return response()->json(['success' => false, 'message' => 'Đơn hàng chưa đạt tối thiểu ' . number_format($voucher->min_order, 0, ',', '.') . 'đ!']);
 
-        // Kiểm tra xem khách hàng có sở hữu voucher trong kho user_vouchers không
         $userId = auth()->id();
-        $hasUserVoucherRecords = false;
-        $unusedInWallet = 0;
-
-        if ($userId && \Illuminate\Support\Facades\Schema::hasTable('user_vouchers')) {
-            $userVoucherQuery = DB::table('user_vouchers')
-                ->where('user_id', $userId)
-                ->where('voucher_id', $voucher->voucher_id);
-            
-            $hasUserVoucherRecords = (clone $userVoucherQuery)->exists();
-            if ($hasUserVoucherRecords) {
-                $unusedInWallet = (clone $userVoucherQuery)->where('is_used', 0)->count();
-            }
-        }
-
         $isPointsExchange = isset($voucher->is_points_exchange) ? (bool)$voucher->is_points_exchange : false;
 
-        if ($hasUserVoucherRecords) {
+        // Nếu là Mã đổi bằng điểm hoặc Mã tặng cá nhân: Bắt buộc phải có trong kho user_vouchers chưa dùng
+        if ($isPointsExchange || !empty($voucher->assigned_user_id)) {
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vui lòng đăng nhập để sử dụng mã giảm giá này!'
+                ]);
+            }
+
+            $unusedInWallet = 0;
+            if (\Illuminate\Support\Facades\Schema::hasTable('user_vouchers')) {
+                $unusedInWallet = DB::table('user_vouchers')
+                    ->where('user_id', $userId)
+                    ->where('voucher_id', $voucher->voucher_id)
+                    ->where('is_used', 0)
+                    ->count();
+            }
+
             if ($unusedInWallet <= 0) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn đã sử dụng hết số lượt của mã giảm giá này!'
+                    'message' => 'Mã giảm giá này cần dùng điểm tích lũy để đổi hoặc bạn đã dùng hết lượt! Vui lòng vào trang Tích điểm & Ưu đãi để đổi mã nhé.'
                 ]);
             }
-        } elseif (!$isPointsExchange) {
-            // Kiểm tra giới hạn lượt sử dụng / 1 khách hàng (Chỉ áp dụng cho Mã công khai / Mã tặng riêng, KHÔNG áp dụng cho Mã đổi bằng điểm)
+        } else {
+            // Nếu là Mã khuyến mãi công khai (Promo voucher): Kiểm tra giới hạn lượt dùng usage_per_user
             $usagePerUser = isset($voucher->usage_per_user) ? $voucher->usage_per_user : 1;
             if ($usagePerUser !== null && $usagePerUser > 0) {
                 $customerPhone = auth()->check() ? auth()->user()->phone : trim($request->input('phone', ''));
@@ -512,8 +547,12 @@ class CartController extends Controller
 
         session()->forget('voucher_opt_out');
         session()->put('voucher', [
-            'voucher_id' => $voucher->voucher_id, 'code' => $voucher->code, 'discount_type' => $voucher->discount_type,
-            'discount_value' => $voucher->discount_value, 'discount_amount' => $discount, 'min_order' => $voucher->min_order
+            'voucher_id' => $voucher->voucher_id,
+            'code' => $voucher->code,
+            'discount_type' => $voucher->discount_type,
+            'discount_value' => $voucher->discount_value,
+            'discount_amount' => $discount,
+            'min_order' => $voucher->min_order
         ]);
 
         return response()->json(['success' => true, 'message' => 'Áp dụng mã thành công!']);

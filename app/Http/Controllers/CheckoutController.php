@@ -19,6 +19,11 @@ class CheckoutController extends Controller
         if (!$user) {
             return redirect()->route('cart.index')->with('login_required', 'Vui lòng đăng nhập tài khoản để tiến hành thanh toán và đặt hàng!');
         }
+
+        // Nếu khách hàng chưa cập nhật Họ tên hoặc Số điện thoại -> Yêu cầu cập nhật profile
+        if (empty($user->name) || empty($user->phone)) {
+            return redirect()->route('user.profile')->with('error', 'Vui lòng cập nhật đầy đủ Họ và tên và Số điện thoại trong Hồ sơ cá nhân trước khi tiến hành đặt hàng!');
+        }
         
         // Xử lý cột address: Chuyển dữ liệu text thành mảng
         $addresses = [];
@@ -113,8 +118,13 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống!');
         }
 
-        if (!auth()->check()) {
+        $user = auth()->user();
+        if (!$user) {
             return redirect()->route('cart.index')->with('login_required', 'Vui lòng đăng nhập tài khoản để đặt hàng!');
+        }
+
+        if (empty($user->name) || empty($user->phone)) {
+            return redirect()->route('user.profile')->with('error', 'Vui lòng cập nhật đầy đủ Họ và tên và Số điện thoại trong Hồ sơ cá nhân trước khi tiến hành đặt hàng!');
         }
 
         // Tính tổng tiền
@@ -141,7 +151,7 @@ class CheckoutController extends Controller
                     $usagePerUser = isset($vDb->usage_per_user) ? $vDb->usage_per_user : 1;
                     if ($usagePerUser !== null && $usagePerUser > 0) {
                         $userId = auth()->id();
-                        $customerPhone = $request->customer_phone ?? (auth()->check() ? auth()->user()->phone : '');
+                        $customerPhone = $user->phone;
                         
                         $usedCount = 0;
                         if ($userId) {
@@ -167,18 +177,27 @@ class CheckoutController extends Controller
             }
         }
 
-        $finalAmount = max(0, $totalAmount - $discountAmount);
+        $shippingFee = 0;
+        $distanceKm = 0;
+        if (($request->order_type ?? 'delivery') === 'delivery' && !empty($request->shipping_address)) {
+            $distanceKm = \App\Services\DistanceService::calculateDistanceKm($request->shipping_address);
+            $shippingFee = \App\Services\DistanceService::getShippingFee($distanceKm);
+        }
+
+        $finalAmount = max(0, $totalAmount + $shippingFee - $discountAmount);
 
         // Lưu vào Database
         $orderId = \DB::table('orders')->insertGetId([
             'user_id' => auth()->id(),
             'voucher_id' => $voucherId,
-            'customer_name' => $request->customer_name ?? auth()->user()->name,
-            'customer_phone' => $request->customer_phone ?? '',
+            'customer_name' => $user->name,
+            'customer_phone' => $user->phone,
             'shipping_address' => $request->shipping_address ?? '',
-            'order_type' => $request->order_type,
+            'order_type' => $request->order_type ?? 'delivery',
             'table_number' => $request->table_number,
             'payment_method' => $request->payment_method,
+            'shipping_fee' => $shippingFee,
+            'distance_km' => $distanceKm,
             'total_amount' => $finalAmount,
             'discount_amount' => $discountAmount,
             'status' => 'pending', // Mặc định là Chờ xác nhận
@@ -273,5 +292,30 @@ class CheckoutController extends Controller
             ]);
 
         return response()->json(['success' => $affected > 0]);
+    }
+
+    // 7. API AJAX Tính khoảng cách & Phí giao hàng động từ QTSC 9 Tô Ký
+    public function calculateShipping(Request $request)
+    {
+        $address = $request->address;
+        if (empty(trim($address))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vui lòng cung cấp địa chỉ giao hàng.',
+                'shipping_fee' => 0,
+                'distance_km' => 0
+            ]);
+        }
+
+        $distanceKm = \App\Services\DistanceService::calculateDistanceKm($address);
+        $shippingFee = \App\Services\DistanceService::getShippingFee($distanceKm);
+
+        return response()->json([
+            'success' => true,
+            'distance_km' => $distanceKm,
+            'shipping_fee' => $shippingFee,
+            'formatted_fee' => number_format($shippingFee) . 'đ',
+            'store_address' => \App\Services\DistanceService::STORE_ADDRESS
+        ]);
     }
 }

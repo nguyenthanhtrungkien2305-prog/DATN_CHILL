@@ -21,7 +21,7 @@
                 {{-- BỘ TAB GIAO HÀNG / TẠI QUÁN --}}
                 <div class="bg-white p-2 rounded-[20px] shadow-sm border border-espresso/5 flex gap-2">
                     <button type="button" id="btn-tab-delivery" onclick="switchOrderType('delivery')" class="flex-1 py-4 rounded-xl font-bold text-lg transition-all bg-coral text-white shadow-md">
-                        🛵 Giao hàng tận nơi
+                        Giao hàng tận nơi
                     </button>
                     <button type="button" id="btn-tab-dinein" onclick="switchOrderType('dine_in')" class="flex-1 py-4 rounded-xl font-bold text-lg transition-all text-espresso/60 hover:bg-gray-50">
                         Thưởng thức tại quán
@@ -30,38 +30,28 @@
 
                 {{-- KHOẢNG 1: GIAO HÀNG TẬN NƠI --}}
                 <div id="section-delivery" class="space-y-6 block">
-                    <div class="bg-white p-6 md:p-8 rounded-[24px] shadow-sm border border-espresso/5">
-                        <h2 class="font-bold text-xl text-espresso mb-4 flex items-center gap-2">
-                            <span class="bg-coral text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span> 
-                            Thông tin người nhận
-                        </h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-espresso/80 mb-2">Họ và tên</label>
-                                <input type="text" name="customer_name" id="req_name" value="{{ $user->name ?? '' }}" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-coral bg-[#FAF7F2]">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-espresso/80 mb-2">Số điện thoại</label>
-                                <input type="text" name="customer_phone" id="req_phone" value="{{ $user->phone ?? '' }}" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-coral bg-[#FAF7F2]">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- BLOCK ĐỊA CHỈ (ĐÃ CẢI TIẾN THEO YÊU CẦU) --}}
+                    {{-- BLOCK ĐỊA CHỈ GIAO HÀNG --}}
                     <div class="bg-white p-6 md:p-8 rounded-[24px] shadow-sm border border-espresso/5">
                         <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
                             <h2 class="font-bold text-xl text-espresso flex items-center gap-2">
-                                <span class="bg-coral text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span> 
+                                <span class="bg-coral text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span> 
                                 Địa chỉ giao hàng <span class="text-xs font-normal text-gray-400 ml-1">({{ count($addresses) }}/4)</span>
                             </h2>
                             
-                            {{-- Nút Thêm Mới Dấu Cộng Ở Góc Phải --}}
-                            @if(count($addresses) < 4)
-                                <button type="button" onclick="openAddressModal()" class="text-coral font-bold hover:text-[#d5523b] flex items-center gap-1.5 text-sm bg-coral/10 px-3 py-1.5 rounded-full transition-colors">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
-                                    Thêm mới
+                            {{-- Nút Định Vị GPS & Nút Thêm Mới Ở Góc Phải --}}
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="useCurrentLocationGPS()" id="btn-gps-location" class="text-blue-700 font-bold hover:bg-blue-100 flex items-center gap-1.5 text-xs sm:text-sm bg-blue-50 border border-blue-200/80 px-3.5 py-1.5 rounded-full transition-all shadow-xs">
+                                    <span class="text-sm sm:text-base">🎯</span>
+                                    <span id="txt-gps-location">Định vị GPS</span>
                                 </button>
-                            @endif
+
+                                @if(count($addresses) < 4)
+                                    <button type="button" onclick="openAddressModal()" class="text-coral font-bold hover:text-[#d5523b] flex items-center gap-1.5 text-xs sm:text-sm bg-coral/10 px-3.5 py-1.5 rounded-full transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
+                                        Thêm mới
+                                    </button>
+                                @endif
+                            </div>
                         </div>
 
                         {{-- Danh sách địa chỉ --}}
@@ -227,6 +217,7 @@
                                                     <div>
                                                         <div class="flex items-center gap-1.5">
                                                             <span class="font-mono font-black text-espresso uppercase text-[11px]">{{ $v->code }}</span>
+                                                            <span class="bg-[#e8634a] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-xs">x{{ $v->available_quantity ?? 1 }}</span>
                                                             <span class="text-coral font-extrabold text-[11px]">-{{ number_format($v->discount_amount, 0, ',', '.') }}đ</span>
                                                         </div>
                                                     </div>
@@ -241,8 +232,9 @@
                                                     <div>
                                                         <div class="flex items-center gap-1.5">
                                                             <span class="font-mono font-black text-gray-500 uppercase text-[11px]">{{ $v->code }}</span>
+                                                            <span class="bg-gray-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-xs">x{{ $v->available_quantity ?? 1 }}</span>
                                                             <span class="text-[10px] text-amber-700 font-bold">
-                                                                ({{ $v->discount_type === 'percent' ? 'Giảm '.$v->discount_value.'%' : 'Giảm '.number_format($v->discount_value, 0, ',', '.').'đ' }})
+                                                                ({{ $v->discount_type === 'percent' ? 'Giảm '.(float)$v->discount_value.'%' : 'Giảm '.number_format($v->discount_value, 0, ',', '.').'đ' }})
                                                             </span>
                                                         </div>
                                                         <span class="text-[9px] text-amber-700 font-bold block mt-0.5">Cần mua thêm {{ number_format($v->missing_amount, 0, ',', '.') }}đ</span>
@@ -258,12 +250,18 @@
                     </div>
 
                     <div class="space-y-3 mb-6 pt-4 border-t border-espresso/10">
-                        <div class="flex justify-between text-espresso/80 text-sm"><span>Tạm tính</span><span class="font-medium">{{ number_format($subTotal, 0, ',', '.') }}đ</span></div>
+                        <div class="flex justify-between text-espresso/80 text-sm"><span>Tạm tính món</span><span class="font-medium">{{ number_format($subTotal, 0, ',', '.') }}đ</span></div>
                         <div class="flex justify-between text-espresso/80 text-sm">
                             <span>Giảm giá (Voucher)</span>
                             <span class="font-medium text-coral">- {{ number_format(session()->has('voucher') ? session('voucher')['discount_amount'] : 0, 0, ',', '.') }}đ</span>
                         </div>
-                        <div class="flex justify-between text-espresso/80 text-sm" id="shipping-fee-row"><span>Phí vận chuyển</span><span class="font-medium text-green-500">Miễn phí</span></div>
+                        <div class="flex justify-between items-center text-espresso/80 text-sm" id="shipping-fee-row">
+                            <div class="flex flex-col">
+                                <span class="font-medium">Phí vận chuyển (Phí ship)</span>
+                                <span id="shipping-distance-badge" class="text-[10px] text-espresso/50 font-medium">Đang tính khoảng cách từ QTSC 9...</span>
+                            </div>
+                            <span id="shipping-fee-val" class="font-bold text-coral">0đ</span>
+                        </div>
                     </div>
                     @php
                         $discount = session()->has('voucher') ? session('voucher')['discount_amount'] : 0;
@@ -271,7 +269,7 @@
                     @endphp
                     <div class="flex justify-between items-end mb-8 pt-4 border-t border-espresso/10">
                         <span class="font-bold text-espresso">Tổng thanh toán</span>
-                        <span class="font-black text-3xl text-coral">{{ number_format($finalTotal, 0, ',', '.') }}đ</span>
+                        <span id="final-total-val" data-subtotal="{{ $subTotal }}" data-discount="{{ $discount }}" data-shipping="0" class="font-black text-3xl text-coral">{{ number_format($finalTotal, 0, ',', '.') }}đ</span>
                     </div>
                     <button type="submit" id="btn-submit-order" onclick="return validateOrder()" class="w-full py-4 bg-coral text-white rounded-full font-bold text-lg hover:bg-[#d5523b] shadow-lg shadow-coral/30 transition-all">
                         Chốt Đơn Ngay
@@ -282,21 +280,59 @@
     </div>
 </div>
 
-{{-- MODAL THÊM ĐỊA CHỈ --}}
+{{-- MODAL THÊM ĐỊA CHỈ KIỂU GRAB / SHOPEE --}}
 <div id="new-address-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 hidden">
     <div class="absolute inset-0 bg-espresso/60 backdrop-blur-sm" onclick="closeAddressModal()"></div>
-    <div class="relative bg-white rounded-[32px] shadow-2xl w-full max-w-lg p-8 transform transition-all scale-95 opacity-0" id="address-modal-content">
-        <h2 class="font-serif font-black text-2xl text-espresso mb-6">Thêm địa chỉ giao hàng</h2>
-        <div class="space-y-4 mb-8">
-            <div class="grid grid-cols-2 gap-4">
-                <select id="district-select" class="w-full px-4 py-3 bg-[#FAF7F2] border border-transparent rounded-xl focus:outline-none focus:border-coral text-sm font-medium"><option value="">-- Chọn Quận/Huyện --</option></select>
-                <select id="ward-select" disabled class="w-full px-4 py-3 bg-gray-100 border border-transparent rounded-xl focus:outline-none focus:border-coral text-sm cursor-not-allowed opacity-60"><option value="">-- Chọn Phường/Xã --</option></select>
-            </div>
-            <input type="text" id="street-input" placeholder="Số nhà, Tên đường..." class="w-full px-4 py-3 bg-[#FAF7F2] border border-transparent rounded-xl focus:outline-none focus:border-coral text-sm">
+    <div class="relative bg-white rounded-[32px] shadow-2xl w-full max-w-lg p-6 sm:p-8 transform transition-all scale-95 opacity-0" id="address-modal-content">
+        
+        <div class="flex items-center justify-between mb-6 pb-3 border-b border-gray-100">
+            <h2 class="font-serif font-black text-2xl text-espresso">Thêm địa chỉ giao hàng</h2>
+            <button type="button" onclick="closeAddressModal()" class="text-gray-400 hover:text-coral font-bold text-xl p-1">✕</button>
         </div>
-        <div class="flex gap-4">
-            <button type="button" onclick="closeAddressModal()" class="flex-1 py-3 rounded-full font-bold text-espresso/60 hover:bg-gray-100 transition-colors">Hủy</button>
-            <button type="button" onclick="submitNewAddress()" class="flex-1 py-3 bg-coral text-white rounded-full font-bold hover:bg-[#d5523b] shadow-lg transition-all">Lưu địa chỉ</button>
+
+        {{-- NÚT ĐỊNH VỊ GPS VÀO TRONG MODAL --}}
+        <div class="mb-5">
+            <button type="button" onclick="useCurrentLocationGPS()" id="btn-gps-location-modal" class="w-full py-3.5 px-4 bg-blue-50 border border-blue-200/90 text-blue-700 font-bold rounded-2xl hover:bg-blue-100 transition-all flex items-center justify-center gap-2 text-sm shadow-2xs">
+                <svg class="w-5 h-5 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span id="txt-gps-location-modal">Lấy vị trí GPS hiện tại của tôi</span>
+            </button>
+        </div>
+
+        <div class="relative flex items-center mb-4">
+            <div class="flex-grow border-t border-gray-200"></div>
+            <span class="flex-shrink mx-3 text-gray-400 text-xs font-bold uppercase tracking-wider">Hoặc nhập tìm kiếm</span>
+            <div class="flex-grow border-t border-gray-200"></div>
+        </div>
+
+        {{-- Ô TÌM KIẾM ĐỊA CHỈ GỢI Ý ĐỘNG KIỂU GRAB / SHOPEE --}}
+        <div class="space-y-4 mb-6 relative">
+            <div class="relative">
+                <label class="block text-xs uppercase tracking-wider font-extrabold text-espresso/70 mb-1.5">Tìm địa chỉ nhanh (Kiểu Grab / Shopee)</label>
+                <div class="relative">
+                    <input type="text" id="address-search-input" oninput="handleAddressSearchInput(event)" placeholder="🔍 Gõ số nhà, tên đường, khu vực..." class="w-full pl-10 pr-4 py-3.5 bg-[#FAF7F2] border border-gray-200 rounded-xl focus:outline-none focus:border-coral text-sm font-medium text-espresso shadow-2xs">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base">🔍</span>
+                </div>
+
+                {{-- DROPDOWN GỢI Ý THẢ NỔI --}}
+                <div id="address-suggestions-dropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-espresso/15 rounded-2xl shadow-2xl z-50 max-h-56 overflow-y-auto custom-scrollbar p-2">
+                    <div id="suggestions-container" class="space-y-1"></div>
+                </div>
+            </div>
+
+            {{-- BỘ CHỌN QUẬN/HUYỆN & PHƯỜNG/XÃ THỦ CÔNG --}}
+            <div class="pt-2 border-t border-gray-100">
+                <label class="block text-xs uppercase tracking-wider font-extrabold text-espresso/70 mb-1.5">Hoặc chọn theo Quận / Phường</label>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <select id="district-select" class="w-full px-3.5 py-3 bg-[#FAF7F2] border border-gray-200 rounded-xl focus:outline-none focus:border-coral text-xs sm:text-sm font-medium text-espresso"><option value="">-- Chọn Quận/Huyện --</option></select>
+                    <select id="ward-select" disabled class="w-full px-3.5 py-3 bg-gray-100 border border-gray-200 rounded-xl focus:outline-none focus:border-coral text-xs sm:text-sm cursor-not-allowed opacity-60"><option value="">-- Chọn Phường/Xã --</option></select>
+                </div>
+                <input type="text" id="street-input" placeholder="Số nhà, Tên đường..." class="w-full px-4 py-3 bg-[#FAF7F2] border border-gray-200 rounded-xl focus:outline-none focus:border-coral text-sm font-medium text-espresso">
+            </div>
+        </div>
+
+        <div class="flex gap-3">
+            <button type="button" onclick="closeAddressModal()" class="flex-1 py-3.5 rounded-full font-bold text-espresso/60 hover:bg-gray-100 transition-colors text-sm">Hủy</button>
+            <button type="button" onclick="submitNewAddress()" class="flex-1 py-3.5 bg-coral text-white rounded-full font-bold hover:bg-[#d5523b] shadow-lg shadow-coral/20 transition-all text-sm">Lưu địa chỉ</button>
         </div>
     </div>
 </div>
@@ -376,7 +412,6 @@
         const btnDineIn = document.getElementById('btn-tab-dinein');
         const secDelivery = document.getElementById('section-delivery');
         const secDineIn = document.getElementById('section-dinein');
-        const reqPhone = document.getElementById('req_phone');
         const addressRadios = document.querySelectorAll('.req-address-radio');
 
         if (type === 'delivery') {
@@ -385,16 +420,16 @@
             secDelivery.classList.remove('hidden'); secDineIn.classList.add('hidden');
             document.getElementById('payment-text-cash').innerText = 'Thanh toán tiền mặt khi nhận hàng';
             document.getElementById('shipping-fee-row').style.display = 'flex';
-            if(reqPhone) reqPhone.setAttribute('required', 'required');
             addressRadios.forEach(r => r.setAttribute('required', 'required'));
+            calculateShippingFee();
         } else {
             btnDineIn.className = 'flex-1 py-4 rounded-xl font-bold text-lg transition-all bg-coral text-white shadow-md';
             btnDelivery.className = 'flex-1 py-4 rounded-xl font-bold text-lg transition-all text-espresso/60 hover:bg-gray-50';
             secDineIn.classList.remove('hidden'); secDelivery.classList.add('hidden');
             document.getElementById('payment-text-cash').innerText = 'Thanh toán tiền mặt tại quầy';
             document.getElementById('shipping-fee-row').style.display = 'none';
-            if(reqPhone) reqPhone.removeAttribute('required');
             addressRadios.forEach(r => r.removeAttribute('required'));
+            calculateShippingFee();
         }
     }
 
@@ -508,5 +543,266 @@
             if (data.success) { window.location.reload(); } else { alert(data.message); }
         });
     }
+
+    // === TÍNH KHOẢNG CÁCH VÀ PHÍ SHIP ĐỘNG CỦA QUÁN (QTSC 9 TÔ KÝ) ===
+    function calculateShippingFee() {
+        const orderType = document.getElementById('order_type').value;
+        const badge = document.getElementById('shipping-distance-badge');
+        const feeVal = document.getElementById('shipping-fee-val');
+
+        if (orderType !== 'delivery') {
+            if (feeVal) feeVal.innerText = '0đ';
+            if (badge) badge.innerText = 'Ăn tại quán (Khôn phí ship)';
+            updateTotalDisplay(0);
+            return;
+        }
+
+        // Lấy địa chỉ đang được chọn
+        const selectedRadio = document.querySelector('input[name="shipping_address"]:checked');
+        const address = selectedRadio ? selectedRadio.value : '';
+
+        if (!address) {
+            if (feeVal) feeVal.innerText = '0đ';
+            if (badge) badge.innerText = 'Vui lòng chọn địa chỉ giao';
+            updateTotalDisplay(0);
+            return;
+        }
+
+        if (badge) badge.innerText = 'Đang tính khoảng cách từ QTSC 9...';
+
+        fetch('{{ route("checkout.calculate_shipping") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ address: address })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (badge) badge.innerText = `Khoảng cách ~${data.distance_km} km từ QTSC 9`;
+                if (feeVal) feeVal.innerText = data.formatted_fee;
+                updateTotalDisplay(data.shipping_fee);
+            } else {
+                if (badge) badge.innerText = 'Ước tính phí ship cố định';
+                if (feeVal) feeVal.innerText = '10.000đ';
+                updateTotalDisplay(10000);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            if (badge) badge.innerText = 'Không tính được khoảng cách';
+            updateTotalDisplay(10000);
+        });
+    }
+
+    function updateTotalDisplay(shippingFee) {
+        const finalTotalVal = document.getElementById('final-total-val');
+        if (!finalTotalVal) return;
+
+        const subtotal = parseFloat(finalTotalVal.dataset.subtotal || 0);
+        const discount = parseFloat(finalTotalVal.dataset.discount || 0);
+        const total = Math.max(0, subtotal + parseFloat(shippingFee) - discount);
+
+        finalTotalVal.innerText = new Intl.NumberFormat('vi-VN').format(total) + 'đ';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        calculateShippingFee();
+
+        document.addEventListener('change', function(e) {
+            if (e.target && e.target.name === 'shipping_address') {
+                calculateShippingFee();
+            }
+        });
+    });
+
+    // === TỰ ĐỘNG ĐỊNH VỊ VỊ TRÍ HIỆN TẠI VỚI GPS ===
+    function useCurrentLocationGPS() {
+        if (!navigator.geolocation) {
+            alert('Trình duyệt của bạn không hỗ trợ tính năng định vị GPS.');
+            return;
+        }
+
+        const btnGps = document.getElementById('btn-gps-location');
+        const txtGps = document.getElementById('txt-gps-location');
+        
+        if (txtGps) txtGps.innerText = 'Đang định vị vị trí...';
+        if (btnGps) btnGps.classList.add('animate-pulse', 'opacity-80');
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                // Dịch ngược Tọa độ Lat/Lng thành Địa chỉ bằng Nominatim Reverse Geocoding API
+                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=vi`, {
+                    headers: {
+                        'User-Agent': 'ChillChillCoffeeApp/1.0'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    let formattedAddress = '';
+                    if (data && data.address) {
+                        const addr = data.address;
+                        const houseNum = addr.house_number || '';
+                        const road = addr.road || addr.pedestrian || '';
+                        const ward = addr.suburb || addr.quarter || addr.village || '';
+                        const district = addr.city_district || addr.district || '';
+                        const city = addr.city || addr.state || 'Hồ Chí Minh';
+                        
+                        const streetPart = [houseNum, road].filter(Boolean).join(' ');
+                        const parts = [streetPart, ward, district, city].filter(Boolean);
+                        formattedAddress = parts.join(', ');
+                    }
+                    
+                    if (!formattedAddress && data && data.display_name) {
+                        formattedAddress = data.display_name;
+                    }
+
+                    if (!formattedAddress) {
+                        formattedAddress = `Vị trí GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                    }
+
+                    // Tự động lưu địa chỉ định vị mới vào tài khoản người dùng
+                    saveGPSAddress(formattedAddress);
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Không thể chuyển đổi tọa độ GPS thành địa chỉ. Vui lòng thử lại hoặc chọn địa chỉ bên dưới.');
+                    resetGpsBtn();
+                });
+            },
+            function(error) {
+                console.error(error);
+                let errorMsg = 'Không thể lấy vị trí GPS từ thiết bị của bạn.';
+                if (error.code === error.PERMISSION_DENIED) {
+                    errorMsg = 'Bạn đã từ chối cấp quyền truy cập vị trí. Vui lòng cho phép quyền truy cập GPS trên trình duyệt để tự động lấy địa chỉ giao hàng!';
+                }
+                alert(errorMsg);
+                resetGpsBtn();
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    }
+
+    function resetGpsBtn() {
+        const btnGpsModal = document.getElementById('btn-gps-location-modal');
+        const txtGpsModal = document.getElementById('txt-gps-location-modal');
+        if (txtGpsModal) txtGpsModal.innerText = 'Lấy vị trí GPS hiện tại của tôi';
+        if (btnGpsModal) btnGpsModal.classList.remove('animate-pulse', 'opacity-80');
+        
+        const btnGps = document.getElementById('btn-gps-location');
+        const txtGps = document.getElementById('txt-gps-location');
+        if (txtGps) txtGps.innerText = 'Định vị GPS';
+        if (btnGps) btnGps.classList.remove('animate-pulse', 'opacity-80');
+    }
+
+    function saveGPSAddress(addressString) {
+        fetch('{{ route("checkout.addAddress") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ new_address: addressString })
+        })
+        .then(res => res.json())
+        .then(data => {
+            resetGpsBtn();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Đã định vị thành công!');
+            }
+        })
+        .catch(err => {
+            resetGpsBtn();
+            window.location.reload();
+        });
+    }
+
+    // === TÌM KIẾM ĐỊA CHỈ THÔNG MINH GỢI Ý ĐỘNG KIỂU GRAB / SHOPEE ===
+    let searchDebounceTimer = null;
+
+    function handleAddressSearchInput(event) {
+        const query = event.target.value.trim();
+        const dropdown = document.getElementById('address-suggestions-dropdown');
+        const container = document.getElementById('suggestions-container');
+
+        if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+
+        if (query.length < 2) {
+            dropdown.classList.add('hidden');
+            return;
+        }
+
+        searchDebounceTimer = setTimeout(() => {
+            container.innerHTML = '<div class="p-3 text-center text-xs text-gray-400 font-medium">Đang tìm địa chỉ gợi ý...</div>';
+            dropdown.classList.remove('hidden');
+
+            fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ', Hồ Chí Minh, Việt Nam')}&format=json&addressdetails=1&limit=5&accept-language=vi`, {
+                headers: { 'User-Agent': 'ChillChillCoffeeApp/1.0' }
+            })
+            .then(res => res.json())
+            .then(results => {
+                if (!results || results.length === 0) {
+                    container.innerHTML = '<div class="p-3 text-center text-xs text-gray-400 font-medium">Không tìm thấy địa chỉ phù hợp. Bạn có thể chọn Quận/Phường bên dưới.</div>';
+                    return;
+                }
+
+                let html = '';
+                results.forEach(item => {
+                    let displayName = item.display_name;
+                    if (item.address) {
+                        const addr = item.address;
+                        const road = addr.road || addr.pedestrian || addr.suburb || '';
+                        const ward = addr.suburb || addr.quarter || addr.village || '';
+                        const district = addr.city_district || addr.district || '';
+                        const city = addr.city || addr.state || 'Hồ Chí Minh';
+                        const parts = [road, ward, district, city].filter(Boolean);
+                        if (parts.length > 0) displayName = parts.join(', ');
+                    }
+
+                    const escaped = displayName.replace(/'/g, "\\'");
+                    html += `
+                        <div onclick="selectAddressSuggestion('${escaped}')" class="p-3 hover:bg-coral/10 rounded-xl cursor-pointer transition-colors border border-gray-100 hover:border-coral/30 flex items-start gap-2.5 group">
+                            <svg class="w-4 h-4 text-coral shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            <div class="flex-1">
+                                <p class="text-xs font-bold text-espresso group-hover:text-coral leading-snug">${displayName}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            })
+            .catch(err => {
+                console.error(err);
+                container.innerHTML = '<div class="p-3 text-center text-xs text-red-400 font-medium">Lỗi kết nối gợi ý địa chỉ.</div>';
+            });
+        }, 350);
+    }
+
+    function selectAddressSuggestion(addressString) {
+        document.getElementById('address-search-input').value = addressString;
+        document.getElementById('address-suggestions-dropdown').classList.add('hidden');
+        document.getElementById('street-input').value = addressString;
+    }
+
+    document.addEventListener('click', function(e) {
+        const dropdown = document.getElementById('address-suggestions-dropdown');
+        const input = document.getElementById('address-search-input');
+        if (dropdown && input && !dropdown.contains(e.target) && !input.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
 </script>
 @endsection

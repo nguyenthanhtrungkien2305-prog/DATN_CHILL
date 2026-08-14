@@ -57,7 +57,7 @@ class AuthController extends Controller
                 return redirect()->route('admin.dashboard');
             }
             
-            return redirect('/')->with('success', 'Đăng nhập thành công!');
+            return redirect('/')->with('show_welcome_modal', 'Đăng ký thành công!');
         }
         return redirect('/')->with('show_welcome_modal', 'Đăng ký thành công!');
     }
@@ -134,5 +134,109 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/dang-nhap')->with('success', 'Đã đăng xuất và hệ thống đã tự động chốt ca an toàn!');
+    }
+
+    // ==========================================
+    // 4. CÁC HÀM XỬ LÝ QUÊN MẬT KHẨU KẾT NỐI GMAIL
+    // ==========================================
+    public function showForgotPasswordForm()
+    {
+        return view('auth.forgot_password');
+    }
+
+    public function sendResetLinkEmail(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email'
+        ], [
+            'email.required' => 'Vui lòng nhập địa chỉ Email.',
+            'email.email' => 'Địa chỉ Email không hợp lệ.'
+        ]);
+
+        $email = $request->email;
+        $user = \App\Models\User::where('email', $email)->first();
+
+        if (!$user) {
+            return back()->with('error', 'Không tìm thấy tài khoản nào gắn với địa chỉ Email này!')->withInput();
+        }
+
+        $token = \Illuminate\Support\Str::random(60);
+
+        // Lưu vào bảng password_reset_tokens
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $email],
+            [
+                'email' => $email,
+                'token' => $token,
+                'created_at' => now()
+            ]
+        );
+
+        // Thử gửi Email qua Mailer (Gmail SMTP)
+        try {
+            \Illuminate\Support\Facades\Mail::send('emails.reset_password', [
+                'token' => $token,
+                'user' => $user
+            ], function ($message) use ($email) {
+                $message->to($email)
+                    ->subject('Khôi Phục Mật Khẩu Tài Khoản - Chill Chill Coffee');
+            });
+
+            return back()->with('success', "🎉 Liên kết khôi phục mật khẩu đã được gửi đến Gmail: {$email}. Vui lòng kiểm tra hộp thư!");
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Reset Password Mail Error: " . $e->getMessage());
+            
+            // Nếu Mailer chưa cấu hình SMTP, trả về kèm liên kết trực tiếp để test tiện lợi
+            $resetUrl = route('password.reset', ['token' => $token, 'email' => $email]);
+            return back()->with('success', "🎉 Đã tạo liên kết khôi phục cho Email {$email}!<br><br><a href='{$resetUrl}' class='inline-block px-4 py-2.5 bg-coral text-white rounded-full font-bold text-xs shadow-md hover:bg-[#d5523b] transition-all my-1'>👉 Bấm vào đây để Đặt lại mật khẩu ngay</a>");
+        }
+    }
+
+    public function showResetPasswordForm($token, Request $request)
+    {
+        $email = $request->query('email');
+        return view('auth.reset_password', compact('token', 'email'));
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'token' => 'required|string',
+            'email' => 'required|email',
+            'password' => 'required|string|min:6|confirmed'
+        ], [
+            'email.required' => 'Vui lòng nhập Email.',
+            'password.required' => 'Vui lòng nhập mật khẩu mới.',
+            'password.min' => 'Mật khẩu mới phải có tối thiểu 6 ký tự.',
+            'password.confirmed' => 'Xác nhận mật khẩu mới không trùng khớp.'
+        ]);
+
+        $resetRecord = \Illuminate\Support\Facades\DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->where('token', $request->token)
+            ->first();
+
+        if (!$resetRecord) {
+            return back()->with('error', 'Mã Token khôi phục không hợp lệ hoặc đã được sử dụng!');
+        }
+
+        // Kiểm tra thời hạn 15 phút
+        if (\Carbon\Carbon::parse($resetRecord->created_at)->addMinutes(15)->isPast()) {
+            return back()->with('error', 'Liên kết khôi phục đã hết hạn (quá 15 phút). Vui lòng yêu cầu lại!');
+        }
+
+        $user = \App\Models\User::where('email', $request->email)->first();
+        if (!$user) {
+            return back()->with('error', 'Không tìm thấy tài khoản người dùng!');
+        }
+
+        // Đổi mật khẩu
+        $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
+        $user->save();
+
+        // Xóa Token đã dùng
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        return redirect()->route('login')->with('success', '🎉 Đặt lại mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới.');
     }
 }

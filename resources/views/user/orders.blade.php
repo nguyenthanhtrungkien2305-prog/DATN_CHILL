@@ -12,34 +12,47 @@
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #d5523b; }
 </style>
 
-<div class="bg-[#FAF7F2] min-h-[calc(100vh-100px)] w-full flex items-center justify-center py-10 px-4">
+<div class="bg-[#FAF7F2] min-h-[calc(100vh-100px)] w-full flex items-center justify-center py-4 sm:py-10 px-2 sm:px-4">
     
-    {{-- Cửa sổ App: Cùng tỷ lệ max-w-5xl và 80vh như trang Hồ sơ cá nhân --}}
-    <div class="w-full max-w-5xl bg-white rounded-[40px] shadow-2xl border border-espresso/5 overflow-hidden flex flex-col md:flex-row h-[80vh] min-h-[550px] max-h-[800px]">
+    <div class="w-full max-w-5xl bg-white rounded-[30px] md:rounded-[40px] shadow-2xl border border-espresso/5 overflow-hidden flex flex-col md:flex-row h-auto md:h-[80vh] md:min-h-[550px] md:max-h-[800px]">
         
-        {{-- Cột Trái: Menu Điều hướng (Tỷ lệ 1/3 cố định) --}}
-        <div class="w-full md:w-1/3 bg-espresso text-cream p-8 md:p-10 flex flex-col h-full shrink-0">
-            <h2 class="font-serif font-bold text-2xl text-white mb-8">Tài khoản</h2>
-            <nav class="space-y-2 flex-1">
-                <a href="{{ route('user.profile') }}" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white transition-colors">Thông tin cá nhân</a>
-                <a href="{{ route('user.orders') }}" class="block px-4 py-3 rounded-xl bg-white/10 text-white font-medium transition-colors">Lịch sử đặt hàng</a>
-                <a href="{{ route('user.points') }}" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white transition-colors flex items-center justify-between">
+        {{-- Cột Trái: Menu Điều hướng (Tự động thích ứng Mobile/Desktop) --}}
+        <div class="w-full md:w-1/3 bg-espresso text-cream p-5 md:p-10 flex flex-col h-auto md:h-full shrink-0">
+            <div class="flex items-center justify-between md:block mb-3 md:mb-8">
+                <h2 class="font-serif font-bold text-xl md:text-2xl text-white">Tài khoản</h2>
+                <a href="{{ route('logout') }}" class="md:hidden px-3 py-1 bg-coral/20 text-coral hover:bg-coral hover:text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg> Thoát
+                </a>
+            </div>
+
+            <nav class="flex md:flex-col overflow-x-auto gap-2 py-1 md:py-0 custom-scrollbar flex-1 shrink-0">
+                <a href="{{ route('user.profile') }}" class="px-4 py-2.5 rounded-xl font-medium text-xs md:text-sm whitespace-nowrap transition-colors text-cream/70 hover:text-white hover:bg-white/5">
+                    Thông tin cá nhân
+                </a>
+                <a href="{{ route('user.orders') }}" class="px-4 py-2.5 rounded-xl font-medium text-xs md:text-sm whitespace-nowrap transition-colors bg-white/20 text-white font-bold">
+                    Đơn hàng của tôi
+                </a>
+                <a href="{{ route('user.points') }}" class="px-4 py-2.5 rounded-xl font-medium text-xs md:text-sm whitespace-nowrap transition-colors flex items-center justify-between gap-2 shrink-0 text-cream/70 hover:text-white hover:bg-white/5">
                     <span>Tích điểm & Ưu đãi</span>
-                    <span class="bg-coral/20 text-coral text-xs font-black px-2 py-0.5 rounded-full">{{ auth()->user()->point ?? 0 }}p</span>
+                    <span class="bg-coral/20 text-coral text-[10px] md:text-xs font-black px-2 py-0.5 rounded-full">{{ auth()->user()->point ?? 0 }}p</span>
+                </a>
+                <a href="{{ route('user.change_password') }}" class="px-4 py-2.5 rounded-xl font-medium text-xs md:text-sm whitespace-nowrap transition-colors text-cream/70 hover:text-white hover:bg-white/5">
+                    Đổi mật khẩu
                 </a>
             </nav>
-            <a href="{{ route('logout') }}" class="mt-auto px-4 py-3 text-coral hover:text-white transition-colors flex items-center gap-2">
+
+            <a href="{{ route('logout') }}" class="hidden md:flex mt-auto px-4 py-3 text-coral hover:text-white transition-colors items-center gap-2 text-sm font-bold">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg> Đăng xuất
             </a>
         </div>
 
-        {{-- Cột Phải: Nội dung Lịch sử & Bảng thống kê (Tỷ lệ 2/3 cho phép cuộn) --}}
-        <div class="w-full md:w-2/3 p-6 md:p-10 bg-white h-full overflow-y-auto custom-scrollbar flex flex-col">
+        {{-- Cột Phải: Nội dung Lịch sử --}}
+        <div class="w-full md:w-2/3 p-4 sm:p-6 md:p-10 bg-white h-auto md:h-full overflow-y-auto custom-scrollbar flex flex-col">
             
             {{-- Header Trang & Nút Đặt món --}}
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-espresso/10">
                 <div>
-                    <h3 class="font-serif font-bold text-3xl text-espresso mb-1">Lịch sử đặt hàng</h3>
+                    <h3 class="font-serif font-bold text-2xl md:text-3xl text-espresso mb-1">Lịch sử đặt hàng</h3>
                     <p class="text-xs sm:text-sm text-espresso/60">Theo dõi trạng thái các món ngon bạn đã gọi</p>
                 </div>
                 <a href="{{ route('product.index') }}" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-coral/10 border border-coral/20 text-coral hover:bg-coral hover:text-white transition-all text-xs font-bold shrink-0">

@@ -209,7 +209,7 @@ class AttendanceController extends Controller
                         $shiftStart = \Carbon\Carbon::parse($shift->shift_date . ' ' . $shift->start_time);
                         $shiftEnd = $shiftStart->copy()->addHours($shift->duration);
 
-                        if ($checkInTime->gte($shiftStart->copy()->subMinutes(10)) && $checkInTime->lte($shiftEnd)) {
+                        if ($checkInTime->lte($shiftEnd)) {
                             $scheduledEnd = $shiftEnd;
                             foreach ($shifts as $nextShift) {
                                 $nextStart = \Carbon\Carbon::parse($nextShift->shift_date . ' ' . $nextShift->start_time);
@@ -289,40 +289,35 @@ class AttendanceController extends Controller
             ]);
         }
 
-        // 4. KIỂM TRA KHUNG GIỜ CHECK-IN (Chỉ cho phép check-in trước hoặc sau giờ vào ca tối đa 10 phút)
-        $isValidTime = false;
-        $shiftTimeMessage = '';
+        // 4. Cho phép nhân viên Check-in linh hoạt bất kỳ lúc nào trong ngày có ca được duyệt (Bỏ giới hạn 10 phút)
         $scheduledEndTime = null;
+        $matchedShift = null;
 
+        // Tìm ca phù hợp nhất với thời gian hiện tại
         foreach ($todayShifts as $shift) {
             $startTime = \Carbon\Carbon::parse($shift->shift_date . ' ' . $shift->start_time);
             $endTime = $startTime->copy()->addHours($shift->duration);
-            
-            $allowedStart = $startTime->copy()->subMinutes(10);
-            $allowedEnd = $startTime->copy()->addMinutes(10);
 
-            $shiftTimeMessage .= '[' . $startTime->format('H:i') . ' (Mở Check-in từ ' . $allowedStart->format('H:i') . ' đến ' . $allowedEnd->format('H:i') . ')] ';
-
-            if ($now->gte($allowedStart) && $now->lte($allowedEnd)) {
-                $isValidTime = true;
+            if ($now->lte($endTime)) {
+                $matchedShift = $shift;
                 $scheduledEndTime = $endTime;
-
-                // Nối các ca liền kề phía sau nếu có
-                foreach ($todayShifts as $nextShift) {
-                    $nextStart = \Carbon\Carbon::parse($nextShift->shift_date . ' ' . $nextShift->start_time);
-                    if ($nextStart->eq($scheduledEndTime)) {
-                        $scheduledEndTime = $nextStart->copy()->addHours($nextShift->duration);
-                    }
-                }
-                break; 
+                break;
             }
         }
 
-        if (!$isValidTime) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'TỪ CHỐI CHECK-IN: Bạn chỉ được phép Check-in trước hoặc sau giờ vào ca tối đa 10 phút! Khung giờ cho phép của bạn hôm nay: ' . $shiftTimeMessage
-            ]);
+        // Nếu đã qua giờ kết thúc các ca nhưng nhân viên vẫn vào ca, chọn ca cuối trong ngày
+        if (!$matchedShift) {
+            $matchedShift = $todayShifts->last();
+            $startTime = \Carbon\Carbon::parse($matchedShift->shift_date . ' ' . $matchedShift->start_time);
+            $scheduledEndTime = $startTime->copy()->addHours($matchedShift->duration);
+        }
+
+        // Nối các ca làm việc liền kề phía sau nếu có
+        foreach ($todayShifts as $nextShift) {
+            $nextStart = \Carbon\Carbon::parse($nextShift->shift_date . ' ' . $nextShift->start_time);
+            if ($nextStart->eq($scheduledEndTime)) {
+                $scheduledEndTime = $nextStart->copy()->addHours($nextShift->duration);
+            }
         }
 
         // 5. Hoàn toàn hợp lệ -> Tạo bản ghi Check-in mới

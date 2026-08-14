@@ -134,44 +134,7 @@
     </main>
 
     @include('partials.footer')
-{{-- POP-UP CHÀO MỪNG THÀNH VIÊN MỚI --}}
-@if(session('show_welcome_modal'))
-<div id="welcome-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-    {{-- Lớp nền mờ --}}
-    <div class="absolute inset-0 bg-espresso/60 backdrop-blur-sm" onclick="closeWelcomeModal()"></div>
-    
-    {{-- Nội dung thẻ Pop-up --}}
-    <div class="relative bg-white rounded-[32px] shadow-2xl w-full max-w-md p-8 md:p-10 text-center transform transition-all scale-100 opacity-100 animate-[float_3s_ease-in-out_infinite]">
-        
-        {{-- Icon pháo hoa / Cà phê --}}
-        <div class="w-24 h-24 mx-auto mb-6 bg-[#FFF0D4] rounded-full flex items-center justify-center">
-            <svg class="w-12 h-12 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-        </div>
-        
-        <h2 class="font-serif font-black text-3xl text-espresso mb-3">Chào mừng bạn!</h2>
-        <p class="text-espresso/70 mb-8 leading-relaxed">
-            Tuyệt vời! Bạn đã chính thức trở thành thành viên của gia đình <strong>Chill Chill</strong>. Hãy cập nhật thêm thông tin để chúng tôi phục vụ bạn chu đáo hơn nhé.
-        </p>
-        
-        <div class="flex flex-col gap-3">
-            {{-- Nút Cập nhật ngay (Sang trang Tài khoản) --}}
-            <a href="{{ route('user.profile') }}" class="w-full py-4 bg-coral text-white font-bold rounded-full hover:bg-[#d5523b] transition-colors shadow-lg shadow-coral/30">
-                Cập nhật thông tin ngay
-            </a>
-            {{-- Nút Để sau (Đóng pop-up ở lại trang chủ) --}}
-            <button onclick="closeWelcomeModal()" class="w-full py-4 bg-transparent text-espresso/60 font-medium hover:text-espresso transition-colors">
-                Để sau nhé
-            </button>
-        </div>
-    </div>
-</div>
 
-<script>
-    function closeWelcomeModal() {
-        document.getElementById('welcome-modal').style.display = 'none';
-    }
-</script>
-@endif
 {{-- THÔNG BÁO CẢNH BÁO TRUY CẬP TRÁI PHÉP --}}
     @if(session('access_denied'))
         <div id="alert-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
