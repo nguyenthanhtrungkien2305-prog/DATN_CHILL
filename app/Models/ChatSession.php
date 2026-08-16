@@ -15,6 +15,7 @@ class ChatSession extends Model
         'session_token',
         'user_id',
         'status',
+        'is_bot_enabled',
     ];
 
     /**

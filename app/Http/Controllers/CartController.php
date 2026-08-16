@@ -272,13 +272,16 @@ class CartController extends Controller
     // 3. Cập nhật số lượng
     public function update(Request $request)
     {
-        $cartKey = $request->cart_key;
-        $change = (int) $request->change;
+        $cartKey = $request->cart_key ?? $request->item_key;
         $cart = session()->get('cart', []);
 
         if (isset($cart[$cartKey])) {
-            $cart[$cartKey]['quantity'] += $change;
-            if ($cart[$cartKey]['quantity'] < 1) $cart[$cartKey]['quantity'] = 1;
+            if ($request->has('quantity')) {
+                $cart[$cartKey]['quantity'] = max(1, (int) $request->quantity);
+            } else if ($request->has('change')) {
+                $cart[$cartKey]['quantity'] += (int) $request->change;
+                if ($cart[$cartKey]['quantity'] < 1) $cart[$cartKey]['quantity'] = 1;
+            }
             
             session()->put('cart', $cart);
             self::checkAndRecalculateVoucher();
@@ -293,7 +296,7 @@ class CartController extends Controller
     // 4. Xóa khỏi giỏ
     public function remove(Request $request)
     {
-        $cartKey = $request->cart_key;
+        $cartKey = $request->cart_key ?? $request->item_key;
         $cart = session()->get('cart', []);
 
         if (isset($cart[$cartKey])) {
@@ -434,7 +437,7 @@ class CartController extends Controller
     // 7. Áp dụng mã giảm giá
     public function applyVoucher(Request $request)
     {
-        $code = strtoupper(trim($request->voucher_code));
+        $code = strtoupper(trim($request->voucher_code ?? $request->code));
         if (empty($code)) return response()->json(['success' => false, 'message' => 'Vui lòng nhập mã giảm giá!']);
 
         $cart = session()->get('cart', []);

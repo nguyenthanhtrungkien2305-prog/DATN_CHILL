@@ -88,8 +88,13 @@ class ChatController extends Controller
         $sessionToken = $request->input('session_token');
         $messageText = $request->input('message');
 
-        if (!$sessionToken || !$messageText) {
-            return response()->json(['success' => false, 'message' => 'Data invalid.'], 400);
+        if (!$messageText) {
+            return response()->json(['success' => false, 'message' => 'Tin nhắn không được để trống.'], 400);
+        }
+
+        // Nếu chưa có sessionToken thì tự động tạo mới
+        if (!$sessionToken) {
+            $sessionToken = 'session_' . \Illuminate\Support\Str::random(32);
         }
 
         $session = ChatSession::where('session_token', $sessionToken)->first();
@@ -98,6 +103,7 @@ class ChatController extends Controller
                 'session_token' => $sessionToken,
                 'user_id' => Auth::check() ? Auth::user()->user_id : null,
                 'status' => 'active',
+                'is_bot_enabled' => 1,
             ]);
         }
 
@@ -108,17 +114,25 @@ class ChatController extends Controller
         ]);
 
         // Nếu bật chế độ Bot AI thì tự động sinh phản hồi
-        if ($session->is_bot_enabled) {
+        $aiReplyMsg = null;
+        if ($session->is_bot_enabled != 0) {
             try {
                 $geminiService = new \App\Services\GeminiService();
-                $allMessages = $session->messages()->orderBy('created_at', 'asc')->get();
-                $aiReply = $geminiService->getAiResponse($allMessages);
+                $allMessages = ChatMessage::where('chat_session_id', $session->id)->orderBy('created_at', 'asc')->get();
+                $aiReplyText = $geminiService->getAiResponse($allMessages);
 
-                ChatMessage::create([
+                $replyObj = ChatMessage::create([
                     'chat_session_id' => $session->id,
                     'sender_type' => 'admin',
-                    'message' => $aiReply,
+                    'message' => $aiReplyText,
                 ]);
+
+                $aiReplyMsg = [
+                    'id' => $replyObj->id,
+                    'sender_type' => 'admin',
+                    'message' => $replyObj->message,
+                    'created_at' => $replyObj->created_at->format('H:i'),
+                ];
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Error generating AI reply: ' . $e->getMessage());
             }
@@ -126,12 +140,14 @@ class ChatController extends Controller
 
         return response()->json([
             'success' => true,
+            'session_token' => $session->session_token,
             'message' => [
                 'id' => $message->id,
                 'sender_type' => 'customer',
                 'message' => $message->message,
                 'created_at' => $message->created_at->format('H:i'),
-            ]
+            ],
+            'ai_reply' => $aiReplyMsg
         ]);
     }
 }

@@ -7,22 +7,25 @@
 </button>
 
 {{-- Khung cửa sổ chat --}}
-<div id="chat-window" class="fixed bottom-24 right-6 z-[999] w-[350px] h-[480px] bg-white rounded-[24px] shadow-[0_15px_50px_rgba(43,38,35,0.15)] border border-espresso/5 flex flex-col overflow-hidden translate-y-10 opacity-0 pointer-events-none transition-all duration-300 ease-out">
+<div id="chat-window" class="fixed bottom-24 right-6 z-[999] w-[360px] h-[520px] bg-white rounded-[28px] shadow-[0_20px_60px_rgba(43,38,35,0.2)] border border-espresso/10 flex flex-col overflow-hidden translate-y-10 opacity-0 pointer-events-none transition-all duration-300 ease-out">
     {{-- Header --}}
-    <div class="bg-espresso text-cream p-4 flex items-center justify-between">
+    <div class="bg-gradient-to-r from-espresso via-[#4a322c] to-espresso text-cream p-4 flex items-center justify-between shadow-md">
         <div class="flex items-center gap-3">
             <div class="relative">
-                <div class="w-10 h-10 rounded-full bg-[#FFF0D4] flex items-center justify-center text-lg">
+                <div class="w-10 h-10 rounded-full bg-[#FFF0D4] flex items-center justify-center text-xl shadow-inner">
                     ☕
                 </div>
-                <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-espresso rounded-full animate-pulse"></div>
+                <div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-espresso rounded-full animate-pulse"></div>
             </div>
             <div>
-                <h4 class="font-bold text-sm text-white">Chill Chill Support</h4>
-                <p class="text-[10px] text-cream/70">Thường phản hồi trong vài phút</p>
+                <h4 class="font-bold text-sm text-white flex items-center gap-1.5">
+                    Chill Chill AI Assistant
+                    <span class="text-[9px] bg-coral/20 text-coral font-bold px-1.5 py-0.5 rounded-full border border-coral/30">AI Bot 24/7</span>
+                </h4>
+                <p class="text-[10px] text-cream/80 font-medium">Trợ lý tư vấn đồ uống & bánh ngọt</p>
             </div>
         </div>
-        <button onclick="toggleChatWindow()" class="text-cream/60 hover:text-white transition-colors p-1">
+        <button onclick="toggleChatWindow()" class="text-cream/70 hover:text-white hover:bg-white/10 rounded-full p-1.5 transition-all">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -32,20 +35,37 @@
     {{-- Khung hiển thị tin nhắn --}}
     <div id="chat-messages-container" class="flex-1 p-4 overflow-y-auto bg-[#FAF7F2] space-y-3 flex flex-col">
         {{-- Tin nhắn mặc định chào mừng --}}
-        <div class="flex items-start gap-2 max-w-[80%]">
-            <div class="w-7 h-7 rounded-full bg-[#FFF0D4] flex items-center justify-center text-xs shrink-0">
+        <div class="flex items-start gap-2 max-w-[85%]">
+            <div class="w-8 h-8 rounded-full bg-[#FFF0D4] flex items-center justify-center text-sm shrink-0 shadow-xs border border-espresso/5">
                 ☕
             </div>
-            <div class="bg-white text-espresso p-3 rounded-[18px] rounded-tl-none shadow-sm text-xs leading-relaxed">
-                Chào bạn! Chill Chill có thể giúp gì cho bạn hôm nay? Hãy gửi lời nhắn nhé!
+            <div class="bg-white text-espresso p-3.5 rounded-[20px] rounded-tl-none shadow-sm text-xs leading-relaxed border border-espresso/5">
+                <p class="font-bold text-coral mb-1">Dạ, Chill Chill xin chào bạn ạ! ☕✨</p>
+                <p>Bạn cần mình tư vấn chọn món nước giải nhiệt, cà phê tỉnh táo hay bánh ngọt nào hôm nay ạ?</p>
             </div>
+        </div>
+
+        {{-- Gợi ý câu hỏi nhanh (Quick Chips) --}}
+        <div id="quick-chips-container" class="flex flex-wrap gap-1.5 my-2 pl-9">
+            <button onclick="sendQuickMessage('Gợi ý cho mình món Cà phê đậm vị tỉnh táo nhé ☕')" class="bg-white hover:bg-coral hover:text-white text-espresso/80 text-[11px] font-semibold px-3 py-1.5 rounded-full border border-espresso/10 shadow-2xs transition-all active:scale-95">
+                ☕ Cà phê tỉnh táo
+            </button>
+            <button onclick="sendQuickMessage('Gợi ý cho mình các món Trà trái cây thanh mát giải nhiệt nhé 🍹')" class="bg-white hover:bg-coral hover:text-white text-espresso/80 text-[11px] font-semibold px-3 py-1.5 rounded-full border border-espresso/10 shadow-2xs transition-all active:scale-95">
+                🍹 Trà trái cây giải nhiệt
+            </button>
+            <button onclick="sendQuickMessage('Quán có những món Bánh ngọt tươi nào thơm ngon ạ? 🍰')" class="bg-white hover:bg-coral hover:text-white text-espresso/80 text-[11px] font-semibold px-3 py-1.5 rounded-full border border-espresso/10 shadow-2xs transition-all active:scale-95">
+                🍰 Bánh ngọt tươi
+            </button>
+            <button onclick="sendQuickMessage('Có những Gói Combo Tiết Kiệm nào ưu đãi không ạ? 🎁')" class="bg-white hover:bg-coral hover:text-white text-espresso/80 text-[11px] font-semibold px-3 py-1.5 rounded-full border border-espresso/10 shadow-2xs transition-all active:scale-95">
+                🎁 Combo tiết kiệm
+            </button>
         </div>
     </div>
 
     {{-- Khung nhập tin nhắn --}}
     <form id="chat-form" onsubmit="handleSend(event)" class="p-3 border-t border-espresso/5 bg-white flex items-center gap-2">
-        <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." autocomplete="off" class="flex-1 px-4 py-2 bg-[#FAF7F2] border border-transparent rounded-full text-xs focus:outline-none focus:border-coral focus:bg-white transition-all text-espresso placeholder-espresso/40">
-        <button type="submit" class="w-8 h-8 rounded-full bg-coral hover:bg-[#d5523b] text-white flex items-center justify-center shrink-0 shadow-md shadow-coral/20 hover:scale-105 active:scale-95 transition-all">
+        <input type="text" id="chat-input" placeholder="Nhập tin nhắn tư vấn..." autocomplete="off" class="flex-1 px-4 py-2.5 bg-[#FAF7F2] border border-transparent rounded-full text-xs focus:outline-none focus:border-coral focus:bg-white transition-all text-espresso placeholder-espresso/40">
+        <button type="submit" class="w-9 h-9 rounded-full bg-coral hover:bg-[#d5523b] text-white flex items-center justify-center shrink-0 shadow-md shadow-coral/20 hover:scale-105 active:scale-95 transition-all">
             <svg class="w-4 h-4 transform rotate-90" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
             </svg>
@@ -77,15 +97,29 @@
                 // Hiển thị lại các tin nhắn cũ
                 if (data.messages && data.messages.length > 0) {
                     const container = document.getElementById('chat-messages-container');
-                    // Xóa các tin nhắn trước đó (giữ lại tin nhắn chào mừng)
                     container.innerHTML = `
-                        <div class="flex items-start gap-2 max-w-[80%]">
-                            <div class="w-7 h-7 rounded-full bg-[#FFF0D4] flex items-center justify-center text-xs shrink-0">
+                        <div class="flex items-start gap-2 max-w-[85%]">
+                            <div class="w-8 h-8 rounded-full bg-[#FFF0D4] flex items-center justify-center text-sm shrink-0 shadow-xs border border-espresso/5">
                                 ☕
                             </div>
-                            <div class="bg-white text-espresso p-3 rounded-[18px] rounded-tl-none shadow-sm text-xs leading-relaxed">
-                                Chào bạn! Chill Chill có thể giúp gì cho bạn hôm nay? Hãy gửi lời nhắn nhé!
+                            <div class="bg-white text-espresso p-3.5 rounded-[20px] rounded-tl-none shadow-sm text-xs leading-relaxed border border-espresso/5">
+                                <p class="font-bold text-coral mb-1">Dạ, Chill Chill xin chào bạn ạ! ☕✨</p>
+                                <p>Bạn cần mình tư vấn chọn món nước giải nhiệt, cà phê tỉnh táo hay bánh ngọt nào hôm nay ạ?</p>
                             </div>
+                        </div>
+                        <div id="quick-chips-container" class="flex flex-wrap gap-1.5 my-2 pl-9">
+                            <button onclick="sendQuickMessage('Gợi ý cho mình món Cà phê đậm vị tỉnh táo nhé ☕')" class="bg-white hover:bg-coral hover:text-white text-espresso/80 text-[11px] font-semibold px-3 py-1.5 rounded-full border border-espresso/10 shadow-2xs transition-all active:scale-95">
+                                ☕ Cà phê tỉnh táo
+                            </button>
+                            <button onclick="sendQuickMessage('Gợi ý cho mình các món Trà trái cây thanh mát giải nhiệt nhé 🍹')" class="bg-white hover:bg-coral hover:text-white text-espresso/80 text-[11px] font-semibold px-3 py-1.5 rounded-full border border-espresso/10 shadow-2xs transition-all active:scale-95">
+                                🍹 Trà trái cây giải nhiệt
+                            </button>
+                            <button onclick="sendQuickMessage('Quán có những món Bánh ngọt tươi nào thơm ngon ạ? 🍰')" class="bg-white hover:bg-coral hover:text-white text-espresso/80 text-[11px] font-semibold px-3 py-1.5 rounded-full border border-espresso/10 shadow-2xs transition-all active:scale-95">
+                                🍰 Bánh ngọt tươi
+                            </button>
+                            <button onclick="sendQuickMessage('Có những Gói Combo Tiết Kiệm nào ưu đãi không ạ? 🎁')" class="bg-white hover:bg-coral hover:text-white text-espresso/80 text-[11px] font-semibold px-3 py-1.5 rounded-full border border-espresso/10 shadow-2xs transition-all active:scale-95">
+                                🎁 Combo tiết kiệm
+                            </button>
                         </div>
                     `;
                     data.messages.forEach(msg => {
@@ -108,14 +142,11 @@
             windowEl.classList.remove('translate-y-10', 'opacity-0', 'pointer-events-none');
             windowEl.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
             
-            // Xóa badge thông báo
             document.getElementById('chat-badge').innerText = '0';
             document.getElementById('chat-badge').classList.add('hidden');
 
-            // Khởi tạo/Cập nhật session
             initChatSession().then(() => {
                 fetchMessages();
-                // Bắt đầu lập trình tự động kéo tin nhắn mới mỗi 3 giây
                 chatPollInterval = setInterval(fetchMessages, 3000);
             });
             
@@ -126,12 +157,18 @@
             windowEl.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
             windowEl.classList.add('translate-y-10', 'opacity-0', 'pointer-events-none');
             
-            // Dừng polling để tiết kiệm tài nguyên
             if (chatPollInterval) {
                 clearInterval(chatPollInterval);
                 chatPollInterval = null;
             }
         }
+    }
+
+    // Gửi tin nhắn từ Quick Chips
+    function sendQuickMessage(text) {
+        document.getElementById('chat-input').value = text;
+        const form = document.getElementById('chat-form');
+        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
     }
 
     // Lấy tin nhắn mới nhất
@@ -144,14 +181,12 @@
                 const container = document.getElementById('chat-messages-container');
                 const prevCount = container.querySelectorAll('.chat-msg-item').length;
                 
-                // Nếu số lượng tin nhắn mới khác biệt, render lại
                 if (data.messages.length > prevCount) {
-                    // Lấy các tin nhắn mới
+                    removeTypingIndicator();
                     const newMessages = data.messages.slice(prevCount);
                     newMessages.forEach(msg => {
                         appendMessageToDOM(msg.sender_type, msg.message, msg.created_at);
                         
-                        // Nếu tin nhắn mới từ admin và cửa sổ đang đóng, hiển thị badge
                         if (msg.sender_type === 'admin' && !chatOpen) {
                             const badge = document.getElementById('chat-badge');
                             let currentBadgeCount = parseInt(badge.innerText) || 0;
@@ -176,9 +211,9 @@
 
         input.value = '';
 
-        // Hiển thị tin nhắn ngay lập tức trên giao diện (màu cam, bên phải)
         const tempTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
         appendMessageToDOM('customer', text, tempTime);
+        showTypingIndicator();
         scrollToBottom();
 
         try {
@@ -195,14 +230,47 @@
             });
             const data = await response.json();
             if (data.success) {
-                // Đã gửi thành công lên server, session token đã được đồng bộ
-                if (!chatToken) {
-                    chatToken = data.message.chat_session_id; // phòng hờ
+                if (data.session_token) {
+                    chatToken = data.session_token;
+                    localStorage.setItem('chill_chat_token', chatToken);
                 }
+                removeTypingIndicator();
+                if (data.ai_reply) {
+                    appendMessageToDOM('admin', data.ai_reply.message, data.ai_reply.created_at);
+                    scrollToBottom();
+                }
+            } else {
+                removeTypingIndicator();
             }
         } catch (error) {
             console.error('Lỗi gửi tin nhắn:', error);
+            removeTypingIndicator();
         }
+    }
+
+    // Hiển thị hiệu ứng gõ phím Typing Indicator
+    function showTypingIndicator() {
+        removeTypingIndicator();
+        const container = document.getElementById('chat-messages-container');
+        const typingDiv = document.createElement('div');
+        typingDiv.id = 'ai-typing-indicator';
+        typingDiv.className = 'flex items-start gap-2 chat-msg-item';
+        typingDiv.innerHTML = `
+            <div class="w-8 h-8 rounded-full bg-[#FFF0D4] flex items-center justify-center text-sm shrink-0 border border-espresso/5 shadow-xs">
+                ☕
+            </div>
+            <div class="bg-white text-espresso px-4 py-3 rounded-[20px] rounded-tl-none shadow-sm text-xs leading-relaxed flex items-center gap-1 border border-espresso/5">
+                <span class="w-1.5 h-1.5 bg-coral rounded-full animate-bounce"></span>
+                <span class="w-1.5 h-1.5 bg-coral rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                <span class="w-1.5 h-1.5 bg-coral rounded-full animate-bounce [animation-delay:0.4s]"></span>
+            </div>
+        `;
+        container.appendChild(typingDiv);
+    }
+
+    function removeTypingIndicator() {
+        const el = document.getElementById('ai-typing-indicator');
+        if (el) el.remove();
     }
 
     // Thêm tin nhắn vào khung chat
@@ -214,7 +282,7 @@
         if (sender === 'customer') {
             wrapper.innerHTML = `
                 <div class="flex flex-col items-end max-w-[85%]">
-                    <div class="bg-coral text-white p-3 rounded-[18px] rounded-tr-none shadow-sm text-xs leading-relaxed">
+                    <div class="bg-coral text-white p-3.5 rounded-[20px] rounded-tr-none shadow-sm text-xs leading-relaxed">
                         ${formatMessageText(message)}
                     </div>
                     <span class="text-[9px] text-espresso/40 mt-1">${time}</span>
@@ -222,11 +290,11 @@
             `;
         } else {
             wrapper.innerHTML = `
-                <div class="w-7 h-7 rounded-full bg-[#FFF0D4] flex items-center justify-center text-xs shrink-0">
+                <div class="w-8 h-8 rounded-full bg-[#FFF0D4] flex items-center justify-center text-sm shrink-0 border border-espresso/5 shadow-xs">
                     ☕
                 </div>
-                <div class="flex flex-col items-start max-w-[80%]">
-                    <div class="bg-white text-espresso p-3 rounded-[18px] rounded-tl-none shadow-sm text-xs leading-relaxed">
+                <div class="flex flex-col items-start max-w-[85%]">
+                    <div class="bg-white text-espresso p-3.5 rounded-[20px] rounded-tl-none shadow-sm text-xs leading-relaxed border border-espresso/5">
                         ${formatMessageText(message)}
                     </div>
                     <span class="text-[9px] text-espresso/40 mt-1">${time}</span>
@@ -237,13 +305,11 @@
         container.appendChild(wrapper);
     }
 
-    // Cuộn xuống đáy khung chat
     function scrollToBottom() {
         const container = document.getElementById('chat-messages-container');
         container.scrollTop = container.scrollHeight;
     }
 
-    // Tiện ích format thời gian từ chuỗi ISO
     function formatTime(isoString) {
         if (!isoString) return '';
         try {
@@ -254,19 +320,22 @@
         }
     }
 
-    // Format tin nhắn (chuyển đổi Markdown và xuống dòng)
     function formatMessageText(text) {
         if (!text) return '';
         let escaped = escapeHTML(text);
-        // Thay thế xuống dòng bằng thẻ <br>
-        escaped = escaped.replace(/\n/g, '<br>');
-        // Thay thế markdown link [Text](URL) bằng thẻ <a>
-        return escaped.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, label, url) => {
-            return `<a href="${url}" target="_blank" class="text-coral underline font-bold hover:text-[#d5523b] transition-colors">${label}</a>`;
+        
+        // 1. Chuyển đổi Markdown **text** thành <strong>text</strong>
+        escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-espresso">$1</strong>');
+        
+        // 2. Chuyển đổi Markdown link [Label](URL) thành thẻ <a> với icon
+        escaped = escaped.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, url) => {
+            return `<a href="${url}" target="_blank" class="inline-flex items-center gap-1 font-bold text-coral hover:underline hover:text-[#d5523b] transition-colors mt-1 bg-coral/10 px-2.5 py-1 rounded-full border border-coral/20 shadow-2xs"><svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg> ${label}</a>`;
         });
+        
+        // 3. Thay thế xuống dòng bằng <br>
+        return escaped.replace(/\n/g, '<br>');
     }
 
-    // Tránh lỗ hổng XSS
     function escapeHTML(str) {
         return str.replace(/[&<>'"]/g, 
             tag => ({
@@ -279,10 +348,8 @@
         );
     }
 
-    // Lắng nghe tải trang để kiểm tra badge chưa đọc ban đầu
     document.addEventListener('DOMContentLoaded', () => {
         if (chatToken) {
-            // Chạy ngầm lấy tin nhắn lần đầu để cập nhật badge nếu có tin nhắn chưa đọc từ admin
             fetchMessages();
         }
     });

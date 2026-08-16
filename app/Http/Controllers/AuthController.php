@@ -15,6 +15,11 @@ class AuthController extends Controller
     // ==========================================
     public function register(Request $request)
     {
+        $identity = $request->register_identity ?? $request->name ?? $request->email ?? $request->phone;
+        if (!$request->has('register_identity') && $identity) {
+            $request->merge(['register_identity' => $identity]);
+        }
+
         $validator = Validator::make($request->all(), [
             'register_identity' => 'required|string|min:3',
             'password' => 'required|string|min:6|confirmed', 
@@ -33,14 +38,15 @@ class AuthController extends Controller
         $identity = $request->register_identity;
         $isPhone = preg_match('/^[0-9]+$/', $identity); 
 
-        $exists = User::where('name', $identity)->orWhere('phone', $identity)->exists();
+        $exists = User::where('name', $identity)->orWhere('phone', $identity)->orWhere('email', $identity)->exists();
         if ($exists) {
-            return back()->withErrors(['register_error' => 'Tên đăng nhập hoặc Số điện thoại đã tồn tại!'])->withInput();
+            return back()->withErrors(['register_error' => 'Tên đăng nhập, Email hoặc Số điện thoại đã tồn tại!'])->withInput();
         }
 
         $user = User::create([
-            'name' => $isPhone ? 'User_' . $identity : $identity, 
-            'phone' => $isPhone ? $identity : null,
+            'name' => $isPhone ? 'User_' . $identity : $identity,
+            'email' => filter_var($identity, FILTER_VALIDATE_EMAIL) ? $identity : ($request->email ?? null),
+            'phone' => $isPhone ? $identity : ($request->phone ?? null),
             'password' => Hash::make($request->password),
             'role' => 'user',
             'point' => 0,
@@ -50,7 +56,7 @@ class AuthController extends Controller
             Auth::login($user, $request->has('remember'));
             
             if ($user->role === 'staff') {
-                return redirect()->route('staff.shifts'); // Đổi hướng về trang Lịch để họ tự Check-in
+                return redirect()->route('staff.shifts'); 
             }
 
             if ($user->role === 'admin') {
@@ -59,7 +65,8 @@ class AuthController extends Controller
             
             return redirect('/')->with('success', 'Đăng nhập thành công!');
         }
-        return redirect('/')->with('show_welcome_modal', 'Đăng ký thành công!');
+
+        return back()->withErrors(['register_error' => 'Đăng ký thất bại, vui lòng thử lại.']);
     }
 
     // ==========================================
@@ -67,6 +74,11 @@ class AuthController extends Controller
     // ==========================================
     public function login(Request $request)
     {
+        $identity = $request->login_identity ?? $request->email ?? $request->phone ?? $request->name;
+        if (!$request->has('login_identity') && $identity) {
+            $request->merge(['login_identity' => $identity]);
+        }
+
         $request->validate([
             'login_identity' => 'required|string', 
             'password' => 'required'
@@ -75,7 +87,6 @@ class AuthController extends Controller
             'password.required' => 'Vui lòng nhập mật khẩu.'
         ]);
 
-        $identity = $request->login_identity;
         $password = $request->password;
 
         $fieldType = 'name'; 
