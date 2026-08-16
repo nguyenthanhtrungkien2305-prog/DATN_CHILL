@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 class GeminiService
 {
     protected $apiKey;
-    protected $endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+    protected $endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
     public function __construct()
     {
@@ -21,9 +21,16 @@ class GeminiService
      */
     public function getAiResponse($chatMessages)
     {
+        // Lấy tin nhắn cuối cùng của khách hàng
+        $lastUserMsg = '';
+        if ($chatMessages instanceof \Illuminate\Support\Collection) {
+            $lastMsgObj = $chatMessages->where('sender_type', 'customer')->last();
+            $lastUserMsg = $lastMsgObj ? $lastMsgObj->message : '';
+        }
+
         if (!$this->apiKey) {
-            Log::warning('Gemini API key is not set.');
-            return 'Dạ, hiện tại trợ lý ảo AI của Chill Chill Coffee đang tạm ngắt kết nối. Bạn vui lòng chờ nhân viên tư vấn trong giây lát nhé! ☕';
+            Log::info('Gemini API key is not set. Using Smart Local Bot Fallback.');
+            return $this->getSmartFallbackResponse($lastUserMsg);
         }
 
         // 1. Xây dựng System Instruction (Menu động từ DB)
@@ -33,7 +40,7 @@ class GeminiService
         $contents = $this->formatHistory($chatMessages);
 
         try {
-            $response = Http::timeout(10)
+            $response = Http::timeout(8)
                 ->withHeaders([
                     'Content-Type' => 'application/json',
                 ])
@@ -52,15 +59,135 @@ class GeminiService
 
             if ($response->successful()) {
                 $data = $response->json();
-                return $data['candidates'][0]['content']['parts'][0]['text'] ?? 'Dạ, Chill Chill chưa nghe rõ ý bạn. Bạn có thể nói chi tiết hơn được không?';
+                $reply = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
+                if (!empty($reply)) {
+                    return $reply;
+                }
             }
 
             Log::error('Gemini API Error: ' . $response->body());
-            return 'Dạ, hiện tại kết nối của trợ lý ảo đang gặp sự cố nhỏ. Xin lỗi bạn vì sự bất tiện này! ☕';
+            return $this->getSmartFallbackResponse($lastUserMsg);
 
         } catch (\Exception $e) {
             Log::error('Gemini Service Exception: ' . $e->getMessage());
-            return 'Dạ, kết nối trợ lý ảo gặp gián đoạn. Bạn vui lòng thử lại sau nhé! 🙏';
+            return $this->getSmartFallbackResponse($lastUserMsg);
+        }
+    }
+
+    /**
+     * Smart local fallback bot that queries DB products dynamically.
+     */
+    protected function getSmartFallbackResponse($userMsg = '')
+    {
+        $msgLower = mb_strtolower($userMsg);
+
+        try {
+            // Lấy ngẫu nhiên 3 sản phẩm nổi bật / mới nhất từ DB
+            $featuredProducts = DB::table('products')
+                ->where('status', 1)
+                ->inRandomOrder()
+                ->take(3)
+                ->get();
+
+            // Nếu hỏi về Cà phê
+            if (str_contains($msgLower, 'cafe') || str_contains($msgLower, 'cà phê') || str_contains($msgLower, 'đắng') || str_contains($msgLower, 'tỉnh táo')) {
+                $cafeProducts = DB::table('products')
+                    ->join('categories', 'products.category_id', '=', 'categories.category_id')
+                    ->where(function($q) {
+                        $q->where('categories.name', 'LIKE', '%cà phê%')
+                          ->orWhere('categories.name', 'LIKE', '%coffee%')
+                          ->orWhere('products.name', 'LIKE', '%cà phê%')
+                          ->orWhere('products.name', 'LIKE', '%cafe%');
+                    })
+                    ->where('products.status', 1)
+                    ->select('products.*')
+                    ->take(3)
+                    ->get();
+
+                if ($cafeProducts->isNotEmpty()) {
+                    $reply = "Dạ, Chill Chill Coffee chào bạn ạ! ☕\n\nĐể giúp bạn tỉnh táo và tràn đầy năng lượng, Chill Chill gợi ý các món Cà phê nguyên chất tuyệt hảo dành cho bạn:\n\n";
+                    foreach ($cafeProducts as $p) {
+                        $url = route('product.show', ['slug' => $p->slug]);
+                        $reply .= "• **{$p->name}**: {$p->description}\n👉 [Đặt mua ngay]({$url})\n\n";
+                    }
+                    $reply .= "Bạn có muốn dùng kèm thêm Topping Trân châu hoặc Thạch cà phê thơm béo không ạ? ✨";
+                    return $reply;
+                }
+            }
+
+            // Nếu hỏi về Trà / Trà trái cây / Giải nhiệt
+            if (str_contains($msgLower, 'trà') || str_contains($msgLower, 'giải nhiệt') || str_contains($msgLower, 'mát') || str_contains($msgLower, 'dâu') || str_contains($msgLower, 'đào') || str_contains($msgLower, 'xoài') || str_contains($msgLower, 'vải')) {
+                $teaProducts = DB::table('products')
+                    ->join('categories', 'products.category_id', '=', 'categories.category_id')
+                    ->where(function($q) {
+                        $q->where('categories.name', 'LIKE', '%trà%')
+                          ->orWhere('products.name', 'LIKE', '%trà%');
+                    })
+                    ->where('products.status', 1)
+                    ->select('products.*')
+                    ->take(3)
+                    ->get();
+
+                if ($teaProducts->isNotEmpty()) {
+                    $reply = "Dạ, thanh mát và sảng khoái là gu của bạn phải không ạ? 🍵🍹\n\nChill Chill gợi ý các món Trà Trái Cây thanh nhiệt cực thơm ngon dành cho bạn:\n\n";
+                    foreach ($teaProducts as $p) {
+                        $url = route('product.show', ['slug' => $p->slug]);
+                        $reply .= "• **{$p->name}**: {$p->description}\n👉 [Thưởng thức ngay]({$url})\n\n";
+                    }
+                    $reply .= "Thêm chút Trân châu hoàng kim hoặc Thạch dừa nữa là chuẩn gu luôn ạ! ✨";
+                    return $reply;
+                }
+            }
+
+            // Nếu hỏi về Bánh ngọt / Ăn kèm
+            if (str_contains($msgLower, 'bánh') || str_contains($msgLower, 'ăn') || str_contains($msgLower, 'ngọt') || str_contains($msgLower, 'cake')) {
+                $cakeProducts = DB::table('products')
+                    ->join('categories', 'products.category_id', '=', 'categories.category_id')
+                    ->where(function($q) {
+                        $q->where('categories.name', 'LIKE', '%bánh%')
+                          ->orWhere('products.name', 'LIKE', '%bánh%');
+                    })
+                    ->where('products.status', 1)
+                    ->select('products.*')
+                    ->take(3)
+                    ->get();
+
+                if ($cakeProducts->isNotEmpty()) {
+                    $reply = "Dạ, nhâm nhi tách trà chiều cùng bánh ngọt là nhất luôn ạ! 🍰🥐\n\nGợi ý các món Bánh tươi nướng mới mỗi ngày tại Chill Chill:\n\n";
+                    foreach ($cakeProducts as $p) {
+                        $url = route('product.show', ['slug' => $p->slug]);
+                        $reply .= "• **{$p->name}**: {$p->description}\n👉 [Thêm vào giỏ bánh]({$url})\n\n";
+                    }
+                    return $reply;
+                }
+            }
+
+            // Nếu hỏi Combo
+            if (str_contains($msgLower, 'combo') || str_contains($msgLower, 'tiết kiệm') || str_contains($msgLower, 'giảm')) {
+                $combos = DB::table('combos')->where('status', 1)->take(2)->get();
+                if ($combos->isNotEmpty()) {
+                    $reply = "Dạ, quán có các gói Combo Tiết Kiệm cực kỳ ưu đãi dành cho bạn đây ạ! 🎁\n\n";
+                    foreach ($combos as $c) {
+                        $url = route('combo.show', ['id' => $c->combo_id]);
+                        $reply .= "• **{$c->name}**: Giá chỉ " . number_format($c->price) . "đ (Tiết kiệm 30%)\n👉 [Đặt ngay Gói Combo]({$url})\n\n";
+                    }
+                    return $reply;
+                }
+            }
+
+            // Phản hồi mặc định / Chào hỏi
+            $reply = "Dạ, Chill Chill Coffee & Tea xin chào bạn ạ! ☕✨\n\nBạn đang muốn chọn đồ uống thanh mát, cà phê đậm vị hay bánh ngọt thơm ngon ạ? Chill Chill gợi ý một số món được yêu thích nhất hôm nay:\n\n";
+
+            foreach ($featuredProducts as $p) {
+                $url = route('product.show', ['slug' => $p->slug]);
+                $reply .= "• **{$p->name}**: {$p->description}\n👉 [Xem & Đặt ngay]({$url})\n\n";
+            }
+
+            $reply .= "Bạn cần Chill Chill tư vấn thêm chi tiết món nào không ạ? ❤️";
+            return $reply;
+
+        } catch (\Exception $e) {
+            return "Dạ, Chill Chill Coffee & Tea chào bạn ạ! ☕ Bạn cần mình tư vấn chọn đồ uống hay bánh ngọt nào hôm nay ạ?";
         }
     }
 

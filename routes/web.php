@@ -31,6 +31,11 @@ use App\Http\Controllers\Admin\ChatController as AdminChatController;
 
 use App\Http\Controllers\PostController as PublicPostController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
+use App\Http\Controllers\PaymentWebhookController;
+
+// Webhook SePay (Bỏ qua CSRF)
+Route::post('/sepay-webhook', [PaymentWebhookController::class, 'handleSePay']);
+Route::post('/api/sepay-webhook', [PaymentWebhookController::class, 'handleSePay']);
 
 /*
 |--------------------------------------------------------------------------

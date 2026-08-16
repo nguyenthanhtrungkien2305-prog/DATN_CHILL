@@ -21,7 +21,7 @@ class OrderController extends Controller
             ->get()
             ->keyBy('product_id');
 
-        return view('staff.orders.index', compact('pendingOrders', 'toppings')); // Bạn nhớ đổi tên view cho khớp nếu dùng new_orders.blade.php
+        return view('staff.new_orders', compact('pendingOrders', 'toppings'));
     }
 
     public function storeApi(Request $request)

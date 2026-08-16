@@ -7,7 +7,7 @@
             
             {{-- Full-Width Background Image (Hiển thị đầy đủ không bị xén) --}}
             <img id="hero-banner-bg" 
-                 src="{{ asset($heroBanner->image_url ?? '/images/banner1.png') }}" 
+                 src="{{ format_image_url($heroBanner->image_url ?? '/images/banner1.png', '/images/banner1.png') }}?v=1812" 
                  alt="{{ $heroBanner->title ?? 'Chill Chill Hero Banner' }}" 
                  class="w-full h-auto max-h-[85vh] sm:max-h-screen object-contain sm:object-cover object-center transition-opacity duration-500 ease-in-out" />
 
@@ -544,21 +544,27 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const heroImages = [
-                "{{ asset($heroBanner->image_url ?? '/images/banner1.png') }}",
-                "{{ asset('/images/banner2.png') }}",
-                "{{ asset('/images/banner3.png') }}"
+                "{{ format_image_url($heroBanner->image_url ?? '/images/banner1.png', '/images/banner1.png') }}?v=1812",
+                "{{ format_image_url('/images/banner2.png') }}?v=1812",
+                "{{ format_image_url('/images/banner3.png') }}?v=1812"
             ];
             let currentHeroIdx = 0;
+
+            // Preload images into browser cache so switching is instantaneous
+            heroImages.forEach(function(src) {
+                const img = new Image();
+                img.src = src;
+            });
 
             window.changeHeroBanner = function(idx) {
                 currentHeroIdx = idx;
                 const bgImg = document.getElementById('hero-banner-bg');
                 if (bgImg) {
-                    bgImg.style.opacity = '0.3';
+                    bgImg.style.opacity = '0.2';
                     setTimeout(() => {
                         bgImg.src = heroImages[currentHeroIdx];
                         bgImg.style.opacity = '1';
-                    }, 250);
+                    }, 200);
                 }
 
                 const dots = document.querySelectorAll('.hero-banner-dot');

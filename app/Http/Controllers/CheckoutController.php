@@ -207,14 +207,12 @@ class CheckoutController extends Controller
 
         // Lưu vào Database
         $orderId = \DB::table('orders')->insertGetId([
-            'user_id' => auth()->id(),
-            'voucher_id' => $voucherId,
-            'customer_name' => auth()->user()->name ?? $request->customer_name ?? '',
-            'customer_phone' => auth()->user()->phone ?? $request->customer_phone ?? '',
-            'shipping_address' => $request->shipping_address ?? '',
-            'order_type' => $request->order_type,
-            'table_number' => $request->table_number,
-            'payment_method' => $request->payment_method,
+            'customer_name' => $request->customer_name ?? $request->recipient_name ?? (auth()->check() ? auth()->user()->name : 'Khách Vãng Lai'),
+            'customer_phone' => $request->customer_phone ?? $request->phone ?? (auth()->check() ? auth()->user()->phone : ''),
+            'shipping_address' => $request->shipping_address ?? $request->address ?? '',
+            'order_type' => $request->order_type ?? 'delivery',
+            'table_number' => $request->table_number ?? null,
+            'payment_method' => $request->payment_method ?? 'bank_transfer',
             'total_amount' => $finalAmount,
             'discount_amount' => $discountAmount,
             'used_wallet_amount' => $walletDeduction,
@@ -305,21 +303,24 @@ class CheckoutController extends Controller
     // 5. Kiểm tra trạng thái đơn hàng (cho AJAX Polling)
     public function checkStatus($id)
     {
-        $user = auth()->user();
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+        $userId = auth()->id() ?? (auth()->check() ? (auth()->user()->user_id ?? auth()->user()->id) : null);
 
         $order = \DB::table('orders')
             ->where('order_id', $id)
-            ->where('user_id', $user->user_id)
             ->first();
 
         if (!$order) {
             return response()->json(['error' => 'Order not found'], 404);
         }
 
-        return response()->json(['status' => $order->status]);
+        if ($userId && $order->user_id && $order->user_id != $userId) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        return response()->json([
+            'success' => true,
+            'status'  => $order->status
+        ]);
     }
 
     // 6. Giả lập thanh toán thành công
