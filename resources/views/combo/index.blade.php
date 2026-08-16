@@ -2,16 +2,19 @@
 
 @section('content')
     {{-- Banner Trang Combo --}}
-    <section class="py-12 bg-gradient-to-r from-espresso via-coral to-amber-700 text-white relative overflow-hidden">
+    <section class="py-16 bg-cover bg-center bg-no-repeat text-white relative overflow-hidden" style="background-image: url('{{ asset('images/anhnen.png') }}');">
+        {{-- Overlay lớp phủ mờ tối giúp chữ hiển thị sắc nét --}}
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-[1px]"></div>
+
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div class="text-center max-w-3xl mx-auto space-y-4">
-                <span class="inline-block bg-white/20 backdrop-blur-md text-cream text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider border border-white/20">
+                <span class="inline-block bg-white/20 backdrop-blur-md text-cream text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider border border-white/20 shadow-md">
                     🎁 Ưu Đãi Độc Quyền Chill Chill
                 </span>
-                <h1 class="text-4xl sm:text-5xl font-serif font-black tracking-tight leading-tight">
+                <h1 class="text-4xl sm:text-5xl font-serif font-black tracking-tight leading-tight drop-shadow-md">
                     GÓI COMBO TIẾT KIỆM – UỐNG LÀ MÊ!
                 </h1>
-                <p class="text-base sm:text-lg text-white/80 font-medium">
+                <p class="text-base sm:text-lg text-white/90 font-medium drop-shadow">
                     Thưởng thức combo thức uống & bánh ngọt được kết hợp hoàn hảo với mức giá ưu đãi cực sốc lên tới <strong class="text-amber-300 font-bold underline">30%</strong>.
                 </p>
             </div>
@@ -31,7 +34,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @forelse($combos as $combo)
-                    <div class="bg-white rounded-3xl p-6 border border-coral/20 shadow-md hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group h-full">
+                    <div class="reveal-up hover-lift bg-white rounded-3xl p-6 border border-coral/20 shadow-md hover:shadow-2xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden group h-full">
                         @if($combo->original_price > $combo->price)
                             @php
                                 $percent = round((($combo->original_price - $combo->price) / $combo->original_price) * 100);
@@ -44,7 +47,7 @@
 
                         <div>
                             <a href="{{ route('combo.show', $combo->combo_id) }}" class="block relative overflow-hidden rounded-2xl mb-5 h-56 bg-cream">
-                                <img src="{{ !empty($combo->image_url) ? (\Illuminate\Support\Str::startsWith($combo->image_url, ['http://', 'https://']) ? $combo->image_url : asset($combo->image_url)) : 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600&auto=format&fit=crop' }}"
+                                <img src="{{ asset($combo->image_url ?? 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600&auto=format&fit=crop') }}"
                                      alt="{{ $combo->name }}"
                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                             </a>

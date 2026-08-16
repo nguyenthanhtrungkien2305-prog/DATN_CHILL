@@ -134,7 +134,7 @@
                             <input type="checkbox" name="remember" class="w-4 h-4 accent-coral rounded border-gray-300">
                             Ghi nhớ tôi
                         </label>
-                        <a href="{{ route('password.request') }}" class="text-coral hover:underline font-medium">Quên mật khẩu?</a>
+                        <a href="#" class="text-coral hover:underline font-medium">Quên mật khẩu?</a>
                     </div>
 
                     <div class="pt-6">

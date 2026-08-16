@@ -26,7 +26,7 @@ class FeedbackReplyMail extends Mailable
     /**
      * Get the message envelope.
      */
-    public function envelope(): Envelope
+    public function getEnvelope(): Envelope
     {
         return new Envelope(
             subject: '[Chill Chill] Phản hồi ý kiến đóng góp của bạn',
@@ -36,7 +36,7 @@ class FeedbackReplyMail extends Mailable
     /**
      * Get the message content definition.
      */
-    public function content(): Content
+    public function getContent(): Content
     {
         return new Content(
             view: 'emails.feedback_reply',

@@ -14,10 +14,9 @@ class DashboardController extends Controller
         // 1. LẤY DỮ LIỆU THỐNG KÊ (WIDGETS)
         $totalRevenue = DB::table('orders')->where('status', 'completed')->sum('total_amount');
         $newOrders = DB::table('orders')->where('status', 'pending')->count();
-        $newOrdersCount = $newOrders;
         $totalProducts = DB::table('products')->count();
+        // Đếm khách hàng (Giả sử dựa vào role 'user' trong bảng users)
         $totalUsers = DB::table('users')->where('role', 'user')->count();
-        $totalCustomers = $totalUsers;
 
         // 2. LẤY DỮ LIỆU CHO BIỂU ĐỒ (Lọc doanh thu các đơn đã hoàn thành)
         $now = Carbon::now('Asia/Ho_Chi_Minh');
@@ -61,7 +60,7 @@ class DashboardController extends Controller
         }
 
         return view('admin.dashboard', compact(
-            'totalRevenue', 'newOrders', 'newOrdersCount', 'totalProducts', 'totalUsers', 'totalCustomers',
+            'totalRevenue', 'newOrders', 'totalProducts', 'totalUsers',
             'chartDay', 'chartWeek', 'chartMonth', 'chartYear'
         ));
     }

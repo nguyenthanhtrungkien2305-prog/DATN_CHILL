@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
@@ -11,20 +10,14 @@ class CheckoutController extends Controller
     // 1. Hiển thị trang Thanh toán
     public function index()
     {
-        $cart = Cache::get(CartController::cartKey(), []);
+        $cart = session()->get('cart', []);
         if (empty($cart)) {
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống!');
         }
 
         $user = auth()->user(); // Lấy thông tin user đang đăng nhập
         if (!$user) {
-            session()->put('url.intended', route('checkout.index'));
             return redirect()->route('cart.index')->with('login_required', 'Vui lòng đăng nhập tài khoản để tiến hành thanh toán và đặt hàng!');
-        }
-
-        // Nếu khách hàng chưa cập nhật Họ tên hoặc Số điện thoại -> Yêu cầu cập nhật profile
-        if (empty($user->name) || empty($user->phone)) {
-            return redirect()->route('user.profile')->with('error', 'Vui lòng cập nhật đầy đủ Họ và tên và Số điện thoại trong Hồ sơ cá nhân trước khi tiến hành đặt hàng!');
         }
         
         // Xử lý cột address: Chuyển dữ liệu text thành mảng
@@ -112,21 +105,16 @@ class CheckoutController extends Controller
         return response()->json(['success' => false, 'message' => 'Không thể xóa địa chỉ này!']);
     }
 
-    // 3. Xử lý Đặt hàng
+    // 3. Xử lý Đặt hàng (Sẽ code chi tiết ở bước sau)
     public function process(Request $request)
     {
-        $cart = Cache::get(CartController::cartKey(), []);
+        $cart = session()->get('cart', []);
         if (empty($cart)) {
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống!');
         }
 
-        $user = auth()->user();
-        if (!$user) {
+        if (!auth()->check()) {
             return redirect()->route('cart.index')->with('login_required', 'Vui lòng đăng nhập tài khoản để đặt hàng!');
-        }
-
-        if (empty($user->name) || empty($user->phone)) {
-            return redirect()->route('user.profile')->with('error', 'Vui lòng cập nhật đầy đủ Họ và tên và Số điện thoại trong Hồ sơ cá nhân trước khi tiến hành đặt hàng!');
         }
 
         // Tính tổng tiền
@@ -153,7 +141,7 @@ class CheckoutController extends Controller
                     $usagePerUser = isset($vDb->usage_per_user) ? $vDb->usage_per_user : 1;
                     if ($usagePerUser !== null && $usagePerUser > 0) {
                         $userId = auth()->id();
-                        $customerPhone = $user->phone;
+                        $customerPhone = $request->customer_phone ?? (auth()->check() ? auth()->user()->phone : '');
                         
                         $usedCount = 0;
                         if ($userId) {
@@ -179,27 +167,18 @@ class CheckoutController extends Controller
             }
         }
 
-        $shippingFee = 0;
-        $distanceKm = 0;
-        if (($request->order_type ?? 'delivery') === 'delivery' && !empty($request->shipping_address)) {
-            $distanceKm = \App\Services\DistanceService::calculateDistanceKm($request->shipping_address);
-            $shippingFee = \App\Services\DistanceService::getShippingFee($distanceKm);
-        }
-
-        $finalAmount = max(0, $totalAmount + $shippingFee - $discountAmount);
+        $finalAmount = max(0, $totalAmount - $discountAmount);
 
         // Lưu vào Database
         $orderId = \DB::table('orders')->insertGetId([
             'user_id' => auth()->id(),
             'voucher_id' => $voucherId,
-            'customer_name' => $user->name,
-            'customer_phone' => $user->phone,
+            'customer_name' => $request->customer_name ?? auth()->user()->name,
+            'customer_phone' => $request->customer_phone ?? '',
             'shipping_address' => $request->shipping_address ?? '',
-            'order_type' => $request->order_type ?? 'delivery',
+            'order_type' => $request->order_type,
             'table_number' => $request->table_number,
             'payment_method' => $request->payment_method,
-            'shipping_fee' => $shippingFee,
-            'distance_km' => $distanceKm,
             'total_amount' => $finalAmount,
             'discount_amount' => $discountAmount,
             'status' => 'pending', // Mặc định là Chờ xác nhận
@@ -244,7 +223,7 @@ class CheckoutController extends Controller
         }
 
         // Xóa giỏ hàng và voucher sau khi đặt xong
-        Cache::forget(CartController::cartKey());
+        session()->forget('cart');
         session()->forget('voucher');
 
         // Chuyển hướng nếu là thanh toán QR
@@ -256,7 +235,7 @@ class CheckoutController extends Controller
         return redirect()->route('user.orders')->with('success', '🎉 Đặt hàng thành công! Vui lòng chờ quán xác nhận nhé.');
     }
 
-    // 4. Hiển thị trang thanh toán QR & Cổng SePay
+    // 4. Hiển thị trang thanh toán QR
     public function paymentQr($id)
     {
         $user = auth()->user();
@@ -274,31 +253,7 @@ class CheckoutController extends Controller
             abort(404, 'Không tìm thấy đơn hàng!');
         }
 
-        $sepayFormHtml = null;
-        try {
-            $merchantId = config('services.sepay.merchant_id', 'SP-LIVE-TK373453');
-            $secretKey  = config('services.sepay.secret_key', 'spsk_live_RT9jvczJjS821HAQchQ7vE5pMPBHBkwr');
-            $sepayEnv   = config('services.sepay.env', 'production');
-
-            if ($merchantId && $secretKey) {
-                $sepay = new \SePay\SePayClient($merchantId, $secretKey, $sepayEnv);
-
-                $checkoutData = \SePay\Builders\CheckoutBuilder::make()
-                    ->paymentMethod('BANK_TRANSFER')
-                    ->currency('VND')
-                    ->orderInvoiceNumber('CHILLCHILL_' . $order->order_id)
-                    ->orderAmount((int)$order->total_amount)
-                    ->operation('PURCHASE')
-                    ->orderDescription('Thanh toan don hang CHILLCHILL #' . $order->order_id)
-                    ->build();
-
-                $sepayFormHtml = $sepay->checkout()->generateFormHtml($checkoutData);
-            }
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('SePay Checkout Builder Error: ' . $e->getMessage());
-        }
-
-        return view('checkout.payment_qr', compact('order', 'sepayFormHtml'));
+        return view('checkout.payment_qr', compact('order'));
     }
 
     // 5. Kiểm tra trạng thái đơn hàng (cho AJAX Polling)
@@ -339,30 +294,5 @@ class CheckoutController extends Controller
             ]);
 
         return response()->json(['success' => $affected > 0]);
-    }
-
-    // 7. API AJAX Tính khoảng cách & Phí giao hàng động từ QTSC 9 Tô Ký
-    public function calculateShipping(Request $request)
-    {
-        $address = $request->address;
-        if (empty(trim($address))) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Vui lòng cung cấp địa chỉ giao hàng.',
-                'shipping_fee' => 0,
-                'distance_km' => 0
-            ]);
-        }
-
-        $distanceKm = \App\Services\DistanceService::calculateDistanceKm($address);
-        $shippingFee = \App\Services\DistanceService::getShippingFee($distanceKm);
-
-        return response()->json([
-            'success' => true,
-            'distance_km' => $distanceKm,
-            'shipping_fee' => $shippingFee,
-            'formatted_fee' => number_format($shippingFee) . 'đ',
-            'store_address' => \App\Services\DistanceService::STORE_ADDRESS
-        ]);
     }
 }

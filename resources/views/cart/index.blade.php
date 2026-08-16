@@ -9,9 +9,11 @@
         @php
             $totalItems = 0;
             $subTotal = 0;
-            foreach($cart as $item) {
-                $totalItems += $item['quantity'];
-                $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
+            if(session()->has('cart')) {
+                foreach(session('cart') as $item) {
+                    $totalItems += $item['quantity'];
+                    $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
+                }
             }
         @endphp
 
@@ -20,14 +22,14 @@
             <span class="bg-coral text-white text-sm font-bold px-3 py-1 rounded-full">{{ $totalItems }} món</span>
         </div>
 
-        @if(!empty($cart))
+        @if(session('cart') && count(session('cart')) > 0)
         
         <div class="flex flex-col lg:flex-row gap-8 items-start">
             
             <div class="w-full lg:w-2/3 flex flex-col space-y-4">
                 
                 {{-- Thanh Tìm Kiếm Món Trong Giỏ Hàng --}}
-                @if(count($cart) > 1)
+                @if(count(session('cart')) > 1)
                     <div class="relative w-full bg-white rounded-2xl p-2.5 border border-espresso/10 shadow-sm flex items-center gap-3">
                         <div class="pl-2 text-espresso/40">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -39,7 +41,7 @@
 
                 {{-- Container Giới Hạn Chiều Cao Có Thanh Cuộn (Scrollbar) --}}
                 <div id="cart-items-container" class="space-y-4 max-h-[620px] overflow-y-auto pr-2 custom-scrollbar">
-                    @foreach($cart as $cartKey => $item)
+                    @foreach(session('cart') as $cartKey => $item)
                     @php
                         $isCombo = !empty($item['is_combo']);
                         $categoryName = !$isCombo ? \DB::table('products')
@@ -219,7 +221,9 @@
                                                     <div>
                                                         <div class="flex items-center gap-2">
                                                             <span class="font-mono font-black text-espresso uppercase">{{ $v->code }}</span>
-                                                            <span class="bg-[#e8634a] text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">x{{ $v->available_quantity ?? 1 }}</span>
+                                                            @if(($v->available_quantity ?? 1) > 1)
+                                                                <span class="bg-[#e8634a] text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-xs">x{{ $v->available_quantity }}</span>
+                                                            @endif
                                                             <span class="text-coral font-extrabold">-{{ number_format($v->discount_amount, 0, ',', '.') }}đ</span>
                                                         </div>
                                                         <span class="text-[10px] text-espresso/50 block">Đơn tối thiểu: {{ number_format($v->min_order, 0, ',', '.') }}đ</span>
@@ -235,9 +239,8 @@
                                                     <div>
                                                         <div class="flex items-center gap-2">
                                                             <span class="font-mono font-black text-gray-500 uppercase">{{ $v->code }}</span>
-                                                            <span class="bg-gray-400 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">x{{ $v->available_quantity ?? 1 }}</span>
                                                             <span class="text-xs text-amber-700 font-bold">
-                                                                ({{ $v->discount_type === 'percent' ? 'Giảm '.(float)$v->discount_value.'%' : 'Giảm '.number_format($v->discount_value, 0, ',', '.').'đ' }})
+                                                                ({{ $v->discount_type === 'percent' ? 'Giảm '.$v->discount_value.'%' : 'Giảm '.number_format($v->discount_value, 0, ',', '.').'đ' }})
                                                             </span>
                                                         </div>
                                                         <span class="text-[10px] text-amber-700 font-bold block mt-0.5">Cần mua thêm {{ number_format($v->missing_amount, 0, ',', '.') }}đ</span>
@@ -449,7 +452,7 @@
                 } else {
                     data.toppings.forEach(top => {
                         let formattedPrice = new Intl.NumberFormat('vi-VN').format(top.price);
-                        let imgUrl = top.image ? top.image : 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=200';
+                        let imgUrl = top.image ? top.image : 'https://via.placeholder.com/200';
                         html += `
                         <div class="flex items-center justify-between p-3 border border-espresso/10 rounded-xl hover:bg-[#FAF7F2] transition-colors group">
                             <div class="flex items-center gap-3"><img src="${imgUrl}" class="w-12 h-12 rounded-full object-cover">

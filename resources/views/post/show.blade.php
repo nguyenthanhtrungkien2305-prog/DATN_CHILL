@@ -40,7 +40,7 @@
         {{-- Ảnh bìa đại diện --}}
         @if($post->thumbnail)
             <div class="w-full aspect-[16/9] rounded-[32px] overflow-hidden shadow-lg border border-espresso/5 mb-12">
-                <img src="{{ $post->thumbnail }}" class="w-full h-full object-cover" alt="{{ $post->title }}">
+                <img src="{{ asset($post->thumbnail) }}" class="w-full h-full object-cover" alt="{{ $post->title }}">
             </div>
         @endif
 
@@ -69,7 +69,7 @@
                 @foreach($relatedPosts as $rp)
                     <article class="bg-[#FFF9ED] rounded-[24px] overflow-hidden group shadow-xs hover:shadow-md transition-all border border-espresso/5 flex flex-col">
                         <a href="{{ route('post.show', $rp->slug) }}" class="aspect-[16/10] overflow-hidden block">
-                            <img src="{{ $rp->thumbnail ?: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600&auto=format&fit=crop' }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            <img src="{{ asset($rp->thumbnail ?: 'images/caphe.png') }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="{{ $rp->title }}">
                         </a>
                         <div class="p-6 flex-1 flex flex-col justify-between">
                             <div>

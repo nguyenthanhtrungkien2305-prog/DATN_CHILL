@@ -36,7 +36,7 @@
             {{-- KHU VỰC ẢNH SẢN PHẨM & ẢNH PHỤ (CĂN GIỮA NẰM TRONG KHU VỰC ẢNH) --}}
             <div class="order-1 md:order-1 md:col-span-5 flex flex-col items-center gap-4 w-full">
                 <div class="bg-cream rounded-[28px] overflow-hidden w-full max-w-[380px] aspect-square relative shadow-inner group border border-espresso/5">
-                    <img id="main-image" src="{{ $gallery[0] ?? $product->image_url }}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=600&auto=format&fit=crop';" alt="{{ $product->name }}" class="w-full h-full object-cover mix-blend-multiply transition-all duration-300 group-hover:scale-105" />
+                    <img id="main-image" src="{{ $gallery[0] ?? $product->image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover mix-blend-multiply transition-all duration-300 group-hover:scale-105" />
                 </div>
 
                 {{-- DANH SÁCH ẢNH PHỤ CĂN GIỮA BÊN DƯỚI ẢNH CHÍNH (TỐI ĐA 4 ẢNH PHỤ) --}}
@@ -158,7 +158,7 @@
                             <div class="review-item border-b border-gray-100 pb-6 last:border-0 last:pb-0" data-rating="{{ $review->rating }}">
                                 <div class="flex items-start gap-4">
                                     <div class="w-12 h-12 rounded-full overflow-hidden bg-gray-100 shadow-sm shrink-0">
-                                        <img src="{{ isset($review->user->avatar) && $review->user->avatar ? (\Illuminate\Support\Str::startsWith($review->user->avatar, ['http://', 'https://']) ? $review->user->avatar : asset($review->user->avatar)) : 'https://ui-avatars.com/api/?name='.urlencode($review->user->name ?? 'User').'&background=ff7043&color=ffffff' }}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($review->user->name ?? 'User') }}&background=ff7043&color=ffffff';">
+                                        <img src="{{ $review->user->avatar ? asset($review->user->avatar) : 'https://i.pravatar.cc/150?u='.$review->user_id }}" class="w-full h-full object-cover">
                                     </div>
                                     <div class="flex-1">
                                         <div class="flex items-center justify-between">

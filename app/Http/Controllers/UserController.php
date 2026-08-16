@@ -19,67 +19,41 @@ class UserController extends Controller
     // 2. Xử lý lưu thông tin và avatar
    public function updateProfile(Request $request)
     {
-        $userId = auth()->user()->user_id ?? auth()->id();
-
         // 1. Validate dữ liệu
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => [
-                'nullable',
-                'email',
-                \Illuminate\Validation\Rule::unique('users', 'email')->ignore($userId, 'user_id')
-            ],
+            'email' => 'required|email',
             'address' => 'nullable|string',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ], [
-            'name.required' => 'Vui lòng nhập họ và tên.',
-            'email.email' => 'Địa chỉ email không đúng định dạng.',
-            'email.unique' => 'Địa chỉ email này đã được sử dụng bởi một tài khoản khác trong hệ thống!',
-            'avatar.image' => 'File tải lên phải là hình ảnh.',
-            'avatar.max' => 'Kích thước ảnh tối đa 2MB.',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // File ảnh, tối đa 2MB
         ]);
 
-        $user = auth()->user();
+        $user = auth()->user(); // Hoặc DB::table('users')->where('user_id', $id)->first() tùy logic của bạn
         
         // 2. Mảng dữ liệu cần update
         $updateData = [
             'name' => $request->name,
             'email' => $request->email,
-            'address' => $request->address,
+            'address' => $request->address, // Lưu địa chỉ
             'updated_at' => now(),
         ];
 
         // 3. XỬ LÝ LƯU ẢNH AVATAR VĨNH VIỄN
         if ($request->hasFile('avatar')) {
             $file = $request->file('avatar');
-            $uploadPath = public_path('uploads/avatars');
-            if (!file_exists($uploadPath)) {
-                mkdir($uploadPath, 0777, true);
-            }
-
-            // Tạo tên file an toàn để tránh ký tự đặc biệt hoặc tiếng Việt trong tên file
-            $extension = $file->getClientOriginalExtension() ?: 'jpg';
-            $filename = time() . '_' . uniqid() . '.' . $extension;
-
-            // Xóa avatar cũ nếu có trên ổ đĩa
-            if (!empty($user->avatar) && !\Illuminate\Support\Str::startsWith($user->avatar, ['http://', 'https://'])) {
-                $oldPath = public_path($user->avatar);
-                if (file_exists($oldPath) && is_file($oldPath)) {
-                    @unlink($oldPath);
-                }
-            }
-
-            // Di chuyển file mới vào thư mục public/uploads/avatars
-            $file->move($uploadPath, $filename);
+            // Tạo tên file ngẫu nhiên để không bị trùng (vd: 1690000000_avatar.jpg)
+            $filename = time() . '_' . $file->getClientOriginalName();
             
-            // Cập nhật đường dẫn tương đối để lưu DB
+            // Di chuyển file ảnh vào thư mục public/uploads/avatars
+            $file->move(public_path('uploads/avatars'), $filename);
+            
+            // Cập nhật đường dẫn vào mảng để lưu xuống Database
             $updateData['avatar'] = 'uploads/avatars/' . $filename;
         }
 
         // 4. Update vào Database
-        \Illuminate\Support\Facades\DB::table('users')->where('user_id', $userId)->update($updateData);
+        \DB::table('users')->where('user_id', $user->user_id)->update($updateData);
 
-        return back()->with('success', 'Đã cập nhật hồ sơ cá nhân thành công!');
+        return back()->with('success', 'Đã cập nhật hồ sơ thành công!');
     }
     // ==========================================
     // HIỂN THỊ LỊCH SỬ ĐƠN HÀNG (CÓ BỘ LỌC)
@@ -340,131 +314,6 @@ class UserController extends Controller
             'updated_at' => now()
         ]);
 
-        return back()->with('success', 'Chúc mừng! Bạn đã đổi thành công mã voucher ' . $voucher->code . ' (-' . $pointsNeeded . ' điểm).');
-    }
-
-    // ==========================================
-    // FORM ĐỔI MẬT KHẨU TÀI KHOẢN
-    // ==========================================
-    public function changePasswordForm()
-    {
-        $userId = auth()->user()->user_id ?? auth()->id();
-        $user = \Illuminate\Support\Facades\DB::table('users')->where('user_id', $userId)->first();
-        return view('user.change_password', compact('user'));
-    }
-
-    public function updatePassword(Request $request)
-    {
-        $request->validate([
-            'current_password' => 'required|string',
-            'new_password' => 'required|string|min:6|confirmed',
-        ], [
-            'current_password.required' => 'Vui lòng nhập mật khẩu hiện tại.',
-            'new_password.required' => 'Vui lòng nhập mật khẩu mới.',
-            'new_password.min' => 'Mật khẩu mới phải có tối thiểu 6 ký tự.',
-            'new_password.confirmed' => 'Xác nhận mật khẩu mới không trùng khớp.',
-        ]);
-
-        $userId = auth()->user()->user_id ?? auth()->id();
-        $user = \App\Models\User::find($userId);
-
-        if (!$user || !\Illuminate\Support\Facades\Hash::check($request->current_password, $user->password)) {
-            return back()->with('error', 'Mật khẩu hiện tại không đúng. Vui lòng kiểm tra lại!');
-        }
-
-        $user->password = \Illuminate\Support\Facades\Hash::make($request->new_password);
-        $user->save();
-
-        return back()->with('success', 'Đổi mật khẩu tài khoản thành công!');
-    }
-
-    // ==========================================
-    // XỬ LÝ GỬI VÀ XÁC NHẬN OTP ĐỔI SỐ ĐIỆN THOẠI
-    // ==========================================
-    public function sendPhoneOtp(Request $request)
-    {
-        $userId = auth()->user()->user_id ?? auth()->id();
-
-        $request->validate([
-            'phone' => [
-                'required',
-                'regex:/^(0[3|5|7|8|9])+([0-9]{8})$/',
-                \Illuminate\Validation\Rule::unique('users', 'phone')->ignore($userId, 'user_id')
-            ]
-        ], [
-            'phone.required' => 'Vui lòng nhập số điện thoại mới.',
-            'phone.regex' => 'Số điện thoại không hợp lệ (phải gồm 10 chữ số bắt đầu bằng đầu số VN).',
-            'phone.unique' => 'Số điện thoại này đã được gắn với một tài khoản khác trong hệ thống.'
-        ]);
-
-        $otp = (string)rand(100000, 999999);
-        $user = auth()->user();
-
-        // Lưu vào Session
-        session([
-            'phone_otp' => $otp,
-            'pending_phone' => $request->phone,
-            'phone_otp_expires_at' => now()->addMinutes(5)
-        ]);
-
-        // Gửi OTP qua SMS Service / Log system
-        \App\Services\SmsService::sendOtp($request->phone, $otp, $user->email ?? null);
-
-        $hasTextBee = !empty(env('TEXTBEE_API_KEY'));
-        $hasTwilio = !empty(env('TWILIO_SID')) && (!empty(env('TWILIO_AUTH_TOKEN')) || !empty(env('TWILIO_API_SECRET')) || !empty(env('TWILIO_API_KEY')));
-        $hasSmsKey = !empty(env('SMS_API_KEY')) && env('SMS_API_KEY') !== 'demo';
-        $isDemo = (!$hasTextBee && !$hasTwilio && !$hasSmsKey);
-
-        $msg = $isDemo 
-            ? "Mã OTP (6 chữ số) đã được phát sinh thử nghiệm! (Mã demo: {$otp})" 
-            : "Mã OTP (6 chữ số) đã được gửi trực tiếp qua SMS đến số điện thoại {$request->phone}. Vui lòng kiểm tra tin nhắn!";
-
-        return response()->json([
-            'success' => true,
-            'message' => $msg,
-            'demo_otp' => $isDemo ? $otp : null
-        ]);
-    }
-
-    public function verifyPhoneOtp(Request $request)
-    {
-        $request->validate([
-            'otp_code' => 'required|string|size:6'
-        ], [
-            'otp_code.required' => 'Vui lòng nhập mã OTP.',
-            'otp_code.size' => 'Mã OTP phải gồm chính xác 6 chữ số.'
-        ]);
-
-        $sessionOtp = session('phone_otp');
-        $pendingPhone = session('pending_phone');
-        $expiresAt = session('phone_otp_expires_at');
-
-        if (!$sessionOtp || !$pendingPhone || !$expiresAt) {
-            return response()->json(['success' => false, 'message' => 'Mã OTP chưa được khởi tạo. Vui lòng thử lại!'], 400);
-        }
-
-        if (now()->greaterThan($expiresAt)) {
-            return response()->json(['success' => false, 'message' => 'Mã OTP đã hết hạn. Vui lòng yêu cầu gửi lại mã mới!'], 400);
-        }
-
-        if ($request->otp_code !== (string)$sessionOtp) {
-            return response()->json(['success' => false, 'message' => 'Mã OTP không chính xác. Vui lòng kiểm tra lại!'], 400);
-        }
-
-        // Khớp OTP thành công -> Cập nhật Số Điện Thoại
-        $userId = auth()->user()->user_id ?? auth()->id();
-        \Illuminate\Support\Facades\DB::table('users')->where('user_id', $userId)->update([
-            'phone' => $pendingPhone,
-            'updated_at' => now()
-        ]);
-
-        // Xóa Session OTP
-        session()->forget(['phone_otp', 'pending_phone', 'phone_otp_expires_at']);
-
-        return response()->json([
-            'success' => true,
-            'message' => '🎉 Xác thực thành công! Số điện thoại của bạn đã được cập nhật thành ' . $pendingPhone,
-            'phone' => $pendingPhone
-        ]);
+        return back()->with('success', '🎉 Chúc mừng! Bạn đã đổi thành công mã voucher ' . $voucher->code . ' (-' . $pointsNeeded . ' điểm).');
     }
 }

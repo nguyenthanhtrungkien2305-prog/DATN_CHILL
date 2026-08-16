@@ -213,4 +213,16 @@ class ComboController extends Controller
 
         return redirect()->route('combos.index')->with('success', 'Xóa gói Combo thành công!');
     }
+
+    public function bulkDelete(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids)) {
+            return back()->with('error', 'Vui lòng chọn ít nhất một gói Combo!');
+        }
+
+        Combo::whereIn('combo_id', $ids)->delete();
+
+        return back()->with('success', 'Đã xóa ' . count($ids) . ' gói Combo đã chọn thành công!');
+    }
 }

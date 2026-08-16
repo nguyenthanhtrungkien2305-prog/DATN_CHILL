@@ -12,42 +12,28 @@
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #d5523b; }
 </style>
 
-<div class="bg-[#FAF7F2] min-h-[calc(100vh-100px)] w-full flex items-center justify-center py-4 sm:py-10 px-2 sm:px-4">
+<div class="bg-[#FAF7F2] min-h-[calc(100vh-100px)] w-full flex items-center justify-center py-10 px-4">
     
-    <div class="w-full max-w-5xl bg-white rounded-[30px] md:rounded-[40px] shadow-2xl border border-espresso/5 overflow-hidden flex flex-col md:flex-row h-auto md:h-[80vh] md:min-h-[550px] md:max-h-[800px]">
+    <div class="w-full max-w-5xl bg-white rounded-[40px] shadow-2xl border border-espresso/5 overflow-hidden flex flex-col md:flex-row h-[80vh] min-h-[550px] max-h-[800px]">
         
-        {{-- Cột Trái: Menu Điều hướng (Tự động thích ứng Mobile/Desktop) --}}
-        <div class="w-full md:w-1/3 bg-espresso text-cream p-5 md:p-10 flex flex-col h-auto md:h-full shrink-0">
-            <div class="flex items-center justify-between md:block mb-3 md:mb-8">
-                <h2 class="font-serif font-bold text-xl md:text-2xl text-white">Tài khoản</h2>
-                <a href="{{ route('logout') }}" class="md:hidden px-3 py-1 bg-coral/20 text-coral hover:bg-coral hover:text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg> Thoát
-                </a>
-            </div>
-
-            <nav class="flex md:flex-col overflow-x-auto gap-2 py-1 md:py-0 custom-scrollbar flex-1 shrink-0">
-                <a href="{{ route('user.profile') }}" class="px-4 py-2.5 rounded-xl font-medium text-xs md:text-sm whitespace-nowrap transition-colors text-cream/70 hover:text-white hover:bg-white/5">
-                    Thông tin cá nhân
-                </a>
-                <a href="{{ route('user.orders') }}" class="px-4 py-2.5 rounded-xl font-medium text-xs md:text-sm whitespace-nowrap transition-colors text-cream/70 hover:text-white hover:bg-white/5">
-                    Đơn hàng của tôi
-                </a>
-                <a href="{{ route('user.points') }}" class="px-4 py-2.5 rounded-xl font-medium text-xs md:text-sm whitespace-nowrap transition-colors flex items-center justify-between gap-2 shrink-0 bg-white/10 text-white font-bold">
+        {{-- Cột Trái: Menu Điều hướng --}}
+        <div class="w-full md:w-1/3 bg-espresso text-cream p-8 md:p-10 flex flex-col h-full shrink-0">
+            <h2 class="font-serif font-bold text-2xl text-white mb-8">Tài khoản</h2>
+            <nav class="space-y-2 flex-1">
+                <a href="{{ route('user.profile') }}" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white transition-colors">Thông tin cá nhân</a>
+                <a href="{{ route('user.orders') }}" class="block px-4 py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white transition-colors">Đơn hàng của tôi</a>
+                <a href="{{ route('user.points') }}" class="block px-4 py-3 rounded-xl bg-white/10 text-white font-medium transition-colors flex items-center justify-between">
                     <span>Tích điểm & Ưu đãi</span>
-                    <span class="bg-coral text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-full shadow-sm">{{ number_format($user->point ?? 0) }}p</span>
-                </a>
-                <a href="{{ route('user.change_password') }}" class="px-4 py-2.5 rounded-xl font-medium text-xs md:text-sm whitespace-nowrap transition-colors text-cream/70 hover:text-white hover:bg-white/5">
-                    Đổi mật khẩu
+                    <span class="bg-coral text-white text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm">{{ number_format($user->point ?? 0) }}p</span>
                 </a>
             </nav>
-
-            <a href="{{ route('logout') }}" class="hidden md:flex mt-auto px-4 py-3 text-coral hover:text-white transition-colors items-center gap-2 text-sm font-bold">
+            <a href="{{ route('logout') }}" class="mt-auto px-4 py-3 text-coral hover:text-white transition-colors flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg> Đăng xuất
             </a>
         </div>
 
         {{-- Cột Phải: Nội dung Tích điểm & Đổi Voucher --}}
-        <div class="w-full md:w-2/3 p-4 sm:p-6 md:p-10 bg-gray-50/50 h-auto md:h-full overflow-y-auto custom-scrollbar space-y-8">
+        <div class="w-full md:w-2/3 p-6 md:p-10 bg-gray-50/50 h-full overflow-y-auto custom-scrollbar space-y-8">
             
             <div>
                 <h3 class="font-serif font-bold text-3xl text-espresso mb-1">Tích điểm & Ưu đãi</h3>
@@ -160,10 +146,10 @@
                 @else
                     <div class="space-y-3">
                         @foreach($myVouchers as $mv)
-                            <div class="bg-white rounded-2xl p-4 border border-espresso/10 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <div class="bg-white rounded-2xl p-4 border border-espresso/10 shadow-xs flex justify-between items-center">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 {{ $mv->assigned_user_id ? 'bg-purple-50 text-purple-600 border-purple-200' : 'bg-amber-50 text-amber-600 border-amber-200' }} rounded-xl flex items-center justify-center font-bold text-lg shrink-0 border relative">
-                                        🎟️
+                                    <div class="w-10 h-10 {{ $mv->assigned_user_id ? 'bg-purple-50 text-purple-600 border-purple-200' : 'bg-amber-50 text-amber-600 border-amber-200' }} rounded-xl flex items-center justify-center font-bold text-sm shrink-0 border relative">
+                                        Voucher
                                     </div>
                                     <div>
                                         <div class="flex items-center gap-2 flex-wrap">
@@ -174,7 +160,7 @@
                                             @endif
 
                                             <span class="text-xs font-bold text-coral">
-                                                ({{ $mv->discount_type === 'percent' ? 'Giảm '.(float)$mv->discount_value.'%' : 'Giảm '.number_format($mv->discount_value, 0, ',', '.').'đ' }})
+                                                ({{ $mv->discount_type === 'percent' ? 'Giảm '.$mv->discount_value.'%' : 'Giảm '.number_format($mv->discount_value, 0, ',', '.').'đ' }})
                                             </span>
                                             @if($mv->assigned_user_id)
                                                 <span class="text-[10px] font-extrabold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md border border-purple-200">Ưu đãi tặng riêng</span>
@@ -196,141 +182,110 @@
                 @endif
             </div>
 
-            {{-- 4 & 5. TABS LỊCH SỬ TÍCH ĐIỂM & ĐỔI VOUCHER --}}
-            <div class="mt-8">
-                <div class="flex border-b border-espresso/10 mb-4 gap-6">
-                    <button type="button" onclick="switchHistoryTab('orders')" id="tab-btn-orders" class="pb-3 text-sm font-black uppercase tracking-wider text-coral border-b-2 border-coral transition-all flex items-center gap-2">
-                        <span>Lịch Sử Tích Điểm</span>
-                        @if(isset($completedOrders) && $completedOrders->isNotEmpty())
-                            <span class="bg-coral/10 text-coral text-[10px] font-bold px-2 py-0.5 rounded-full">{{ $completedOrders->count() }}</span>
-                        @endif
-                    </button>
-                    <button type="button" onclick="switchHistoryTab('vouchers')" id="tab-btn-vouchers" class="pb-3 text-sm font-bold uppercase tracking-wider text-espresso/40 border-b-2 border-transparent hover:text-coral transition-all flex items-center gap-2">
-                        <span>Lịch Sử Đổi Voucher</span>
-                        @if(isset($redeemHistory) && $redeemHistory->isNotEmpty())
-                            <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">{{ $redeemHistory->count() }}</span>
-                        @endif
-                    </button>
-                </div>
+            {{-- 4. LỊCH SỬ TÍCH ĐIỂM TỪ ĐƠN HÀNG --}}
+            <div>
+                <h4 class="font-bold text-base text-espresso uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <span>Lịch Sử Tích Điểm Đơn Hàng</span>
+                </h4>
 
-                {{-- TAB 1: LỊCH SỬ TÍCH ĐIỂM TỪ ĐƠN HÀNG --}}
-                <div id="tab-content-orders" class="block">
-                    @if($completedOrders->isEmpty())
-                        <div class="bg-white p-6 rounded-2xl border border-dashed border-gray-300 text-center text-espresso/60 text-xs font-medium">
-                            Chưa có lịch sử tích điểm từ đơn hàng nào.
-                        </div>
-                    @else
-                        <div class="bg-white rounded-2xl border border-espresso/10 overflow-hidden shadow-xs">
-                            <div class="overflow-x-auto max-h-80 overflow-y-auto custom-scrollbar">
-                                <table class="w-full text-left border-collapse text-xs">
-                                    <thead class="bg-espresso text-white uppercase text-[10px] font-black tracking-wider sticky top-0 z-10">
-                                        <tr>
-                                            <th class="py-3 px-4">Mã Đơn</th>
-                                            <th class="py-3 px-4">Ngày Hoàn Thành</th>
-                                            <th class="py-3 px-4 text-right">Tổng Tiền</th>
-                                            <th class="py-3 px-4 text-center">Điểm Tích Lũy</th>
+                @if($completedOrders->isEmpty())
+                    <div class="bg-white p-6 rounded-2xl border border-dashed border-gray-300 text-center text-espresso/60 text-xs font-medium">
+                        Chưa có lịch sử tích điểm từ đơn hàng nào.
+                    </div>
+                @else
+                    <div class="bg-white rounded-2xl border border-espresso/10 overflow-hidden shadow-xs">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead class="bg-espresso text-white uppercase text-[10px] font-black tracking-wider">
+                                    <tr>
+                                        <th class="py-3 px-4">Mã Đơn</th>
+                                        <th class="py-3 px-4">Ngày Hoàn Thành</th>
+                                        <th class="py-3 px-4 text-right">Tổng Tiền</th>
+                                        <th class="py-3 px-4 text-center">Điểm Tích Lũy</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    @foreach($completedOrders as $co)
+                                        @php $earned = (int)floor($co->total_amount / 10000); @endphp
+                                        <tr class="hover:bg-gray-50/50 transition-colors">
+                                            <td class="py-3 px-4 font-black text-espresso">#{{ $co->order_id }}</td>
+                                            <td class="py-3 px-4 text-espresso/70 font-medium">{{ \Carbon\Carbon::parse($co->updated_at ?? $co->created_at)->format('H:i - d/m/Y') }}</td>
+                                            <td class="py-3 px-4 text-right font-black text-coral">{{ number_format($co->total_amount, 0, ',', '.') }}đ</td>
+                                            <td class="py-3 px-4 text-center">
+                                                <span class="font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full text-xs">
+                                                    +{{ $earned }} điểm
+                                                </span>
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-gray-100">
-                                        @foreach($completedOrders as $co)
-                                            @php $earned = (int)floor($co->total_amount / 10000); @endphp
-                                            <tr class="hover:bg-gray-50/50 transition-colors">
-                                                <td class="py-3 px-4 font-black text-espresso">#{{ $co->order_id }}</td>
-                                                <td class="py-3 px-4 text-espresso/70 font-medium">{{ \Carbon\Carbon::parse($co->updated_at ?? $co->created_at)->format('H:i - d/m/Y') }}</td>
-                                                <td class="py-3 px-4 text-right font-black text-coral">{{ number_format($co->total_amount, 0, ',', '.') }}đ</td>
-                                                <td class="py-3 px-4 text-center">
-                                                    <span class="font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full text-xs">
-                                                        +{{ $earned }} điểm
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
+                                    @endforeach
+                                </tbody>
+                            </table>
                         </div>
-                    @endif
-                </div>
+                    </div>
+                @endif
+            </div>
 
-                {{-- TAB 2: LỊCH SỬ ĐỔI VOUCHER BẰNG ĐIỂM --}}
-                <div id="tab-content-vouchers" class="hidden">
-                    @if(!isset($redeemHistory) || $redeemHistory->isEmpty())
-                        <div class="bg-white p-6 rounded-2xl border border-dashed border-gray-300 text-center text-espresso/60 text-xs font-medium">
-                            Chưa có lịch sử đổi voucher bằng điểm tích lũy.
-                        </div>
-                    @else
-                        <div class="bg-white rounded-2xl border border-espresso/10 overflow-hidden shadow-xs">
-                            <div class="overflow-x-auto max-h-80 overflow-y-auto custom-scrollbar">
-                                <table class="w-full text-left border-collapse text-xs">
-                                    <thead class="bg-espresso text-white uppercase text-[10px] font-black tracking-wider sticky top-0 z-10">
-                                        <tr>
-                                            <th class="py-3 px-4">Thời Gian</th>
-                                            <th class="py-3 px-4">Mã Voucher</th>
-                                            <th class="py-3 px-4">Mức Ưu Đãi</th>
-                                            <th class="py-3 px-4 text-center">Điểm Đã Trừ</th>
-                                            <th class="py-3 px-4 text-center">Trạng Thái</th>
+            {{-- 5. LỊCH SỬ ĐỔI VOUCHER BẰNG ĐIỂM --}}
+            <div>
+                <h4 class="font-bold text-base text-espresso uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <span>Lịch Sử Đổi Voucher</span>
+                </h4>
+
+                @if(!isset($redeemHistory) || $redeemHistory->isEmpty())
+                    <div class="bg-white p-6 rounded-2xl border border-dashed border-gray-300 text-center text-espresso/60 text-xs font-medium">
+                        Chưa có lịch sử đổi voucher bằng điểm tích lũy.
+                    </div>
+                @else
+                    <div class="bg-white rounded-2xl border border-espresso/10 overflow-hidden shadow-xs">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead class="bg-espresso text-white uppercase text-[10px] font-black tracking-wider">
+                                    <tr>
+                                        <th class="py-3 px-4">Thời Gian</th>
+                                        <th class="py-3 px-4">Mã Voucher</th>
+                                        <th class="py-3 px-4">Mức Ưu Đãi</th>
+                                        <th class="py-3 px-4 text-center">Điểm Đã Trừ</th>
+                                        <th class="py-3 px-4 text-center">Trạng Thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    @foreach($redeemHistory as $rh)
+                                        <tr class="hover:bg-gray-50/50 transition-colors">
+                                            <td class="py-3 px-4 text-espresso/70 font-medium whitespace-nowrap">
+                                                {{ \Carbon\Carbon::parse($rh->save_at ?? $rh->created_at)->format('H:i - d/m/Y') }}
+                                            </td>
+                                            <td class="py-3 px-4 font-mono font-black text-espresso">
+                                                <span class="bg-orange-50 text-[#e8634a] border border-orange-200 px-2 py-0.5 rounded-md">
+                                                    {{ $rh->code }}
+                                                </span>
+                                            </td>
+                                            <td class="py-3 px-4 font-bold text-coral">
+                                                {{ $rh->discount_type === 'percent' ? 'Giảm '.(float)$rh->discount_value.'%' : 'Giảm '.number_format($rh->discount_value, 0, ',', '.').'đ' }}
+                                                <span class="text-[10px] text-espresso/50 font-normal block">(Đơn tối thiểu: {{ number_format($rh->min_order, 0, ',', '.') }}đ)</span>
+                                            </td>
+                                            <td class="py-3 px-4 text-center">
+                                                <span class="font-black text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full text-xs">
+                                                    -{{ $rh->points_required }} điểm
+                                                </span>
+                                            </td>
+                                            <td class="py-3 px-4 text-center">
+                                                @if($rh->is_used)
+                                                    <span class="px-2.5 py-1 bg-gray-100 text-gray-500 rounded-full text-[11px] font-bold border border-gray-200">Đã dùng</span>
+                                                @else
+                                                    <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[11px] font-bold border border-emerald-200">Sẵn sàng dùng</span>
+                                                @endif
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-gray-100">
-                                        @foreach($redeemHistory as $rh)
-                                            <tr class="hover:bg-gray-50/50 transition-colors">
-                                                <td class="py-3 px-4 text-espresso/70 font-medium whitespace-nowrap">
-                                                    {{ \Carbon\Carbon::parse($rh->save_at ?? $rh->created_at)->format('H:i - d/m/Y') }}
-                                                </td>
-                                                <td class="py-3 px-4 font-mono font-black text-espresso">
-                                                    <span class="bg-orange-50 text-[#e8634a] border border-orange-200 px-2 py-0.5 rounded-md">
-                                                        {{ $rh->code }}
-                                                    </span>
-                                                </td>
-                                                <td class="py-3 px-4 font-bold text-coral">
-                                                    {{ $rh->discount_type === 'percent' ? 'Giảm '.(float)$rh->discount_value.'%' : 'Giảm '.number_format($rh->discount_value, 0, ',', '.').'đ' }}
-                                                    <span class="text-[10px] text-espresso/50 font-normal block">(Đơn tối thiểu: {{ number_format($rh->min_order, 0, ',', '.') }}đ)</span>
-                                                </td>
-                                                <td class="py-3 px-4 text-center">
-                                                    <span class="font-black text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full text-xs">
-                                                        -{{ $rh->points_required }} điểm
-                                                    </span>
-                                                </td>
-                                                <td class="py-3 px-4 text-center">
-                                                    @if($rh->is_used)
-                                                        <span class="px-2.5 py-1 bg-gray-100 text-gray-500 rounded-full text-[11px] font-bold border border-gray-200">Đã dùng</span>
-                                                    @else
-                                                        <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[11px] font-bold border border-emerald-200">Sẵn sàng dùng</span>
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
+                                    @endforeach
+                                </tbody>
+                            </table>
                         </div>
-                    @endif
-                </div>
+                    </div>
+                @endif
             </div>
 
         </div>
         
     </div>
 </div>
-
-<script>
-    function switchHistoryTab(tab) {
-        document.getElementById('tab-content-orders').classList.toggle('hidden', tab !== 'orders');
-        document.getElementById('tab-content-orders').classList.toggle('block', tab === 'orders');
-
-        document.getElementById('tab-content-vouchers').classList.toggle('hidden', tab !== 'vouchers');
-        document.getElementById('tab-content-vouchers').classList.toggle('block', tab === 'vouchers');
-
-        const btnOrders = document.getElementById('tab-btn-orders');
-        const btnVouchers = document.getElementById('tab-btn-vouchers');
-
-        if (tab === 'orders') {
-            btnOrders.className = "pb-3 text-sm font-black uppercase tracking-wider text-coral border-b-2 border-coral transition-all flex items-center gap-2";
-            btnVouchers.className = "pb-3 text-sm font-bold uppercase tracking-wider text-espresso/40 border-b-2 border-transparent hover:text-coral transition-all flex items-center gap-2";
-        } else {
-            btnOrders.className = "pb-3 text-sm font-bold uppercase tracking-wider text-espresso/40 border-b-2 border-transparent hover:text-coral transition-all flex items-center gap-2";
-            btnVouchers.className = "pb-3 text-sm font-black uppercase tracking-wider text-coral border-b-2 border-coral transition-all flex items-center gap-2";
-        }
-    }
-</script>
 @endsection

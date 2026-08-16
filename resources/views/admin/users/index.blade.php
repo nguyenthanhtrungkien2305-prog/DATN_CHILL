@@ -1,163 +1,156 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Quản lý Người dùng - Chill Chill Admin')
-@section('page_title', 'Danh sách Người dùng')
+@section('title', 'Quản lý Người Dùng - Chill Chill Admin')
 
 @section('content')
-{{-- Thông báo --}}
-@if(session('success'))
-    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl relative mb-4 shadow-sm">{{ session('success') }}</div>
-@endif
-@if(session('error'))
-    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl relative mb-4 shadow-sm">{{ session('error') }}</div>
-@endif
-
-<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-    <p class="text-gray-500">Quản lý tài khoản khách hàng, nhân viên và quản trị viên của cửa hàng.</p>
-</div>
-
-{{-- Thanh bộ lọc --}}
-<div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-6">
-    <form action="{{ Route::has('admin.users.index') ? route('admin.users.index') : route('users.index') }}" method="GET" class="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
-        <div class="flex-1 relative">
-            <input type="text" name="search" id="user-search-input" value="{{ request('search') ?? request('keyword') }}" 
-                   placeholder="Tìm theo tên, email, số điện thoại..." 
-                   class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#e8634a] transition">
+    {{-- Header của trang --}}
+    <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 shrink-0">
+        <h2 class="text-xl font-semibold text-gray-800">Quản lý Người Dùng</h2>
+        <div class="flex items-center gap-4">
+            <span class="text-sm text-gray-600">Xin chào, <strong>{{ Auth::user()->name }}</strong></span>
+            <a href="{{ route('logout') }}" class="text-sm text-red-500 hover:underline">Đăng xuất</a>
         </div>
-        
-        <div class="w-full md:w-48">
-            <select name="role" onchange="this.form.submit()" 
-                    class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#e8634a] transition text-gray-700">
-                <option value="">Tất cả Vai trò</option>
-                <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Quản trị viên (Admin)</option>
-                <option value="staff" {{ request('role') == 'staff' ? 'selected' : '' }}>Nhân viên (Staff)</option>
-                <option value="user" {{ request('role') == 'user' ? 'selected' : '' }}>Khách hàng (User)</option>
-            </select>
-        </div>
-        
-        <div class="flex gap-2">
-            <button type="submit" class="bg-gray-800 hover:bg-gray-700 text-white px-5 py-2 rounded-xl text-sm font-medium transition">
-                Lọc
-            </button>
-            @if(request('search') || request('keyword') || request('role'))
-                <a href="{{ Route::has('admin.users.index') ? route('admin.users.index') : route('users.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-xl text-sm font-medium transition flex items-center">
-                    Reset
-                </a>
-            @endif
-        </div>
-    </form>
-</div>
+    </header>
 
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-    <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-                <tr class="bg-gray-50 text-gray-500 text-sm border-b">
-                    <th class="p-4 font-medium w-16 text-center">ID</th>
-                    <th class="p-4 font-medium">Tài khoản / Người dùng</th>
-                    <th class="p-4 font-medium">Email</th>
-                    <th class="p-4 font-medium w-48 text-center">Vai trò phân quyền</th>
-                    <th class="p-4 font-medium text-center w-36">Trạng thái</th>
-                </tr>
-            </thead>
-            <tbody class="text-gray-700 text-sm divide-y divide-gray-100">
-                @forelse($users as $u)
-                @php
-                    $isMainAdmin = ($u->user_id == 1);
-                    $isLocked = !empty($u->is_locked);
-                    $lockRoute = Route::has('admin.users.toggle_lock') ? route('admin.users.toggle_lock', $u->user_id) : (Route::has('users.toggle_lock') ? route('users.toggle_lock', $u->user_id) : '#');
-                    $roleRoute = Route::has('admin.users.update_role') ? route('admin.users.update_role', $u->user_id) : (Route::has('users.update_role') ? route('users.update_role', $u->user_id) : '#');
-                @endphp
-                <tr class="hover:bg-gray-50 transition user-row {{ $isLocked ? 'bg-red-50/20' : '' }}"
-                    data-name="{{ mb_strtolower($u->name) }}" 
-                    data-phone="{{ $u->phone }}" 
-                    data-email="{{ mb_strtolower($u->email ?? '') }}">
-                    <td class="p-4 text-center font-bold text-gray-500">#{{ $u->user_id }}</td>
-                    <td class="p-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-full bg-[#e8634a]/10 text-[#e8634a] font-bold flex items-center justify-center text-sm">
-                                {{ strtoupper(substr($u->name, 0, 1)) }}
-                            </div>
-                            <div>
-                                <div class="font-bold text-gray-900">{{ $u->name }}</div>
-                                <div class="text-xs text-gray-400">{{ $u->phone ?? 'Chưa cập nhật SĐT' }}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="p-4 text-gray-600 font-mono text-xs">{{ $u->email ?: '-' }}</td>
-                    <td class="p-4 text-center">
-                        @if($isMainAdmin)
-                            <span class="inline-block px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-gray-700 border border-gray-200">
-                                Admin
-                            </span>
-                        @elseif($roleRoute !== '#')
-                        <form action="{{ $roleRoute }}" method="POST" class="m-0">
-                            @csrf
-                            <select name="role" onchange="this.form.submit()" 
-                                class="w-full rounded-xl px-3 py-1.5 text-xs font-bold border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#e8634a]/50 transition-colors cursor-pointer text-center
-                                {{ $u->role == 'admin' ? 'bg-red-50 text-red-600 border-red-100' : ($u->role == 'staff' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-blue-50 text-blue-600 border-blue-100') }}">
-                                <option value="user" {{ $u->role == 'user' ? 'selected' : '' }}>Khách hàng</option>
-                                <option value="staff" {{ $u->role == 'staff' ? 'selected' : '' }}>Nhân viên</option>
-                                <option value="admin" {{ $u->role == 'admin' ? 'selected' : '' }}>Admin</option>
-                            </select>
-                        </form>
-                        @else
-                            <span class="px-3 py-1 rounded-full text-xs font-bold {{ $u->role == 'admin' ? 'bg-red-50 text-red-600' : ($u->role == 'staff' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600') }}">
-                                {{ ucfirst($u->role) }}
-                            </span>
-                        @endif
-                    </td>
-                    <td class="p-4 text-center">
-                        @if($isMainAdmin)
-                            <span class="text-xs font-medium text-gray-400 px-3 py-1 rounded-full inline-block">Cố định</span>
-                        @elseif($lockRoute !== '#' && auth()->id() != $u->user_id)
-                        <form action="{{ $lockRoute }}" method="POST" class="m-0"
-                              onsubmit="return confirm('Bạn có chắc chắn muốn {{ $u->is_locked ? 'mở khóa' : 'khóa' }} tài khoản này?');">
-                            @csrf
-                            <button type="submit" class="px-3 py-1 text-xs font-bold rounded-full transition {{ $u->is_locked ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200' }}">
-                                {{ $u->is_locked ? '🔒 Đã khóa' : '✅ Hoạt động' }}
-                            </button>
-                        </form>
-                        @else
-                            <span class="px-3 py-1 text-xs font-bold rounded-full {{ $u->is_locked ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">
-                                {{ $u->is_locked ? '🔒 Đã khóa' : '✅ Hoạt động' }}
-                            </span>
-                        @endif
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="5" class="p-8 text-center text-gray-400 italic">
-                        Không tìm thấy người dùng phù hợp.
-                    </td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
+    <div class="p-8">
+        @if(session('success'))
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl relative mb-4 text-sm font-medium">{{ session('success') }}</div>
+        @endif
+        @if(session('error'))
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl relative mb-4 text-sm font-medium">{{ session('error') }}</div>
+        @endif
+
+        <div class="w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            
+            <div class="p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800">Danh sách tài khoản</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">Quản lý người dùng, phân quyền vai trò và khóa/mở khóa tài khoản.</p>
+                </div>
+
+                {{-- Ô và Nút Tìm Kiếm Người Dùng --}}
+                <form action="{{ route('admin.users.index') }}" method="GET" class="flex items-center gap-2 w-full md:w-auto">
+                    <div class="relative flex-1 md:w-72">
+                        <input type="text" name="keyword" id="user-search-input" value="{{ request('keyword') }}" 
+                               placeholder="Tìm tên, SĐỐ, email..." 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-[#e8634a]">
+                    </div>
+                    <button type="submit" class="bg-gray-800 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-700 transition shrink-0">
+                        Tìm kiếm
+                    </button>
+                    @if(request('keyword'))
+                        <a href="{{ route('admin.users.index') }}" class="text-xs text-gray-500 hover:text-red-500 underline shrink-0">Bỏ lọc</a>
+                    @endif
+                </form>
+            </div>
+
+            <div class="overflow-x-auto w-full">
+                <table class="w-full text-left border-collapse min-w-[800px]">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-bold border-b border-gray-100">
+                        <tr>
+                            <th class="p-4 pl-6 w-16">ID</th>
+                            <th class="p-4">Tài khoản / Người dùng</th>
+                            <th class="p-4 text-center w-36">Trạng thái</th>
+                            <th class="p-4 text-center w-48">Vai trò phân quyền</th>
+                            <th class="p-4 pr-6 text-center w-40">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50" id="users-table-body">
+                        @forelse($users as $user)
+                        @php
+                            $isMainAdmin = ($user->user_id == 1);
+                            $isLocked = !empty($user->is_locked);
+                        @endphp
+                        <tr class="user-row hover:bg-gray-50/80 transition-colors {{ $isLocked ? 'bg-red-50/20' : '' }}" 
+                            data-name="{{ mb_strtolower($user->name) }}" 
+                            data-phone="{{ $user->phone }}" 
+                            data-email="{{ mb_strtolower($user->email ?? '') }}">
+                            
+                            <td class="p-4 pl-6 font-bold text-gray-900">{{ $user->user_id }}</td>
+                            
+                            <td class="p-4">
+                                <div class="font-bold text-gray-800 text-base">{{ $user->name }}</div>
+                                <div class="text-xs text-gray-400 font-medium mt-0.5">
+                                    {{ $user->phone ?? $user->email ?? 'Tham gia: ' . ($user->created_at ? \Carbon\Carbon::parse($user->created_at)->format('d/m/Y') : 'Mới') }}
+                                </div>
+                            </td>
+
+                            {{-- Trạng thái Tài khoản --}}
+                            <td class="p-4 text-center">
+                                @if($isLocked)
+                                    <span class="bg-red-100 text-red-700 font-medium px-3 py-1 rounded-full text-xs inline-block">
+                                        Đã bị khóa
+                                    </span>
+                                @else
+                                    <span class="bg-emerald-100 text-emerald-700 font-medium px-3 py-1 rounded-full text-xs inline-block">
+                                        Hoạt động
+                                    </span>
+                                @endif
+                            </td>
+                            
+                            {{-- Phân quyền Vai trò --}}
+                            <td class="p-4 text-center">
+                                @if($isMainAdmin)
+                                    <span class="inline-block w-full py-2 px-3 rounded-lg text-sm font-bold bg-gray-100 text-gray-700 border border-gray-200">
+                                        Admin
+                                    </span>
+                                @else
+                                    <form action="{{ route('admin.users.update_role', $user->user_id) }}" method="POST" class="m-0">
+                                        @csrf
+                                        <select name="role" onchange="this.form.submit()" 
+                                            class="w-full rounded-lg px-3 py-2 text-sm font-bold border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#e8634a]/50 transition-colors cursor-pointer text-center
+                                            {{ $user->role == 'admin' ? 'bg-red-50 text-red-600 border-red-100' : ($user->role == 'staff' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-gray-50 text-gray-600') }}">
+                                            <option value="user" {{ $user->role == 'user' ? 'selected' : '' }}>Khách hàng</option>
+                                            <option value="staff" {{ $user->role == 'staff' ? 'selected' : '' }}>Nhân viên</option>
+                                            <option value="admin" {{ $user->role == 'admin' ? 'selected' : '' }}>Admin</option>
+                                        </select>
+                                    </form>
+                                @endif
+                            </td>
+                            
+                            {{-- Hành động khóa / mở khóa --}}
+                            <td class="p-4 pr-6 text-center">
+                                @if($isMainAdmin)
+                                    <span class="text-xs font-medium text-gray-400 px-3 py-1.5 rounded-lg inline-block">
+                                        Cố định
+                                    </span>
+                                @else
+                                    <form action="{{ route('admin.users.toggle_lock', $user->user_id) }}" method="POST" class="m-0" onsubmit="return confirm('Bạn có chắc muốn {{ $isLocked ? 'mở khóa' : 'khóa' }} tài khoản {{ $user->name }}?');">
+                                        @csrf
+                                        <button type="submit" 
+                                                class="font-medium text-xs px-3 py-1.5 rounded-lg transition-colors {{ $isLocked ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-red-100 text-red-700 hover:bg-red-200' }}">
+                                            {{ $isLocked ? 'Mở khóa' : 'Khóa tài khoản' }}
+                                        </button>
+                                    </form>
+                                @endif
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="5" class="text-center p-8 text-gray-400 text-sm">Không tìm thấy người dùng nào phù hợp.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    {{-- Phân trang --}}
-    @if(method_exists($users, 'hasPages') && $users->hasPages())
-    <div class="p-4 border-t">
-        {{ $users->appends(request()->query())->links() }}
-    </div>
-    @endif
-</div>
-
-<script>
-    document.getElementById('user-search-input')?.addEventListener('input', function() {
-        const kw = this.value.trim().toLowerCase();
-        const rows = document.querySelectorAll('.user-row');
-        rows.forEach(row => {
-            const name = row.getAttribute('data-name') || '';
-            const phone = row.getAttribute('data-phone') || '';
-            const email = row.getAttribute('data-email') || '';
-            if (name.includes(kw) || phone.includes(kw) || email.includes(kw)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
+    <script>
+        // Lọc nhanh trực tiếp khi gõ chữ
+        document.getElementById('user-search-input')?.addEventListener('input', function() {
+            const kw = this.value.trim().toLowerCase();
+            const rows = document.querySelectorAll('.user-row');
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name') || '';
+                const phone = row.getAttribute('data-phone') || '';
+                const email = row.getAttribute('data-email') || '';
+                if (name.includes(kw) || phone.includes(kw) || email.includes(kw)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
         });
-    });
-</script>
+    </script>
 @endsection

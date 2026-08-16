@@ -3,47 +3,14 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class CartController extends Controller
 {
-    const CART_TTL_HOURS = 24;
-
     /**
-     * Trả về cache key của giỏ hàng theo trạng thái đăng nhập.
-     * - Đã đăng nhập : cart:u:{user_id}
-     * - Khách vãng lai: cart:g:{uuid_cookie}   (cookie 'cart_token' tồn tại 24h)
+     * BỘ LỌC THÉP: Xử lý mảng Topping gửi lên từ Javascript
+     * Đảm bảo luôn trả về mảng đúng định dạng [topping_id => số_lượng]
      */
-    public static function cartKey(): string
-    {
-        if (auth()->check()) {
-            return 'cart:u:' . auth()->id();
-        }
-
-        $token = request()->cookie('cart_token');
-        if (!$token) {
-            $token = Str::uuid()->toString();
-            Cookie::queue('cart_token', $token, 60 * self::CART_TTL_HOURS);
-        }
-
-        return 'cart:g:' . $token;
-    }
-
-    /** Đọc giỏ hàng từ Cache. */
-    public static function getCart(): array
-    {
-        return Cache::get(self::cartKey(), []);
-    }
-
-    /** Lưu giỏ hàng vào Cache, gia hạn TTL 24h từ lần thao tác cuối. */
-    public static function saveCart(array $cart): void
-    {
-        Cache::put(self::cartKey(), $cart, now()->addHours(self::CART_TTL_HOURS));
-    }
-
     private function parseToppings($input)
     {
         $clean = [];
@@ -62,14 +29,86 @@ class CartController extends Controller
                 }
             }
         }
-        ksort($clean);
+        ksort($clean); // Sắp xếp để tạo Cart Key luôn chuẩn xác
         return $clean;
+    }
+
+    public function getApplicableVouchers($subTotal)
+    {
+        \App\Http\Controllers\Admin\VoucherController::cleanupExpiredVouchers();
+
+        $vouchers = collect();
+
+        // 1. Lấy mã công khai
+        $publicVouchers = DB::table('vouchers')
+            ->where(function ($q) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', now());
+            })
+            ->where(function ($q) {
+                $q->whereNull('start_date')->orWhere('start_date', '<=', now());
+            })
+            ->where(function ($q) {
+                $q->whereNull('usage_limit')->orWhereRaw('used_count < usage_limit');
+            })
+            ->whereNull('assigned_user_id')
+            ->get();
+
+        foreach ($publicVouchers as $v) {
+            $vouchers->push($v);
+        }
+
+        // 2. Lấy mã cá nhân của user đang đăng nhập
+        if (auth()->check()) {
+            $userId = auth()->id() ?? auth()->user()->user_id;
+
+            $myVouchers = DB::table('user_vouchers')
+                ->join('vouchers', 'user_vouchers.voucher_id', '=', 'vouchers.voucher_id')
+                ->where('user_vouchers.user_id', $userId)
+                ->where('user_vouchers.is_used', 0)
+                ->where(function ($q) {
+                    $q->whereNull('vouchers.end_date')->orWhere('vouchers.end_date', '>=', now());
+                })
+                ->select('vouchers.*')
+                ->get();
+
+            foreach ($myVouchers as $mv) {
+                if (!$vouchers->contains('voucher_id', $mv->voucher_id)) {
+                    $vouchers->push($mv);
+                }
+            }
+        }
+
+        // Tính toán tính khả dụng cho mỗi voucher
+        $vouchers->transform(function ($v) use ($subTotal) {
+            $v->is_eligible = ($subTotal >= $v->min_order);
+            $v->missing_amount = max(0, $v->min_order - $subTotal);
+
+            $discount = $v->discount_type === 'percent' 
+                ? $subTotal * ($v->discount_value / 100) 
+                : $v->discount_value;
+            $v->discount_amount = min($discount, $subTotal);
+            return $v;
+        });
+
+        // Sắp xếp: Mã đủ điều kiện lên trên (giảm nhiều nhất lên đầu), mã chưa đủ điều kiện xuống dưới
+        return $vouchers->sortBy([
+            ['is_eligible', 'desc'],
+            ['discount_amount', 'desc'],
+            ['missing_amount', 'asc']
+        ])->values();
     }
 
     // 1. Hiển thị trang Giỏ hàng
     public function index()
     {
-        $cart = self::getCart();
+        $cart = session()->get('cart', []);
+
+        // Nạp giỏ hàng từ CSDL nếu session rỗng và người dùng đã đăng nhập
+        if (empty($cart) && auth()->check()) {
+            self::loadCartFromDatabase();
+            $cart = session()->get('cart', []);
+        }
+
         $subTotal = 0;
         foreach ($cart as $item) {
             $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
@@ -96,17 +135,18 @@ class CartController extends Controller
         return view('cart.index', compact('cart', 'availableVouchers'));
     }
 
-    // 2. Thêm sản phẩm vào giỏ
+    // 2. Thêm sản phẩm vào giỏ (Đã dùng Bộ lọc)
     public function add(Request $request)
     {
         $productId = $request->input('product_id', $request->input('productId', $request->input('id')));
         $variantId = $request->input('variant_id', $request->input('variantId'));
-        $quantity  = (int)($request->input('quantity', 1));
+        $quantity = (int)($request->input('quantity', 1));
         if ($quantity < 1) $quantity = 1;
 
-        $iceLevel   = $request->input('ice_level', '100');
+        $iceLevel = $request->input('ice_level', '100');
         $sugarLevel = $request->input('sugar_level', '100');
         
+        // Gọi bộ lọc xử lý Topping
         $cleanToppings = $this->parseToppings($request->input('toppings', []));
 
         $product = DB::table('products')->where('product_id', $productId)->first();
@@ -129,62 +169,57 @@ class CartController extends Controller
         }
 
         $toppingDetails = [];
-        $toppingTotal   = 0;
-        $cleanToppings  = [];
-
-        if (!empty($toppings)) {
-            $parsed = $this->parseToppings($toppings);
-            foreach ($parsed as $topId => $topQty) {
-                $topInfo = DB::table('toppings')->where('topping_id', $topId)->first();
-                if ($topInfo) {
-                    $toppingDetails[$topId] = [
-                        'name'  => $topInfo->name,
-                        'price' => $topInfo->price,
-                        'qty'   => $topQty,
-                    ];
-                    $toppingTotal += $topInfo->price * $topQty;
-                    $cleanToppings[$topId] = $topQty;
-                }
+        $toppingTotal = 0;
+        
+        // Xử lý lưu chi tiết Topping
+        foreach ($cleanToppings as $topId => $topQty) {
+            $topProduct = DB::table('products')->where('product_id', $topId)->first();
+            $topPrice = DB::table('product_variants')->where('product_id', $topId)->min('price');
+            $topPrice = $topPrice ? (float) $topPrice : 0;
+            
+            if ($topProduct) {
+                $toppingDetails[$topId] = [
+                    'name' => $topProduct->name,
+                    'price' => $topPrice,
+                    'qty' => $topQty
+                ];
+                $toppingTotal += ($topPrice * $topQty);
             }
         }
 
+        // Tính phụ thu
         if ($iceLevel === '0_full') {
             $toppingTotal += 3000;
         }
 
-        ksort($cleanToppings);
+        // Tạo khóa giỏ hàng bằng json_encode để tránh lỗi Serialize
         $cartKey = md5($productId . '_' . $variantId . '_' . $iceLevel . '_' . $sugarLevel . '_' . json_encode($cleanToppings));
-        $cart    = self::getCart();
+        $cart = session()->get('cart', []);
 
         if (isset($cart[$cartKey])) {
             $cart[$cartKey]['quantity'] += $quantity;
         } else {
             $cart[$cartKey] = [
-                'product_id'    => $product->product_id,
-                'name'          => $product->name,
-                'image'         => $product->image_url,
-                'variant_id'    => $variant->variant_id,
-                'size_name'     => DB::table('sizes')->where('size_id', $variant->size_id)->value('name') ?? 'Mặc định',
-                'price'         => (float) $variant->price,
-                'quantity'      => $quantity,
-                'toppings'      => $toppingDetails,
+                'product_id' => $product->product_id,
+                'name' => $product->name,
+                'image' => $product->image_url,
+                'variant_id' => $variant->variant_id,
+                'size_name' => DB::table('sizes')->where('size_id', $variant->size_id)->value('name') ?? 'Mặc định',
+                'price' => (float) $variant->price,
+                'quantity' => $quantity,
+                'toppings' => $toppingDetails,
                 'topping_total' => $toppingTotal,
-                'ice_level'     => $iceLevel,
-                'sugar_level'   => $sugarLevel,
+                'ice_level' => $iceLevel,
+                'sugar_level' => $sugarLevel,
             ];
         }
 
-        self::saveCart($cart);
+        session()->put('cart', $cart);
         self::checkAndRecalculateVoucher();
         self::syncCartItemsToDatabase();
 
         $totalItems = array_sum(array_column($cart, 'quantity'));
-
-        return response()->json([
-            'success'    => true,
-            'message'    => 'Đã thêm vào giỏ hàng!',
-            'cart_count' => $totalItems,
-        ]);
+        return response()->json(['success' => true, 'message' => 'Đã thêm vào giỏ hàng!', 'cart_count' => $totalItems]);
     }
 
     public function addCombo(Request $request)
@@ -238,19 +273,19 @@ class CartController extends Controller
     public function update(Request $request)
     {
         $cartKey = $request->cart_key;
-        $change  = (int)$request->change;
-        $cart    = self::getCart();
+        $change = (int) $request->change;
+        $cart = session()->get('cart', []);
 
         if (isset($cart[$cartKey])) {
-            $cart[$cartKey]['quantity'] = max(1, $cart[$cartKey]['quantity'] + $change);
-            self::saveCart($cart);
+            $cart[$cartKey]['quantity'] += $change;
+            if ($cart[$cartKey]['quantity'] < 1) $cart[$cartKey]['quantity'] = 1;
+            
+            session()->put('cart', $cart);
             self::checkAndRecalculateVoucher();
             self::syncCartItemsToDatabase();
-
-            return response()->json([
-                'success'    => true,
-                'cart_count' => array_sum(array_column($cart, 'quantity')),
-            ]);
+            
+            $totalItems = array_sum(array_column($cart, 'quantity'));
+            return response()->json(['success' => true, 'cart_count' => $totalItems]);
         }
         return response()->json(['success' => false, 'message' => 'Không tìm thấy sản phẩm!']);
     }
@@ -259,87 +294,110 @@ class CartController extends Controller
     public function remove(Request $request)
     {
         $cartKey = $request->cart_key;
-        $cart    = self::getCart();
+        $cart = session()->get('cart', []);
 
         if (isset($cart[$cartKey])) {
             unset($cart[$cartKey]);
-            self::saveCart($cart);
+            session()->put('cart', $cart);
             self::checkAndRecalculateVoucher();
             self::syncCartItemsToDatabase();
-
-            return response()->json([
-                'success'    => true,
-                'cart_count' => array_sum(array_column($cart, 'quantity')),
-            ]);
+            
+            $totalItems = array_sum(array_column($cart, 'quantity'));
+            return response()->json(['success' => true, 'cart_count' => $totalItems]);
         }
         return response()->json(['success' => false, 'message' => 'Không tìm thấy sản phẩm!']);
     }
 
-    // 5. Lấy thông tin 1 món (cho modal sửa topping)
+    // 5. Lấy dữ liệu đẩy lên Bảng (Modal)
     public function getItem(Request $request)
     {
         $cartKey = $request->cart_key;
-        $cart    = self::getCart();
+        $cart = session()->get('cart', []);
 
         if (!isset($cart[$cartKey])) {
             return response()->json(['success' => false, 'message' => 'Không tìm thấy sản phẩm!']);
         }
 
-        $item       = $cart[$cartKey];
-        $product    = DB::table('products')->where('product_id', $item['product_id'])->first();
-        $catName    = $product ? DB::table('categories')->where('category_id', $product->category_id)->value('name') : '';
-        $isBanh     = $catName && (str_contains(mb_strtolower($catName), 'bánh') || str_contains(mb_strtolower($catName), 'cake'));
-        $isTopping  = $catName && str_contains(mb_strtolower($catName), 'topping');
+        $item = $cart[$cartKey];
+        $productId = $item['product_id'];
 
-        $availableToppings = (!$isBanh && !$isTopping)
-            ? DB::table('toppings')->where('status', 1)->get()
-            : collect([]);
+        $product = DB::table('products')->where('product_id', $productId)->first();
+        $categoryName = $product ? DB::table('categories')->where('category_id', $product->category_id)->value('name') : '';
+        $isBanhNgot = $categoryName && (str_contains(mb_strtolower($categoryName), 'bánh') || str_contains(mb_strtolower($categoryName), 'cake'));
+        $isToppingCategory = $categoryName && str_contains(mb_strtolower($categoryName), 'topping');
+
+        if (!$isBanhNgot && !$isToppingCategory) {
+            $toppingCategory = DB::table('categories')->where('name', 'LIKE', '%topping%')->orWhere('name', 'LIKE', '%Topping%')->first();
+            if ($toppingCategory) {
+                $availableToppings = DB::table('products')
+                    ->leftJoin('product_variants', 'products.product_id', '=', 'product_variants.product_id')
+                    ->where('products.category_id', $toppingCategory->category_id)
+                    ->where('products.status', 1)
+                    ->select('products.product_id as topping_id', 'products.name', 'products.image_url as image', DB::raw('MIN(product_variants.price) as price'))
+                    ->groupBy('products.product_id', 'products.name', 'products.image_url')
+                    ->get();
+            } else {
+                $availableToppings = collect([]);
+            }
+        } else {
+            $availableToppings = collect([]);
+        }
 
         $toppingList = [];
         foreach ($availableToppings as $top) {
+            $currentQty = isset($item['toppings'][$top->topping_id]) ? $item['toppings'][$top->topping_id]['qty'] : 0;
             $toppingList[] = [
                 'topping_id' => $top->topping_id,
-                'name'       => $top->name,
-                'price'      => (float) $top->price,
-                'image'      => $top->image ?? '',
-                'qty'        => $item['toppings'][$top->topping_id]['qty'] ?? 0,
+                'name' => $top->name,
+                'price' => (float) $top->price,
+                'image' => $top->image,
+                'qty' => $currentQty
             ];
         }
 
         return response()->json([
-            'success'    => true,
-            'item_name'  => $item['name'],
-            'size_name'  => $item['size_name'],
+            'success' => true,
+            'item_name' => $item['name'],
+            'size_name' => $item['size_name'],
             'item_price' => $item['price'],
-            'ice_level'  => $item['ice_level'] ?? '100',
-            'sugar_level'=> $item['sugar_level'] ?? '100',
-            'toppings'   => $toppingList,
+            'ice_level' => $item['ice_level'] ?? '100',
+            'sugar_level' => $item['sugar_level'] ?? '100',
+            'toppings' => $toppingList
         ]);
     }
 
-    // 6. Cập nhật topping cho 1 món
+    // 6. Cập nhật lại thay đổi Topping trong giỏ
     public function updateToppings(Request $request)
     {
-        $oldCartKey  = $request->cart_key;
-        $iceLevel    = $request->input('ice_level', '100');
-        $sugarLevel  = $request->input('sugar_level', '100');
-        $newToppings = $request->toppings ?? [];
-        $cart        = self::getCart();
+        $oldCartKey = $request->cart_key;
+        $iceLevel = $request->input('ice_level', '100');
+        $sugarLevel = $request->input('sugar_level', '100');
+        
+        // Gọi bộ lọc xử lý Topping
+        $cleanToppings = $this->parseToppings($request->input('toppings', []));
+        
+        $cart = session()->get('cart', []);
 
         if (!isset($cart[$oldCartKey])) {
             return response()->json(['success' => false, 'message' => 'Sản phẩm không tồn tại!']);
         }
 
-        $oldItem        = $cart[$oldCartKey];
+        $oldItem = $cart[$oldCartKey];
         $toppingDetails = [];
-        $toppingTotal   = 0;
-        $cleanToppings  = $this->parseToppings($newToppings);
+        $toppingTotal = 0;
 
         foreach ($cleanToppings as $topId => $topQty) {
-            $topInfo = DB::table('toppings')->where('topping_id', $topId)->first();
-            if ($topInfo) {
-                $toppingDetails[$topId] = ['name' => $topInfo->name, 'price' => $topInfo->price, 'qty' => $topQty];
-                $toppingTotal += $topInfo->price * $topQty;
+            $topProduct = DB::table('products')->where('product_id', $topId)->first();
+            $topPrice = DB::table('product_variants')->where('product_id', $topId)->min('price');
+            $topPrice = $topPrice ? (float) $topPrice : 0;
+            
+            if ($topProduct) {
+                $toppingDetails[$topId] = [
+                    'name' => $topProduct->name,
+                    'price' => $topPrice,
+                    'qty' => $topQty
+                ];
+                $toppingTotal += ($topPrice * $topQty);
             }
         }
 
@@ -347,18 +405,18 @@ class CartController extends Controller
             $toppingTotal += 3000;
         }
 
-        ksort($cleanToppings);
+        // Tạo key mới
         $newCartKey = md5($oldItem['product_id'] . '_' . $oldItem['variant_id'] . '_' . $iceLevel . '_' . $sugarLevel . '_' . json_encode($cleanToppings));
 
+        // Nếu khách lưu mà không thay đổi gì thì bỏ qua
         if ($newCartKey === $oldCartKey) {
             return response()->json(['success' => true]);
         }
-
-        $newItem                  = $oldItem;
-        $newItem['toppings']      = $toppingDetails;
+        $newItem = $oldItem;
+        $newItem['toppings'] = $toppingDetails;
         $newItem['topping_total'] = $toppingTotal;
-        $newItem['ice_level']     = $iceLevel;
-        $newItem['sugar_level']   = $sugarLevel;
+        $newItem['ice_level'] = $iceLevel;
+        $newItem['sugar_level'] = $sugarLevel;
 
         if (isset($cart[$newCartKey])) {
             $cart[$newCartKey]['quantity'] += $newItem['quantity'];
@@ -366,109 +424,11 @@ class CartController extends Controller
             $cart[$newCartKey] = $newItem;
         }
 
-        unset($cart[$oldCartKey]);
-        self::saveCart($cart);
+        unset($cart[$oldCartKey]); // Xóa khóa cũ
+        session()->put('cart', $cart); // Lưu khóa mới
         self::checkAndRecalculateVoucher();
 
         return response()->json(['success' => true]);
-    }
-
-    public function getApplicableVouchers($subTotal)
-    {
-        \App\Http\Controllers\Admin\VoucherController::cleanupExpiredVouchers();
-
-        $vouchers = collect();
-
-        // 1. Lấy mã công khai (Không phải mã đổi bằng điểm & Không gán riêng cho user khác)
-        $publicVouchers = DB::table('vouchers')
-            ->where(function ($q) {
-                $q->whereNull('end_date')->orWhere('end_date', '>=', now());
-            })
-            ->where(function ($q) {
-                $q->whereNull('start_date')->orWhere('start_date', '<=', now());
-            })
-            ->where(function ($q) {
-                $q->whereNull('usage_limit')->orWhereRaw('used_count < usage_limit');
-            })
-            ->whereNull('assigned_user_id')
-            ->where(function ($q) {
-                $q->whereNull('is_points_exchange')->orWhere('is_points_exchange', 0);
-            })
-            ->get();
-
-        foreach ($publicVouchers as $v) {
-            $vouchers->push($v);
-        }
-
-        // 2. Lấy mã cá nhân trong kho của user đang đăng nhập (gồm mã đổi điểm đã đổi + mã tặng riêng)
-        if (auth()->check()) {
-            $userId = auth()->id() ?? auth()->user()->user_id;
-
-            $myVouchers = DB::table('user_vouchers')
-                ->join('vouchers', 'user_vouchers.voucher_id', '=', 'vouchers.voucher_id')
-                ->where('user_vouchers.user_id', $userId)
-                ->where('user_vouchers.is_used', 0)
-                ->where(function ($q) {
-                    $q->whereNull('vouchers.end_date')->orWhere('vouchers.end_date', '>=', now());
-                })
-                ->select('vouchers.*')
-                ->get();
-
-            foreach ($myVouchers as $mv) {
-                if (!$vouchers->contains('voucher_id', $mv->voucher_id)) {
-                    $vouchers->push($mv);
-                }
-            }
-        }
-
-        // Tính toán tính khả dụng và đếm số lượng lượt dùng còn lại cho từng mã
-        $vouchers->transform(function ($v) use ($subTotal) {
-            $v->is_eligible = ($subTotal >= $v->min_order);
-            $v->missing_amount = max(0, $v->min_order - $subTotal);
-
-            $discount = $v->discount_type === 'percent' 
-                ? $subTotal * ($v->discount_value / 100) 
-                : $v->discount_value;
-            $v->discount_amount = min($discount, $subTotal);
-
-            $isPointsExchange = isset($v->is_points_exchange) ? (bool)$v->is_points_exchange : false;
-
-            if (auth()->check() && \Illuminate\Support\Facades\Schema::hasTable('user_vouchers')) {
-                $userVoucherCount = DB::table('user_vouchers')
-                    ->where('user_id', auth()->id())
-                    ->where('voucher_id', $v->voucher_id)
-                    ->where('is_used', 0)
-                    ->count();
-
-                if ($isPointsExchange || $v->assigned_user_id) {
-                    $v->available_quantity = $userVoucherCount;
-                } else {
-                    $usagePerUser = isset($v->usage_per_user) ? $v->usage_per_user : 1;
-                    $usedInOrders = DB::table('orders')
-                        ->where('voucher_id', $v->voucher_id)
-                        ->where('user_id', auth()->id())
-                        ->where('status', '!=', 'cancelled')
-                        ->count();
-                    $v->available_quantity = max(0, $usagePerUser - $usedInOrders);
-                }
-            } else {
-                $v->available_quantity = 1;
-            }
-
-            return $v;
-        });
-
-        // Loại bỏ những mã mà người dùng đã dùng hết lượt khả dụng (available_quantity <= 0)
-        $vouchers = $vouchers->filter(function($v) {
-            return ($v->available_quantity ?? 0) > 0;
-        });
-
-        // Sắp xếp: Mã đủ điều kiện lên trên (giảm nhiều nhất lên đầu), mã chưa đủ điều kiện xuống dưới
-        return $vouchers->sortBy([
-            ['is_eligible', 'desc'],
-            ['discount_amount', 'desc'],
-            ['missing_amount', 'asc']
-        ])->values();
     }
 
     // 7. Áp dụng mã giảm giá
@@ -477,65 +437,48 @@ class CartController extends Controller
         $code = strtoupper(trim($request->voucher_code));
         if (empty($code)) return response()->json(['success' => false, 'message' => 'Vui lòng nhập mã giảm giá!']);
 
-        $cart = self::getCart();
-        if (empty($cart)) {
-            return response()->json(['success' => false, 'message' => 'Giỏ hàng của bạn đang trống!']);
-        }
+        $cart = session()->get('cart', []);
+        if (empty($cart)) return response()->json(['success' => false, 'message' => 'Giỏ hàng đang trống!']);
 
         $subTotal = 0;
         foreach ($cart as $item) $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
 
         $voucher = DB::table('vouchers')->where('code', $code)->first();
-        if (!$voucher) {
-            return response()->json(['success' => false, 'message' => 'Mã giảm giá không hợp lệ!']);
-        }
+        if (!$voucher) return response()->json(['success' => false, 'message' => 'Mã giảm giá không hợp lệ!']);
 
         $now = now();
-        if ($voucher->start_date && $now->lt(\Carbon\Carbon::parse($voucher->start_date))) {
-            return response()->json(['success' => false, 'message' => 'Mã giảm giá chưa có hiệu lực!']);
-        }
-        if ($voucher->end_date && $now->gt(\Carbon\Carbon::parse($voucher->end_date))) {
-            return response()->json(['success' => false, 'message' => 'Mã giảm giá đã hết hạn!']);
-        }
-        if ($voucher->usage_limit !== null && $voucher->used_count >= $voucher->usage_limit) {
-            return response()->json(['success' => false, 'message' => 'Mã giảm giá đã hết lượt sử dụng!']);
-        }
-        if ($subTotal < $voucher->min_order) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Đơn hàng chưa đạt tối thiểu ' . number_format($voucher->min_order, 0, ',', '.') . 'đ!',
-            ]);
+        if ($voucher->start_date && $now->lt(\Carbon\Carbon::parse($voucher->start_date))) return response()->json(['success' => false, 'message' => 'Mã giảm giá chưa có hiệu lực!']);
+        if ($voucher->end_date && $now->gt(\Carbon\Carbon::parse($voucher->end_date))) return response()->json(['success' => false, 'message' => 'Mã giảm giá đã hết hạn!']);
+        if ($voucher->usage_limit !== null && $voucher->used_count >= $voucher->usage_limit) return response()->json(['success' => false, 'message' => 'Mã đã hết lượt sử dụng!']);
+        if ($subTotal < $voucher->min_order) return response()->json(['success' => false, 'message' => 'Đơn hàng chưa đạt tối thiểu ' . number_format($voucher->min_order, 0, ',', '.') . 'đ!']);
+
+        // Kiểm tra xem khách hàng có sở hữu voucher trong kho user_vouchers không
+        $userId = auth()->id();
+        $hasUserVoucherRecords = false;
+        $unusedInWallet = 0;
+
+        if ($userId && \Illuminate\Support\Facades\Schema::hasTable('user_vouchers')) {
+            $userVoucherQuery = DB::table('user_vouchers')
+                ->where('user_id', $userId)
+                ->where('voucher_id', $voucher->voucher_id);
+            
+            $hasUserVoucherRecords = (clone $userVoucherQuery)->exists();
+            if ($hasUserVoucherRecords) {
+                $unusedInWallet = (clone $userVoucherQuery)->where('is_used', 0)->count();
+            }
         }
 
-        $userId = auth()->id();
         $isPointsExchange = isset($voucher->is_points_exchange) ? (bool)$voucher->is_points_exchange : false;
 
-        // Nếu là Mã đổi bằng điểm hoặc Mã tặng cá nhân: Bắt buộc phải có trong kho user_vouchers chưa dùng
-        if ($isPointsExchange || !empty($voucher->assigned_user_id)) {
-            if (!$userId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Vui lòng đăng nhập để sử dụng mã giảm giá này!'
-                ]);
-            }
-
-            $unusedInWallet = 0;
-            if (\Illuminate\Support\Facades\Schema::hasTable('user_vouchers')) {
-                $unusedInWallet = DB::table('user_vouchers')
-                    ->where('user_id', $userId)
-                    ->where('voucher_id', $voucher->voucher_id)
-                    ->where('is_used', 0)
-                    ->count();
-            }
-
+        if ($hasUserVoucherRecords) {
             if ($unusedInWallet <= 0) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Mã giảm giá này cần dùng điểm tích lũy để đổi hoặc bạn đã dùng hết lượt! Vui lòng vào trang Tích điểm & Ưu đãi để đổi mã nhé.'
+                    'message' => 'Bạn đã sử dụng hết số lượt của mã giảm giá này!'
                 ]);
             }
-        } else {
-            // Nếu là Mã khuyến mãi công khai (Promo voucher): Kiểm tra giới hạn lượt dùng usage_per_user
+        } elseif (!$isPointsExchange) {
+            // Kiểm tra giới hạn lượt sử dụng / 1 khách hàng (Chỉ áp dụng cho Mã công khai / Mã tặng riêng, KHÔNG áp dụng cho Mã đổi bằng điểm)
             $usagePerUser = isset($voucher->usage_per_user) ? $voucher->usage_per_user : 1;
             if ($usagePerUser !== null && $usagePerUser > 0) {
                 $customerPhone = auth()->check() ? auth()->user()->phone : trim($request->input('phone', ''));
@@ -569,72 +512,46 @@ class CartController extends Controller
 
         session()->forget('voucher_opt_out');
         session()->put('voucher', [
-            'voucher_id'      => $voucher->voucher_id,
-            'code'            => $voucher->code,
-            'discount_type'   => $voucher->discount_type,
-            'discount_value'  => $voucher->discount_value,
-            'discount_amount' => $discount,
-            'min_order'       => $voucher->min_order,
+            'voucher_id' => $voucher->voucher_id, 'code' => $voucher->code, 'discount_type' => $voucher->discount_type,
+            'discount_value' => $voucher->discount_value, 'discount_amount' => $discount, 'min_order' => $voucher->min_order
         ]);
 
-        return response()->json([
-            'success'             => true,
-            'message'             => 'Áp dụng mã giảm giá thành công!',
-            'discount'            => $discount,
-            'discount_formatted'  => number_format($discount, 0, ',', '.') . ' đ',
-            'new_total'           => $subTotal - $discount,
-            'new_total_formatted' => number_format($subTotal - $discount, 0, ',', '.') . ' đ',
-        ]);
+        return response()->json(['success' => true, 'message' => 'Áp dụng mã thành công!']);
     }
 
-    // 8. Hủy voucher
+    // 8. Hủy áp dụng mã giảm giá
     public function removeVoucher(Request $request)
     {
         session()->forget('voucher');
         session()->put('voucher_opt_out', true);
-
-        $cart     = self::getCart();
-        $subTotal = 0;
-        foreach ($cart as $item) {
-            $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
-        }
-
-        return response()->json([
-            'success'         => true,
-            'message'         => 'Đã hủy mã giảm giá.',
-            'total'           => $subTotal,
-            'total_formatted' => number_format($subTotal, 0, ',', '.') . ' đ',
-        ]);
+        return response()->json(['success' => true, 'message' => 'Đã hủy mã giảm giá.']);
     }
 
-    // 9. Helper: tính lại voucher sau mỗi thao tác giỏ hàng
-    public static function checkAndRecalculateVoucher(): void
+    // 9. Cập nhật lại voucher khi giỏ đổi
+    public static function checkAndRecalculateVoucher()
     {
         if (!session()->has('voucher')) return;
 
-        $cart     = self::getCart();
+        $cart = session()->get('cart', []);
         $subTotal = 0;
         foreach ($cart as $item) $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
 
         $voucherSession = session()->get('voucher');
-        $voucher        = DB::table('vouchers')->where('voucher_id', $voucherSession['voucher_id'])->first();
+        $voucher = DB::table('vouchers')->where('voucher_id', $voucherSession['voucher_id'])->first();
 
         if (empty($cart) || !$voucher || $subTotal < $voucher->min_order) {
             session()->forget('voucher'); return;
         }
 
-        $discount = $voucher->discount_type === 'percent'
-            ? $subTotal * ($voucher->discount_value / 100)
-            : $voucher->discount_value;
-
-        $voucherSession['discount_amount'] = min($discount, $subTotal);
+        $discount = $voucher->discount_type === 'percent' ? $subTotal * ($voucher->discount_value / 100) : $voucher->discount_value;
+        $discount = min($discount, $subTotal);
+        $voucherSession['discount_amount'] = $discount;
         session()->put('voucher', $voucherSession);
     }
 
-    // 10. Số lượng giỏ hàng (AJAX)
     public function getCount()
     {
-        $cart       = self::getCart();
+        $cart = session()->get('cart', []);
         $totalItems = array_sum(array_column($cart, 'quantity'));
         return response()->json(['cart_count' => $totalItems]);
     }

@@ -28,9 +28,6 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\Admin\ChatController as AdminChatController;
-use App\Http\Controllers\Admin\AiAssistantController;
-use App\Http\Controllers\Admin\UserController as AdminUserController;
-
 
 use App\Http\Controllers\PostController as PublicPostController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
@@ -59,12 +56,6 @@ Route::middleware(['guest'])->group(function () {
     Route::get('/dang-nhap', function () { return view('auth.login'); })->name('login');
     Route::post('/dang-nhap', [AuthController::class, 'login'])->name('login.post');
     Route::post('/dang-ky', [AuthController::class, 'register'])->name('register.post');
-
-    // ROUTES QUÊN & ĐẶT LẠI MẬT KHẨU
-    Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
-    Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
-    Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
-    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 });
 
 // Route đăng xuất (Ai đăng nhập rồi cũng dùng được)
@@ -75,6 +66,10 @@ Route::get('/dang-xuat', [AuthController::class, 'logout'])->name('logout');
 | ROUTES NGƯỜI DÙNG THÀNH VIÊN (ĐÃ ĐĂNG NHẬP)
 |--------------------------------------------------------------------------
 */
+// Trang Liên hệ
+Route::get('/lien-he', function () {
+    return view('contact'); 
+})->name('contact');
 Route::post('/lien-he', [FeedbackController::class, 'store'])->name('contact.submit');
 // ROUTES NGƯỜI DÙNG (Bắt buộc phải đăng nhập)
 Route::middleware(['auth'])->group(function () {
@@ -83,10 +78,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/tai-khoan/don-hang', [UserController::class, 'orders'])->name('user.orders');
     Route::get('/tai-khoan/tich-diem', [UserController::class, 'points'])->name('user.points');
     Route::post('/tai-khoan/tich-diem/doi-voucher', [UserController::class, 'redeemVoucher'])->name('user.points.redeem');
-    Route::get('/tai-khoan/doi-mat-khau', [UserController::class, 'changePasswordForm'])->name('user.change_password');
-    Route::post('/tai-khoan/doi-mat-khau', [UserController::class, 'updatePassword'])->name('user.update_password');
-    Route::post('/tai-khoan/gui-otp-sdt', [UserController::class, 'sendPhoneOtp'])->name('user.send_phone_otp');
-    Route::post('/tai-khoan/xac-nhan-otp-sdt', [UserController::class, 'verifyPhoneOtp'])->name('user.verify_phone_otp');
     // QUẢN LÝ ĐƠN HÀNG
     Route::get('orders', [\App\Http\Controllers\Admin\OrderController::class, 'index'])->name('admin.orders.index');
     Route::post('orders/{id}/status', [\App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('admin.orders.update_status');
@@ -117,7 +108,6 @@ Route::prefix('checkout')->group(function () {
     Route::get('/', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/add-address', [CheckoutController::class, 'addAddress'])->name('checkout.addAddress');
     Route::post('/delete-address', [CheckoutController::class, 'deleteAddress'])->name('checkout.deleteAddress');
-    Route::post('/calculate-shipping', [CheckoutController::class, 'calculateShipping'])->name('checkout.calculate_shipping');
     Route::post('/process', [CheckoutController::class, 'process'])->name('checkout.process');
     Route::get('/payment-qr/{id}', [CheckoutController::class, 'paymentQr'])->name('checkout.payment_qr');
     Route::get('/check-status/{id}', [CheckoutController::class, 'checkStatus'])->name('checkout.check_status');
@@ -174,8 +164,6 @@ Route::prefix('chat')->group(function () {
     Route::post('/start', [ChatController::class, 'startSession'])->name('chat.start');
     Route::get('/messages', [ChatController::class, 'getMessages'])->name('chat.messages');
     Route::post('/send', [ChatController::class, 'sendMessage'])->name('chat.send');
-    Route::post('/add-to-cart', [ChatController::class, 'addToCartAction'])->name('chat.add_to_cart');
-    Route::post('/add-combo', [ChatController::class, 'addComboAction'])->name('chat.add_combo');
 });
 /*
 |--------------------------------------------------------------------------
@@ -185,26 +173,32 @@ Route::prefix('chat')->group(function () {
 Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(function () {
     
     Route::get('/', [DashboardController::class, 'index'])->name('admin.dashboard');
-    Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::get('pos', [\App\Http\Controllers\PosController::class, 'index'])->name('admin.pos');
     
     Route::resource('categories', AdminCategoryController::class);
+    Route::post('categories/bulk-delete', [AdminCategoryController::class, 'bulkDelete'])->name('categories.bulk_delete');
+
     Route::resource('products', AdminProductController::class);
+    Route::post('products/bulk-delete', [AdminProductController::class, 'bulkDelete'])->name('products.bulk_delete');
     Route::post('products/{id}/toggle-featured', [AdminProductController::class, 'toggleFeatured'])->name('products.toggle_featured');
+
     Route::resource('combos', AdminComboController::class);
+    Route::post('combos/bulk-delete', [AdminComboController::class, 'bulkDelete'])->name('combos.bulk_delete');
+
     Route::resource('posts', AdminPostController::class);
+    Route::post('posts/bulk-delete', [AdminPostController::class, 'bulkDelete'])->name('posts.bulk_delete');
+
     // Route::resource('toppings', AdminToppingController::class);
+
     Route::resource('vouchers', AdminVoucherController::class);
-    Route::resource('users', AdminUserController::class);
+    Route::post('vouchers/bulk-delete', [AdminVoucherController::class, 'bulkDelete'])->name('vouchers.bulk_delete');
+
     Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class);
+    Route::post('banners/bulk-delete', [\App\Http\Controllers\Admin\BannerController::class, 'bulkDelete'])->name('banners.bulk_delete');
     Route::post('banners/{id}/toggle-status', [\App\Http\Controllers\Admin\BannerController::class, 'toggleStatus'])->name('banners.toggle_status');
     Route::get('users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.users.index');
     Route::post('users/{id}/update-role', [\App\Http\Controllers\Admin\UserController::class, 'updateRole'])->name('admin.users.update_role');
     Route::post('users/{id}/toggle-lock', [\App\Http\Controllers\Admin\UserController::class, 'toggleLock'])->name('admin.users.toggle_lock');
-    
-    // QUẢN LÝ ĐƠN HÀNG (ORDERS):
-    Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->only(['index', 'show']);
-    Route::put('orders/{id}/status', [\App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('orders.update_status');
     
     // QUẢN LÝ LỊCH LÀM & LƯƠNG NHÂN VIÊN
     Route::get('staff-manager', [\App\Http\Controllers\Admin\StaffManagerController::class, 'index'])->name('admin.staff.manager');
@@ -221,9 +215,4 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     Route::post('chats/sessions/{id}/reply', [AdminChatController::class, 'sendReply'])->name('admin.chats.reply');
     Route::get('chats/sessions/{id}/bot-status', [AdminChatController::class, 'getBotStatus'])->name('admin.chats.bot_status');
     Route::post('chats/sessions/{id}/toggle-bot', [AdminChatController::class, 'toggleBot'])->name('admin.chats.toggle_bot');
-
-    // TRỢ LÝ AI QUẢN LÝ (ADMIN AI ASSISTANT):
-    Route::get('ai-assistant', [AiAssistantController::class, 'index'])->name('admin.ai.index');
-    Route::post('ai-assistant/chat', [AiAssistantController::class, 'chat'])->name('admin.ai.chat');
-    Route::post('ai-assistant/clear', [AiAssistantController::class, 'clearHistory'])->name('admin.ai.clear');
 });
