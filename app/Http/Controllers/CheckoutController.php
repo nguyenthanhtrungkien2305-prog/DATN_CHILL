@@ -208,6 +208,27 @@ class CheckoutController extends Controller
             'updated_at' => now(),
         ]);
 
+        // Lưu chi tiết từng món vào bảng order_items chuẩn CSDL
+        if (\Illuminate\Support\Facades\Schema::hasTable('order_items') && is_array($cart)) {
+            foreach ($cart as $item) {
+                \DB::table('order_items')->insert([
+                    'order_id'   => $orderId,
+                    'variant_id' => $item['variant_id'] ?? null,
+                    'quantity'   => $item['quantity'] ?? 1,
+                    'unit_price' => $item['price'] ?? 0,
+                    'notes'      => json_encode([
+                        'sugar_level' => $item['sugar_level'] ?? null,
+                        'ice_level'   => $item['ice_level'] ?? null,
+                        'toppings'    => $item['toppings'] ?? [],
+                        'name'        => $item['name'] ?? null,
+                        'size_name'   => $item['size_name'] ?? null
+                    ], JSON_UNESCAPED_UNICODE),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
         // Tăng lượt sử dụng của voucher & đánh dấu đã dùng trong user_vouchers
         if ($voucherId) {
             \DB::table('vouchers')->where('voucher_id', $voucherId)->increment('used_count');

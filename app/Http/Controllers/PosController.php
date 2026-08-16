@@ -124,6 +124,21 @@ class PosController extends Controller
             'updated_at'       => $now,
         ]);
 
+        // Lưu chi tiết từng món vào bảng order_items
+        if (\Illuminate\Support\Facades\Schema::hasTable('order_items') && !empty($data['items']) && is_array($data['items'])) {
+            foreach ($data['items'] as $item) {
+                DB::table('order_items')->insert([
+                    'order_id'   => $orderId,
+                    'variant_id' => $item['variant_id'] ?? null,
+                    'quantity'   => $item['quantity'] ?? 1,
+                    'unit_price' => $item['price'] ?? 0,
+                    'notes'      => json_encode($item, JSON_UNESCAPED_UNICODE),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        }
+
         return response()->json([
             'success' => true, 
             'order_id' => $orderId, 
