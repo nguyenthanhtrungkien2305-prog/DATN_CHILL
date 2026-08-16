@@ -12,11 +12,16 @@
 </head>
 <body class="bg-[#FAF7F2] font-sans antialiased h-screen flex overflow-hidden">
 
-    @include('staff.partials.sidebar', ['isOpen' => true])
+    @include('staff.partials.sidebar', ['isOpen' => false])
 
     <div class="flex-1 flex flex-col h-screen overflow-hidden">
-        <div class="h-[64px] bg-espresso text-white px-6 flex justify-between items-center shadow-md shrink-0 z-10">
-            <h1 class="font-serif font-bold tracking-widest uppercase text-lg">Quản Lý Lịch Làm Việc</h1>
+        <div class="h-[64px] bg-espresso text-white px-4 lg:px-6 flex justify-between items-center shadow-md shrink-0 z-10">
+            <div class="font-bold text-lg flex items-center gap-3">
+                <button onclick="toggleSidebar()" class="p-2 bg-white/10 hover:bg-coral rounded-lg transition-colors flex items-center justify-center focus:outline-none group">
+                    <svg class="w-5 h-5 text-white group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <h1 class="font-serif font-bold tracking-widest uppercase text-base sm:text-lg">Quản Lý Lịch Làm Việc</h1>
+            </div>
         </div>
 
         <div class="p-6 flex-1 overflow-y-auto custom-scrollbar">
@@ -31,16 +36,16 @@
             </div>
 
             {{-- MENU TABS TỰ ĐỘNG ĐỔI TÊN NẾU LÀ TUẦN SAU --}}
-            <div class="flex space-x-6 mb-6 border-b border-gray-200">
-                <button onclick="switchTab('schedule')" id="tab-btn-schedule" class="pb-3 px-2 font-black text-coral border-b-4 border-coral transition-all uppercase tracking-wider text-sm">
+            <div class="flex space-x-4 md:space-x-6 mb-6 border-b border-gray-200 overflow-x-auto custom-scrollbar pb-1">
+                <button onclick="switchTab('schedule')" id="tab-btn-schedule" class="pb-3 px-2 font-black text-coral border-b-4 border-coral transition-all uppercase tracking-wider text-xs md:text-sm whitespace-nowrap shrink-0">
                     Lịch Cá Nhân ({{ $isNextWeek ? 'Tuần Sau' : 'Tuần Này' }})
                 </button>
-                <button onclick="switchTab('register')" id="tab-btn-register" class="pb-3 px-2 font-bold text-gray-400 border-b-4 border-transparent hover:text-coral transition-all uppercase tracking-wider text-sm flex items-center gap-2">
+                <button onclick="switchTab('register')" id="tab-btn-register" class="pb-3 px-2 font-bold text-gray-400 border-b-4 border-transparent hover:text-coral transition-all uppercase tracking-wider text-xs md:text-sm flex items-center gap-2 whitespace-nowrap shrink-0">
                     Đăng Ký Ca Mới & Danh Sách Chờ
                     @php $pendingCount = $registrations->where('status', 'pending')->count(); @endphp
                     @if($pendingCount > 0) <span class="bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px]">{{ $pendingCount }}</span> @endif
                 </button>
-                <button onclick="switchTab('statistics')" id="tab-btn-statistics" class="pb-3 px-2 font-bold text-gray-400 border-b-4 border-transparent hover:text-coral transition-all uppercase tracking-wider text-sm flex items-center gap-2">
+                <button onclick="switchTab('statistics')" id="tab-btn-statistics" class="pb-3 px-2 font-bold text-gray-400 border-b-4 border-transparent hover:text-coral transition-all uppercase tracking-wider text-xs md:text-sm flex items-center gap-2 whitespace-nowrap shrink-0">
                     Thống Kê Giờ Làm Thực Tế
                 </button>
             </div>
@@ -382,6 +387,22 @@
                 dateInput.classList.remove('ring-4', 'ring-coral/50');
                 selectInput.classList.remove('ring-4', 'ring-coral/50');
             }, 800);
+        }
+
+        function toggleSidebar() { 
+            const sidebar = document.getElementById('sidebar'); 
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (window.innerWidth < 768) {
+                if (sidebar.classList.contains('-translate-x-full')) {
+                    sidebar.classList.remove('-translate-x-full');
+                    if (backdrop) backdrop.classList.remove('hidden');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    if (backdrop) backdrop.classList.add('hidden');
+                }
+            } else {
+                sidebar.classList.toggle('md:w-0');
+            }
         }
 
         @if(session('active_tab') == 'register')

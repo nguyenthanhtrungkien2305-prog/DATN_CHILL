@@ -321,7 +321,7 @@
                                 @php
                                     $pId = $product->product_id;
                                     $pSlug = $product->slug ?? $pId;
-                                    $pImage = format_image_url($product->image_url ?? null, '/images/trasuaccdd.jpg');
+                                    $pImage = format_image_url($product->image_url ?? null, '/images/logo1.jpg', $product->name);
                                 @endphp
                                 <div class="reveal-up hover-lift hover-glow bg-white rounded-3xl p-4 border border-espresso/5 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group h-full">
                                     <div>
@@ -329,7 +329,7 @@
                                         <div class="relative overflow-hidden rounded-2xl mb-3 h-52 bg-cream">
                                             <a href="{{ route('product.show', $pSlug) }}" class="block w-full h-full">
                                                 <img src="{{ $pImage }}"
-                                                     onerror="this.onerror=null;this.src='/images/trasuaccdd.jpg';"
+                                                     onerror="this.onerror=null;this.src='/images/logo1.jpg';"
                                                      alt="{{ $product->name }}"
                                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                                             </a>
@@ -375,13 +375,13 @@
                                 @php
                                     $pId = $product->product_id;
                                     $pSlug = $product->slug ?? $pId;
-                                    $pImage = format_image_url($product->image_url ?? null, '/images/trasuaccdd.jpg');
+                                    $pImage = format_image_url($product->image_url ?? null, '/images/logo1.jpg', $product->name);
                                 @endphp
                                 <div class="bg-white rounded-3xl p-4 border border-espresso/5 shadow-sm hover:shadow-lg transition-all flex flex-col sm:flex-row items-center gap-5">
                                     <div class="relative w-full sm:w-36 h-36 shrink-0 overflow-hidden rounded-2xl bg-cream">
                                         <a href="{{ route('product.show', $pSlug) }}">
                                             <img src="{{ $pImage }}" 
-                                                 onerror="this.onerror=null;this.src='/images/trasuaccdd.jpg';"
+                                                 onerror="this.onerror=null;this.src='/images/logo1.jpg';"
                                                  alt="{{ $product->name }}" 
                                                  class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
                                         </a>

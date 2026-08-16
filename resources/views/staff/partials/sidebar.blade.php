@@ -24,9 +24,14 @@
     }
 @endphp
 
-<div id="sidebar" class="bg-white h-screen border-r border-espresso/10 flex flex-col shrink-0 transition-all duration-300 ease-in-out {{ isset($isOpen) && $isOpen ? 'w-64' : 'w-0' }} overflow-hidden shadow-xl z-50">
-    <div class="h-[64px] bg-espresso text-white flex items-center justify-center font-bold tracking-widest shrink-0 px-4 border-b border-white/10">
+<div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-[90] md:hidden hidden transition-opacity"></div>
+
+<div id="sidebar" class="bg-white h-screen border-r border-espresso/10 flex flex-col shrink-0 transition-all duration-300 ease-in-out fixed md:relative top-0 bottom-0 left-0 z-[100] transform -translate-x-full md:translate-x-0 w-64 md:w-64 overflow-hidden shadow-2xl">
+    <div class="h-[64px] bg-espresso text-white flex items-center justify-between font-bold tracking-widest shrink-0 px-4 border-b border-white/10">
         <span class="whitespace-nowrap">MENU QUẢN LÝ</span>
+        <button type="button" onclick="toggleSidebar()" class="md:hidden text-white/70 hover:text-white p-1">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
     </div>
     
     <div class="flex-1 overflow-y-auto py-4">

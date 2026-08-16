@@ -524,6 +524,32 @@
         </script>
     @endif
 
+    {{-- MODAL HỎI CẬP NHẬT THÔNG TIN SAU KHI ĐĂNG KÝ --}}
+    @if(session('show_post_register_popup'))
+    <div id="postRegisterModal" class="fixed inset-0 bg-espresso/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl relative border border-cream text-center">
+            <div class="w-16 h-16 bg-coral/10 text-coral rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            </div>
+
+            <h3 class="font-serif font-bold text-2xl text-espresso mb-2">🎉 Đăng ký thành công!</h3>
+            <p class="text-sm text-espresso/70 mb-6 leading-relaxed">
+                Bạn có muốn cập nhật thông tin cá nhân (<strong>Số điện thoại, Địa chỉ giao hàng</strong>) ngay bây giờ trước khi mua hàng không?
+            </p>
+
+            <div class="space-y-3">
+                <a href="{{ route('user.profile') }}" class="w-full py-3.5 bg-coral text-white rounded-full font-bold text-sm hover:bg-espresso transition-colors shadow-lg shadow-coral/30 flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    Cập nhật thông tin ngay
+                </a>
+                <button type="button" onclick="document.getElementById('postRegisterModal').remove()" class="w-full py-3 text-espresso/60 hover:text-espresso font-medium text-sm transition-colors">
+                    Để sau / Bỏ qua
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
+
     {{-- Tích hợp Chat Box nổi --}}
     @include('partials.chatbox')
 </body>

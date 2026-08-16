@@ -14,13 +14,18 @@
 </head>
 <body class="bg-[#FAF7F2] font-sans antialiased h-screen flex overflow-hidden">
 
-    @include('staff.partials.sidebar', ['isOpen' => true])
+    @include('staff.partials.sidebar', ['isOpen' => false])
 
     <div class="flex-1 flex flex-col h-screen overflow-hidden">
         
         {{-- THANH HEADER (ĐÃ ĐƯỢC ĐƯA RA NGOÀI ĐỂ TRÀN VIỀN) --}}
-        <div class="h-[64px] bg-espresso text-white px-6 flex justify-between items-center shadow-md shrink-0 z-10">
-            <h1 class="font-serif font-bold tracking-widest uppercase text-lg">BÁO CÁO CA & HOA HỒNG</h1>
+        <div class="h-[64px] bg-espresso text-white px-4 lg:px-6 flex justify-between items-center shadow-md shrink-0 z-10">
+            <div class="font-bold text-lg flex items-center gap-3">
+                <button onclick="toggleSidebar()" class="p-2 bg-white/10 hover:bg-coral rounded-lg transition-colors flex items-center justify-center focus:outline-none group">
+                    <svg class="w-5 h-5 text-white group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <h1 class="font-serif font-bold tracking-widest uppercase text-base sm:text-lg">BÁO CÁO CA & HOA HỒNG</h1>
+            </div>
             <div class="text-sm">Xin chào, <span class="font-bold text-coral">{{ auth()->user()->name ?? 'Nhân viên' }}</span></div>
         </div>
 
@@ -132,5 +137,22 @@
        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #ff7043; border-radius: 20px; }
     </style>
+    <script>
+        function toggleSidebar() { 
+            const sidebar = document.getElementById('sidebar'); 
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (window.innerWidth < 768) {
+                if (sidebar.classList.contains('-translate-x-full')) {
+                    sidebar.classList.remove('-translate-x-full');
+                    if (backdrop) backdrop.classList.remove('hidden');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    if (backdrop) backdrop.classList.add('hidden');
+                }
+            } else {
+                sidebar.classList.toggle('md:w-0');
+            }
+        }
+    </script>
 </body>
 </html>

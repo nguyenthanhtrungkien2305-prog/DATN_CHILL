@@ -4,7 +4,7 @@
 
 @section('content')
     {{-- Header của trang --}}
-    <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 shrink-0">
+    <header class="hidden lg:flex h-16 bg-white shadow-sm items-center justify-between px-8 shrink-0">
         <h2 class="text-xl font-semibold text-gray-800">Quản lý Người Dùng</h2>
         <div class="flex items-center gap-4">
             <span class="text-sm text-gray-600">Xin chào, <strong>{{ Auth::user()->name }}</strong></span>
@@ -12,7 +12,7 @@
         </div>
     </header>
 
-    <div class="p-8">
+    <div class="p-4 md:p-8">
         @if(session('success'))
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl relative mb-4 text-sm font-medium">{{ session('success') }}</div>
         @endif

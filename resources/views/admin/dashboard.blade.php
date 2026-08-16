@@ -4,7 +4,7 @@
 
 @section('content')
     {{-- Header của Main Content --}}
-    <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 shrink-0">
+    <header class="hidden lg:flex h-16 bg-white shadow-sm items-center justify-between px-8 shrink-0">
         <h2 class="text-xl font-semibold text-gray-800">Tổng quan hệ thống</h2>
         <div class="flex items-center gap-4">
             <span class="text-sm text-gray-600">Xin chào, <strong>{{ Auth::user()->name ?? 'Admin' }}</strong></span>
@@ -13,32 +13,32 @@
     </header>
 
     {{-- Nội dung Dashboard --}}
-    <div class="p-8 flex-1 overflow-y-auto custom-scrollbar">
+    <div class="p-4 md:p-8 flex-1 overflow-y-auto custom-scrollbar">
         
-        {{-- Widget thống kê thực tế --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center relative overflow-hidden">
+        {{-- Widget thống kê thực tế (Gọn gàng 2x2 trên Mobile) --}}
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6">
+            <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center relative overflow-hidden">
                 <div class="absolute right-[-20px] top-[-20px] w-20 h-20 bg-emerald-500/10 rounded-full blur-xl"></div>
-                <h3 class="text-gray-500 text-sm font-bold uppercase tracking-wider mb-2">Tổng doanh thu</h3>
-                <p class="text-3xl font-black text-emerald-600">{{ number_format($totalRevenue, 0, ',', '.') }}đ</p>
+                <h3 class="text-gray-500 text-[11px] sm:text-xs font-bold uppercase tracking-wider mb-1">Tổng doanh thu</h3>
+                <p class="text-lg sm:text-2xl md:text-3xl font-black text-emerald-600 line-clamp-1">{{ number_format($totalRevenue, 0, ',', '.') }}đ</p>
             </div>
             
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center relative overflow-hidden">
+            <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center relative overflow-hidden">
                 <div class="absolute right-[-20px] top-[-20px] w-20 h-20 bg-[#e8634a]/10 rounded-full blur-xl"></div>
-                <h3 class="text-gray-500 text-sm font-bold uppercase tracking-wider mb-2">Đơn chờ xử lý</h3>
-                <p class="text-3xl font-black text-[#e8634a]">{{ $newOrders }}</p>
+                <h3 class="text-gray-500 text-[11px] sm:text-xs font-bold uppercase tracking-wider mb-1">Đơn chờ xử lý</h3>
+                <p class="text-lg sm:text-2xl md:text-3xl font-black text-[#e8634a]">{{ $newOrders }}</p>
             </div>
             
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center relative overflow-hidden">
+            <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center relative overflow-hidden">
                 <div class="absolute right-[-20px] top-[-20px] w-20 h-20 bg-blue-500/10 rounded-full blur-xl"></div>
-                <h3 class="text-gray-500 text-sm font-bold uppercase tracking-wider mb-2">Tổng sản phẩm</h3>
-                <p class="text-3xl font-black text-gray-800">{{ $totalProducts }}</p>
+                <h3 class="text-gray-500 text-[11px] sm:text-xs font-bold uppercase tracking-wider mb-1">Tổng sản phẩm</h3>
+                <p class="text-lg sm:text-2xl md:text-3xl font-black text-gray-800">{{ $totalProducts }}</p>
             </div>
             
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center relative overflow-hidden">
+            <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center relative overflow-hidden">
                 <div class="absolute right-[-20px] top-[-20px] w-20 h-20 bg-purple-500/10 rounded-full blur-xl"></div>
-                <h3 class="text-gray-500 text-sm font-bold uppercase tracking-wider mb-2">Khách hàng</h3>
-                <p class="text-3xl font-black text-gray-800">{{ $totalUsers }}</p>
+                <h3 class="text-gray-500 text-[11px] sm:text-xs font-bold uppercase tracking-wider mb-1">Khách hàng</h3>
+                <p class="text-lg sm:text-2xl md:text-3xl font-black text-gray-800">{{ $totalUsers }}</p>
             </div>
         </div>
 

@@ -134,7 +134,7 @@
                             <input type="checkbox" name="remember" class="w-4 h-4 accent-coral rounded border-gray-300">
                             Ghi nhớ tôi
                         </label>
-                        <a href="#" class="text-coral hover:underline font-medium">Quên mật khẩu?</a>
+                        <button type="button" onclick="openForgotPasswordModal()" class="text-coral hover:underline font-medium focus:outline-none">Quên mật khẩu?</button>
                     </div>
 
                     <div class="pt-6">
@@ -155,15 +155,15 @@
 
             {{-- FORM ĐĂNG KÝ --}}
             <div id="register-form" class="hidden absolute top-0 left-0 w-full h-full p-10 md:p-16 flex flex-col justify-center bg-white transition-all duration-500 transform translate-x-full opacity-0">
-                <div class="mb-12">
+                <div class="mb-8">
                     <button onclick="toggleAuthForms()" class="text-coral hover:text-espresso mb-4 flex items-center gap-2 font-medium">
                         ← Quay lại đăng nhập
                     </button>
-                    <h1 class="font-serif font-bold text-4xl text-espresso mb-3">Tạo tài khoản</h1>
-                    <p class="text-espresso/60">Gia nhập gia đình Chill Chill để nhận ưu đãi tích điểm ngay hôm nay.</p>
+                    <h1 class="font-serif font-bold text-4xl text-espresso mb-2">Tạo tài khoản</h1>
+                    <p class="text-espresso/60 text-sm">Gia nhập gia đình Chill Chill để nhận ưu đãi tích điểm ngay hôm nay.</p>
                 </div>
 
-                <form action="{{ route('register.post') }}" method="POST" class="space-y-5">
+                <form action="{{ route('register.post') }}" method="POST" class="space-y-4" id="reg-main-form">
                     @csrf
                     
                     @error('register_error')
@@ -174,11 +174,11 @@
                     @enderror
 
                     <div>
-                        <input type="text" name="register_identity" placeholder="Nhập Số điện thoại hoặc Tên đăng nhập" required class="auth-input">
-                        <p class="text-xs text-espresso/50 mt-2 px-4">* Thông tin này sẽ dùng để đăng nhập</p>
+                        <input type="text" name="register_identity" id="reg-identity" placeholder="Tên đăng nhập hoặc Số điện thoại" required class="auth-input">
+                        <p class="text-xs text-espresso/50 mt-1 px-4">* Thông tin này dùng để tạo tài khoản & đăng nhập</p>
                     </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
+
+                    <div class="grid grid-cols-2 gap-3">
                         <div class="relative">
                             <input type="password" name="password" id="reg-password" placeholder="Mật khẩu" required class="auth-input pr-10">
                             <button type="button" onclick="togglePassword('reg-password', 'reg-eye')" class="absolute right-4 top-1/2 -translate-y-1/2 text-espresso/40 hover:text-coral transition-colors focus:outline-none">
@@ -199,12 +199,12 @@
                         </div>
                     </div>
 
-                    <div class="flex items-start gap-2 text-sm text-espresso/70 pt-2 px-2">
-                        <input type="checkbox" required class="w-4 h-4 accent-coral rounded border-gray-300 mt-1">
+                    <div class="flex items-start gap-2 text-xs text-espresso/70 pt-1 px-2">
+                        <input type="checkbox" required class="w-4 h-4 accent-coral rounded border-gray-300 mt-0.5">
                         <span>Tôi đồng ý với <a href="#" class="text-coral underline">Điều khoản dịch vụ</a> và <a href="#" class="text-coral underline">Chính sách bảo mật</a>.</span>
                     </div>
 
-                    <div class="pt-6">
+                    <div class="pt-4">
                         <button type="submit" class="w-full h-14 bg-coral text-white rounded-full font-bold text-lg hover:bg-[#e05b42] shadow-lg shadow-coral/30 transition-all duration-300 flex items-center justify-center gap-3">
                             Hoàn tất đăng ký
                         </button>
@@ -215,10 +215,83 @@
         </div>
     </div>
 
-   {{-- Javascript chuyển đổi form và giữ trạng thái form đăng ký khi có lỗi --}}
+    {{-- MODAL QUÊN MẬT KHẨU (GMAIL OTP) --}}
+    <div id="forgotPasswordModal" class="fixed inset-0 bg-espresso/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl relative border border-cream transform transition-all">
+            <button type="button" onclick="closeForgotPasswordModal()" class="absolute top-5 right-5 text-espresso/40 hover:text-coral text-2xl font-bold focus:outline-none">
+                &times;
+            </button>
+
+            {{-- Bước 1: Nhập Email --}}
+            <div id="forgot-step-1">
+                <div class="text-center mb-6">
+                    <div class="w-14 h-14 bg-coral/10 text-coral rounded-2xl flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </div>
+                    <h3 class="font-serif font-bold text-2xl text-espresso">Quên mật khẩu?</h3>
+                    <p class="text-xs text-espresso/60 mt-1">Nhập Email đã đăng ký để nhận mã xác minh 6 chữ số qua Gmail.</p>
+                </div>
+
+                <div id="forgot-step1-error" class="hidden mb-4 p-3 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs"></div>
+
+                <div class="space-y-4">
+                    <div>
+                        <input type="email" id="forgot-email" placeholder="Nhập địa chỉ Gmail của bạn" class="auth-input">
+                    </div>
+                    <button type="button" id="btn-send-forgot-otp" onclick="sendForgotOtp()" class="w-full h-12 bg-espresso text-white rounded-full font-bold text-sm hover:bg-coral transition-colors flex items-center justify-center gap-2">
+                        <span>Gửi mã OTP qua Gmail</span>
+                    </button>
+                </div>
+            </div>
+
+            {{-- Bước 2: Nhập OTP & Mật khẩu mới --}}
+            <div id="forgot-step-2" class="hidden">
+                <div class="text-center mb-6">
+                    <div class="w-14 h-14 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <h3 class="font-serif font-bold text-2xl text-espresso">Xác minh & Đặt lại mật khẩu</h3>
+                    <p class="text-xs text-espresso/60 mt-1" id="forgot-step2-desc">Mã OTP đã được gửi đến email của bạn.</p>
+                </div>
+
+                <div id="forgot-step2-msg" class="hidden mb-4 p-3 border rounded-xl text-xs"></div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-espresso/70 mb-1">Mã OTP (6 chữ số):</label>
+                        <input type="text" id="forgot-otp-code" maxlength="6" placeholder="******" class="w-full h-12 text-center text-xl font-mono tracking-widest border border-espresso/20 rounded-2xl focus:outline-none focus:border-coral">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-espresso/70 mb-1">Mật khẩu mới:</label>
+                        <input type="password" id="forgot-new-password" placeholder="Tối thiểu 6 ký tự" class="auth-input">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-espresso/70 mb-1">Xác nhận mật khẩu mới:</label>
+                        <input type="password" id="forgot-confirm-password" placeholder="Nhập lại mật khẩu mới" class="auth-input">
+                    </div>
+
+                    <button type="button" id="btn-reset-password" onclick="submitResetPassword()" class="w-full h-12 bg-coral text-white rounded-full font-bold text-sm hover:bg-espresso transition-colors flex items-center justify-center gap-2 shadow-lg">
+                        <span>Xác nhận đổi mật khẩu</span>
+                    </button>
+
+                    <div class="text-center pt-2">
+                        <button type="button" onclick="backToStep1()" class="text-xs text-espresso/60 hover:text-coral underline">
+                            ← Thử lại với email khác
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    {{-- Javascript chuyển đổi form, xử lý AJAX OTP SMS và Gmail --}}
     <script>
+        const CSRF_TOKEN = '{{ csrf_token() }}';
+
         document.addEventListener('DOMContentLoaded', () => {
-            // Nếu có lỗi từ form đăng ký do backend gửi về, tự động mở form đăng ký
             const hasRegisterErrors = {{ $errors->has('register_error') ? 'true' : 'false' }};
             if (hasRegisterErrors) {
                 document.getElementById('login-form').classList.add('hidden', 'translate-x-full', 'opacity-0');
@@ -230,7 +303,6 @@
             }
         });
 
-        // Hàm click chuyển đổi (Giữ nguyên của bạn)
         function toggleAuthForms() {
             const loginForm = document.getElementById('login-form');
             const registerForm = document.getElementById('register-form');
@@ -259,7 +331,6 @@
             }
         }
         
-        // Cần thêm hàm togglePassword vào đây nếu trong HTML bạn gọi onclick="togglePassword(...)"
         function togglePassword(inputId, iconId) {
             const input = document.getElementById(inputId);
             if (input.type === 'password') {
@@ -267,6 +338,211 @@
             } else {
                 input.type = 'password';
             }
+        }
+
+        // ==========================================
+        // SMS OTP FUNCTIONS
+        // ==========================================
+        function sendSmsOtp() {
+            const phoneInput = document.getElementById('reg-identity');
+            const phone = phoneInput.value.trim();
+
+            if (!phone || !/^(0[3|5|7|8|9])+([0-9]{8})$/.test(phone)) {
+                alert('Vui lòng nhập đúng định dạng Số điện thoại Việt Nam (10 chữ số)!');
+                return;
+            }
+
+            const btn = document.getElementById('btn-send-sms-otp');
+            btn.disabled = true;
+            btn.innerHTML = 'Đang gửi...';
+
+            fetch('{{ route("auth.send_phone_otp") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': CSRF_TOKEN
+                },
+                body: JSON.stringify({ phone: phone, check_exists: true })
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = 'Gửi lại SMS';
+                if (data.success) {
+                    document.getElementById('sms-otp-block').classList.remove('hidden');
+                    const msgEl = document.getElementById('sms-msg');
+                    msgEl.className = 'text-xs font-medium text-green-600 block mt-1';
+                    msgEl.innerText = data.message;
+                } else {
+                    alert(data.message || 'Lỗi gửi mã SMS OTP');
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = 'Gửi mã SMS';
+                alert('Không thể kết nối đến máy chủ. Vui lòng thử lại!');
+            });
+        }
+
+        function verifySmsOtp() {
+            const code = document.getElementById('sms-otp-code').value.trim();
+            if (code.length !== 6) {
+                alert('Vui lòng nhập đủ 6 chữ số mã OTP SMS!');
+                return;
+            }
+
+            fetch('{{ route("auth.verify_phone_otp") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': CSRF_TOKEN
+                },
+                body: JSON.stringify({ otp_code: code })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('sms-otp-block').classList.add('hidden');
+                    document.getElementById('sms-verified-badge').classList.remove('hidden');
+                    document.getElementById('btn-send-sms-otp').classList.add('hidden');
+                } else {
+                    alert(data.message || 'Xác thực OTP thất bại!');
+                }
+            })
+            .catch(err => {
+                alert('Có lỗi xảy ra khi xác thực OTP!');
+            });
+        }
+
+        // ==========================================
+        // GMAIL FORGOT PASSWORD MODAL FUNCTIONS
+        // ==========================================
+        function openForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').classList.remove('hidden');
+            document.getElementById('forgot-step-1').classList.remove('hidden');
+            document.getElementById('forgot-step-2').classList.add('hidden');
+        }
+
+        function closeForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').classList.add('hidden');
+        }
+
+        function backToStep1() {
+            document.getElementById('forgot-step-1').classList.remove('hidden');
+            document.getElementById('forgot-step-2').classList.add('hidden');
+        }
+
+        function sendForgotOtp() {
+            const email = document.getElementById('forgot-email').value.trim();
+            const errBox = document.getElementById('forgot-step1-error');
+            errBox.classList.add('hidden');
+
+            if (!email) {
+                errBox.innerText = 'Vui lòng nhập địa chỉ Gmail.';
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            const btn = document.getElementById('btn-send-forgot-otp');
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Đang gửi mail...';
+
+            fetch('{{ route("auth.send_forgot_otp") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': CSRF_TOKEN
+                },
+                body: JSON.stringify({ email: email })
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Gửi mã OTP qua Gmail</span>';
+
+                if (data.success) {
+                    document.getElementById('forgot-step-1').classList.add('hidden');
+                    document.getElementById('forgot-step-2').classList.remove('hidden');
+                    
+                    const msgBox = document.getElementById('forgot-step2-msg');
+                    msgBox.className = 'mb-4 p-3 bg-green-50 text-green-700 border border-green-200 rounded-xl text-xs block';
+                    msgBox.innerText = data.message;
+                } else {
+                    errBox.innerText = data.message || 'Có lỗi xảy ra khi gửi email.';
+                    errBox.classList.remove('hidden');
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Gửi mã OTP qua Gmail</span>';
+                errBox.innerText = 'Không thể kết nối máy chủ gửi mail. Vui lòng kiểm tra lại!';
+                errBox.classList.remove('hidden');
+            });
+        }
+
+        function submitResetPassword() {
+            const otpCode = document.getElementById('forgot-otp-code').value.trim();
+            const password = document.getElementById('forgot-new-password').value;
+            const confirmPassword = document.getElementById('forgot-confirm-password').value;
+            const msgBox = document.getElementById('forgot-step2-msg');
+
+            if (!otpCode || otpCode.length !== 6) {
+                msgBox.className = 'mb-4 p-3 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs block';
+                msgBox.innerText = 'Vui lòng nhập mã OTP gồm 6 chữ số.';
+                return;
+            }
+
+            if (!password || password.length < 6) {
+                msgBox.className = 'mb-4 p-3 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs block';
+                msgBox.innerText = 'Mật khẩu mới phải từ 6 ký tự trở lên.';
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                msgBox.className = 'mb-4 p-3 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs block';
+                msgBox.innerText = 'Mật khẩu xác nhận không trùng khớp!';
+                return;
+            }
+
+            const btn = document.getElementById('btn-reset-password');
+            btn.disabled = true;
+            btn.innerHTML = 'Đang đổi mật khẩu...';
+
+            fetch('{{ route("auth.reset_password_otp") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': CSRF_TOKEN
+                },
+                body: JSON.stringify({
+                    otp_code: otpCode,
+                    password: password,
+                    password_confirmation: confirmPassword
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Xác nhận đổi mật khẩu</span>';
+
+                if (data.success) {
+                    msgBox.className = 'mb-4 p-3 bg-green-50 text-green-700 border border-green-200 rounded-xl text-xs block';
+                    msgBox.innerText = data.message;
+                    setTimeout(() => {
+                        closeForgotPasswordModal();
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    msgBox.className = 'mb-4 p-3 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs block';
+                    msgBox.innerText = data.message || 'Đặt lại mật khẩu thất bại.';
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Xác nhận đổi mật khẩu</span>';
+                msgBox.className = 'mb-4 p-3 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs block';
+                msgBox.innerText = 'Có lỗi xảy ra khi đặt lại mật khẩu.';
+            });
         }
     </script>
 </body>

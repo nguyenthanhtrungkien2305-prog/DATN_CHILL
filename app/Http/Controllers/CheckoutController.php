@@ -134,13 +134,34 @@ class CheckoutController extends Controller
             // Re-verify per-user usage limit right before order creation to prevent bypass
             $vDb = \DB::table('vouchers')->where('voucher_id', $voucherId)->first();
             if ($vDb) {
-                $isPointsExchange = isset($vDb->is_points_exchange) ? (bool)$vDb->is_points_exchange : false;
+                $isPointsExchange = (!empty($vDb->is_points_exchange) && $vDb->is_points_exchange == 1) || (!empty($vDb->points_required) && $vDb->points_required > 0);
+                $isAssignedUser = !empty($vDb->assigned_user_id);
+                $userId = auth()->id();
 
-                // Chỉ kiểm tra giới hạn lượt dùng usage_per_user cho mã công khai / mã tặng riêng (KHÔNG áp dụng cho Mã đổi điểm)
-                if (!$isPointsExchange) {
+                if ($isPointsExchange || $isAssignedUser) {
+                    if (!$userId) {
+                        session()->forget('voucher');
+                        return redirect()->route('cart.index')->with('error', 'Vui lòng đăng nhập để sử dụng mã voucher từ điểm tích lũy!');
+                    }
+
+                    if ($isAssignedUser && $vDb->assigned_user_id != $userId) {
+                        session()->forget('voucher');
+                        return redirect()->route('cart.index')->with('error', 'Mã voucher này không dành cho tài khoản của bạn!');
+                    }
+
+                    $unusedCount = \DB::table('user_vouchers')
+                        ->where('user_id', $userId)
+                        ->where('voucher_id', $voucherId)
+                        ->where('is_used', 0)
+                        ->count();
+
+                    if ($unusedCount <= 0) {
+                        session()->forget('voucher');
+                        return redirect()->route('cart.index')->with('error', 'Bạn chưa đổi mã voucher này từ điểm thưởng hoặc đã sử dụng hết lượt trong kho!');
+                    }
+                } else {
                     $usagePerUser = isset($vDb->usage_per_user) ? $vDb->usage_per_user : 1;
                     if ($usagePerUser !== null && $usagePerUser > 0) {
-                        $userId = auth()->id();
                         $customerPhone = $request->customer_phone ?? (auth()->check() ? auth()->user()->phone : '');
                         
                         $usedCount = 0;
@@ -169,19 +190,35 @@ class CheckoutController extends Controller
 
         $finalAmount = max(0, $totalAmount - $discountAmount);
 
+        // Xử lý Khấu trừ từ Ví Số Dư Hoàn Tiền nếu người dùng lựa chọn
+        $walletDeduction = 0;
+        if ($request->has('use_wallet_balance') && auth()->user()->wallet_balance > 0) {
+            $walletBalance = (float)auth()->user()->wallet_balance;
+            $walletDeduction = min($walletBalance, $finalAmount);
+
+            if ($walletDeduction > 0) {
+                // Khấu trừ số dư hoàn tiền của user
+                \DB::table('users')->where('user_id', auth()->id())->decrement('wallet_balance', $walletDeduction);
+
+                // Giảm bớt số tiền phải thanh toán
+                $finalAmount = max(0, $finalAmount - $walletDeduction);
+            }
+        }
+
         // Lưu vào Database
         $orderId = \DB::table('orders')->insertGetId([
             'user_id' => auth()->id(),
             'voucher_id' => $voucherId,
-            'customer_name' => $request->customer_name ?? auth()->user()->name,
-            'customer_phone' => $request->customer_phone ?? '',
+            'customer_name' => auth()->user()->name ?? $request->customer_name ?? '',
+            'customer_phone' => auth()->user()->phone ?? $request->customer_phone ?? '',
             'shipping_address' => $request->shipping_address ?? '',
             'order_type' => $request->order_type,
             'table_number' => $request->table_number,
             'payment_method' => $request->payment_method,
             'total_amount' => $finalAmount,
             'discount_amount' => $discountAmount,
-            'status' => 'pending', // Mặc định là Chờ xác nhận
+            'used_wallet_amount' => $walletDeduction,
+            'status' => ($walletDeduction > 0 && $finalAmount == 0) ? 'processing' : 'pending', // Nếu đã dùng ví trả hết 100% thì tự động duyệt sang Đang chuẩn bị
             'items' => json_encode($cart, JSON_UNESCAPED_UNICODE), // Đóng gói nguyên cái giỏ hàng thành chuỗi JSON
             'created_at' => now(),
             'updated_at' => now(),
@@ -226,13 +263,17 @@ class CheckoutController extends Controller
         session()->forget('cart');
         session()->forget('voucher');
 
-        // Chuyển hướng nếu là thanh toán QR
-        if ($request->payment_method === 'qr') {
+        // Chuyển hướng nếu là thanh toán QR VÀ số tiền còn phải trả > 0
+        if ($request->payment_method === 'qr' && $finalAmount > 0) {
             return redirect()->route('checkout.payment_qr', $orderId);
         }
 
+        $successMsg = ($walletDeduction > 0 && $finalAmount == 0)
+            ? '🎉 Đặt hàng thành công! Đơn hàng đã được thanh toán 100% bằng Ví tiền hoàn của bạn.'
+            : '🎉 Đặt hàng thành công! Vui lòng chờ quán xác nhận nhé.';
+
         // Chuyển hướng thẳng sang trang Đơn hàng của tôi
-        return redirect()->route('user.orders')->with('success', '🎉 Đặt hàng thành công! Vui lòng chờ quán xác nhận nhé.');
+        return redirect()->route('user.orders')->with('success', $successMsg);
     }
 
     // 4. Hiển thị trang thanh toán QR
@@ -251,6 +292,11 @@ class CheckoutController extends Controller
 
         if (!$order) {
             abort(404, 'Không tìm thấy đơn hàng!');
+        }
+
+        // Nếu đơn hàng đã thanh toán xong (processing/completed) hoặc 0đ -> Chuyển thẳng về Đơn hàng của tôi
+        if ($order->status === 'processing' || $order->status === 'completed' || $order->total_amount <= 0) {
+            return redirect()->route('user.orders')->with('success', '🎉 Đơn hàng #' . $id . ' đã được thanh toán thành công!');
         }
 
         return view('checkout.payment_qr', compact('order'));

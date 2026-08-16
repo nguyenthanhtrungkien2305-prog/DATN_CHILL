@@ -156,6 +156,10 @@
                     clearInterval(checkInterval);
                     alert('🎉 Thanh toán thành công! Hệ thống đang chuẩn bị đơn hàng cho bạn.');
                     window.location.href = '{{ route('user.orders') }}';
+                } else if (data.status === 'cancelled') {
+                    clearInterval(checkInterval);
+                    alert('⚠️ Đơn hàng này đã bị hủy.');
+                    window.location.href = '{{ route('user.orders') }}';
                 }
             })
             .catch(err => console.error('Lỗi kiểm tra trạng thái:', err));

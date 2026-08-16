@@ -26,7 +26,7 @@
         </div>
     </div>
 
-    @include('staff.partials.sidebar', ['isOpen' => true])
+    @include('staff.partials.sidebar', ['isOpen' => false])
 
     <div class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300">
         
@@ -193,7 +193,18 @@
     <script>
         function toggleSidebar() { 
             const sidebar = document.getElementById('sidebar'); 
-            sidebar.classList.toggle('w-64'); sidebar.classList.toggle('w-0'); 
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (window.innerWidth < 768) {
+                if (sidebar.classList.contains('-translate-x-full')) {
+                    sidebar.classList.remove('-translate-x-full');
+                    if (backdrop) backdrop.classList.remove('hidden');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    if (backdrop) backdrop.classList.add('hidden');
+                }
+            } else {
+                sidebar.classList.toggle('md:w-0');
+            }
         }
         
         let currentProcessingOrderId = null;

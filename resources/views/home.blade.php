@@ -58,10 +58,10 @@
                             {{-- Khung chứa ảnh cao hơn (h-64 sm:h-72) để hiển thị đầy đủ hình ảnh --}}
                             <div class="relative overflow-hidden rounded-2xl mb-4 h-64 sm:h-72 bg-cream flex items-center justify-center">
                                 <a href="{{ route('product.show', $product->slug) }}" class="block w-full h-full">
-                                    <img src="{{ format_image_url($product->image_url, '/images/trasuaccdd.jpg') }}"
+                                    <img src="{{ format_image_url($product->image_url, '/images/logo1.jpg', $product->name) }}"
                                          alt="{{ $product->name }}"
                                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                         onerror="this.onerror=null; this.src='/images/logo1.png';" />
+                                         onerror="this.onerror=null; this.src='/images/logo1.jpg';" />
                                 </a>
                                 <span class="absolute top-3 right-3 bg-coral text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md animate-bounce-slow">
                                     🔥 {{ $product->total_sold > 0 ? 'Đã bán ' . number_format($product->total_sold) : 'Best Seller' }}
@@ -126,7 +126,7 @@
                             {{-- Khung chứa ảnh --}}
                             <div class="relative overflow-hidden rounded-2xl mb-4 h-64 sm:h-72 bg-cream flex items-center justify-center">
                                 <a href="{{ route('product.show', $cake->slug) }}" class="block w-full h-full">
-                                    <img src="{{ format_image_url($cake->image_url, '/images/banhngot.png') }}"
+                                    <img src="{{ format_image_url($cake->image_url, '/images/banhngot.png', $cake->name) }}"
                                          alt="{{ $cake->name }}"
                                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                          onerror="this.onerror=null; this.src='/images/banhngot.png';" />

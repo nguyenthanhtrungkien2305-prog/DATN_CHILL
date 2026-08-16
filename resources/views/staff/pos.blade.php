@@ -66,12 +66,12 @@
             <div id="step-track" class="flex h-full w-[300%] transition-transform duration-500 ease-in-out transform translate-x-0">
                 
                 {{-- GIAO ĐOẠN 1: GỌI MÓN --}}
-                <div class="w-1/3 h-full p-4 lg:p-6 overflow-hidden grid grid-cols-12 gap-4 lg:gap-6 shrink-0">
-                    <div class="col-span-12 lg:col-span-8 bg-white rounded-2xl border border-espresso/10 p-4 lg:p-6 shadow-sm flex flex-col h-full overflow-hidden">
-                        <div class="flex flex-col md:flex-row gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100 shrink-0 items-center justify-between">
-                            <div class="flex items-center gap-3 w-full md:w-1/2">
-                                <span class="font-bold text-espresso text-sm whitespace-nowrap">Danh Mục</span>
-                                <select id="category-filter" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-espresso text-sm bg-white focus:outline-none focus:border-coral">
+                <div class="w-1/3 h-full p-3 lg:p-6 overflow-hidden flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-6 shrink-0 relative">
+                    <div class="flex-1 min-h-0 lg:col-span-8 bg-white rounded-2xl border border-espresso/10 p-3 lg:p-6 shadow-sm flex flex-col overflow-hidden">
+                        <div class="flex flex-col sm:flex-row gap-3 bg-gray-50 p-2.5 rounded-xl border border-gray-100 shrink-0 items-center justify-between">
+                            <div class="flex items-center gap-2 w-full sm:w-1/2">
+                                <span class="font-bold text-espresso text-xs sm:text-sm whitespace-nowrap">Danh Mục</span>
+                                <select id="category-filter" class="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-espresso text-xs sm:text-sm bg-white focus:outline-none focus:border-coral">
                                     <option value="">--- Tất cả sản phẩm ---</option>
                                     @foreach($categories as $cat)
                                         @if(stripos($cat->name, 'Topping') === false)
@@ -80,55 +80,92 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="relative w-full md:w-1/2">
-                                <input type="text" id="search-product" placeholder="Nhập tên món cần tìm..." class="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2 text-sm text-espresso bg-white focus:outline-none focus:border-coral">
-                                <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <div class="relative w-full sm:w-1/2">
+                                <input type="text" id="search-product" placeholder="Nhập tên món cần tìm..." class="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-xs sm:text-sm text-espresso bg-white focus:outline-none focus:border-coral">
+                                <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                             </div>
                         </div>
 
-                        <div class="flex border-b border-gray-200 mb-4 mt-4 shrink-0">
-                            <button type="button" onclick="switchPosTab('products')" id="btn-tab-products" class="flex-1 py-2 text-sm font-black uppercase tracking-wider text-coral border-b-2 border-coral transition-colors flex items-center justify-center gap-2">Sản phẩm</button>
-                            <button type="button" onclick="switchPosTab('toppings')" id="btn-tab-toppings" class="flex-1 py-2 text-sm font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-coral transition-colors flex items-center justify-center gap-2">Topping</button>
+                        <div class="flex border-b border-gray-200 mb-3 mt-3 shrink-0">
+                            <button type="button" onclick="switchPosTab('products')" id="btn-tab-products" class="flex-1 py-2 text-xs sm:text-sm font-black uppercase tracking-wider text-coral border-b-2 border-coral transition-colors flex items-center justify-center gap-2">Sản phẩm</button>
+                            <button type="button" onclick="switchPosTab('combos')" id="btn-tab-combos" class="flex-1 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-coral transition-colors flex items-center justify-center gap-2">Combo Gói</button>
+                            <button type="button" onclick="switchPosTab('toppings')" id="btn-tab-toppings" class="flex-1 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-coral transition-colors flex items-center justify-center gap-2">Topping</button>
                         </div>
 
-                        <div id="content-tab-products" class="flex-1 min-h-0 overflow-y-auto pr-2 space-y-2 custom-scrollbar p-2 rounded-xl block">
+                        <div id="content-tab-products" class="flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar p-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-2.5 content-start">
                             @foreach($products as $product)
-                                <div onclick="openToppingModal({{ $product->product_id }}, '{{ $product->name }}', {{ $product->price }})" class="product-item flex items-center justify-between p-3 bg-white border border-espresso/10 rounded-xl hover:border-coral hover:shadow-md transition-all group cursor-pointer" data-category-id="{{ $product->category_id ?? '' }}" data-name="{{ $product->name }}">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 bg-cream rounded-lg flex items-center justify-center overflow-hidden shrink-0">
-                                            @if($product->image_url) <img src="{{ asset($product->image_url) }}" class="w-full h-full object-cover">
-                                            @endif
+                                <div onclick="openToppingModal({{ $product->product_id }}, '{{ $product->name }}', {{ $product->price }})" class="product-item flex flex-col justify-between p-2.5 bg-white border border-espresso/10 rounded-2xl hover:border-coral hover:shadow-md transition-all group cursor-pointer relative" data-category-id="{{ $product->category_id ?? '' }}" data-name="{{ $product->name }}">
+                                    <div>
+                                        <div class="w-full h-20 sm:h-28 bg-cream rounded-xl flex items-center justify-center overflow-hidden mb-1.5">
+                                            <img src="{{ format_image_url($product->image_url, '/images/logo1.png') }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='/images/logo1.png';">
                                         </div>
-                                        <div>
-                                            <h4 class="font-bold text-espresso text-sm group-hover:text-coral transition-colors line-clamp-1">{{ $product->name }}</h4>
-                                            <p class="text-xs text-coral font-medium">{{ number_format($product->price, 0, ',', '.') }}đ</p>
-                                        </div>
+                                        <h4 class="font-bold text-espresso text-xs sm:text-sm group-hover:text-coral transition-colors line-clamp-2 leading-tight mb-1">{{ $product->name }}</h4>
                                     </div>
-                                    <button class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-espresso font-bold group-hover:bg-coral group-hover:text-white transition-all shrink-0">+</button>
+                                    <div class="flex items-center justify-between mt-1.5 pt-1.5 border-t border-gray-100">
+                                        <span class="text-xs sm:text-sm text-coral font-black">{{ number_format($product->price, 0, ',', '.') }}đ</span>
+                                        <span class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-coral/10 text-coral flex items-center justify-center font-bold text-xs group-hover:bg-coral group-hover:text-white transition-all">+</span>
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
 
-                        <div id="content-tab-toppings" class="flex-1 min-h-0 overflow-y-auto pr-2 space-y-2 custom-scrollbar p-2 rounded-xl hidden">
-                            @foreach($toppings as $topping)
-                                <div onclick="addDirectItem({{ $topping->product_id }}, '{{ $topping->name }}', {{ $topping->price }})" class="product-item flex items-center justify-between p-3 bg-white border border-emerald-100 rounded-xl hover:border-emerald-500 hover:shadow-md transition-all group cursor-pointer" data-category-id="{{ $topping->category_id ?? '' }}" data-name="{{ $topping->name }}">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center overflow-hidden shrink-0">
-                                            @if($topping->image_url) <img src="{{ asset($topping->image_url) }}" class="w-full h-full object-cover">
+                        <div id="content-tab-combos" class="flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar p-1 hidden grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-2.5 content-start">
+                            @foreach($combos as $combo)
+                                <div onclick="addDirectItem({{ $combo->combo_id }}, '[Combo] {{ $combo->name }}', {{ $combo->price }})" class="product-item flex flex-col justify-between p-2.5 bg-white border border-amber-200 rounded-2xl hover:border-amber-500 hover:shadow-md transition-all group cursor-pointer relative" data-category-id="" data-name="[Combo] {{ $combo->name }}">
+                                    <div>
+                                        <div class="w-full h-20 sm:h-28 bg-amber-50 rounded-xl flex items-center justify-center overflow-hidden mb-1.5 relative">
+                                            <img src="{{ format_image_url($combo->image_url, '/images/logo1.png') }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='/images/logo1.png';">
+                                            <span class="absolute top-1 right-1 bg-amber-500 text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase shadow-xs">Combo</span>
+                                        </div>
+                                        <h4 class="font-bold text-espresso text-xs sm:text-sm group-hover:text-amber-600 transition-colors line-clamp-2 leading-tight mb-1">{{ $combo->name }}</h4>
+                                    </div>
+                                    <div class="flex items-center justify-between mt-1.5 pt-1.5 border-t border-gray-100">
+                                        <div>
+                                            <span class="text-xs sm:text-sm text-amber-600 font-black">{{ number_format($combo->price, 0, ',', '.') }}đ</span>
+                                            @if(($combo->original_price ?? 0) > $combo->price)
+                                                <span class="text-[10px] text-gray-400 line-through block">{{ number_format($combo->original_price, 0, ',', '.') }}đ</span>
                                             @endif
                                         </div>
-                                        <div>
-                                            <h4 class="font-bold text-espresso text-sm group-hover:text-emerald-600 transition-colors line-clamp-1">{{ $topping->name }}</h4>
-                                            <p class="text-xs text-emerald-500 font-medium">+{{ number_format($topping->price, 0, ',', '.') }}đ</p>
-                                        </div>
+                                        <span class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-xs group-hover:bg-amber-500 group-hover:text-white transition-all">+</span>
                                     </div>
-                                    <button class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold group-hover:bg-emerald-500 group-hover:text-white transition-all shrink-0">+</button>
                                 </div>
                             @endforeach
+                        </div>
+
+                        <div id="content-tab-toppings" class="flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar p-1 hidden grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-2.5 content-start">
+                            @foreach($toppings as $topping)
+                                <div onclick="addDirectItem({{ $topping->product_id }}, '{{ $topping->name }}', {{ $topping->price }})" class="product-item flex flex-col justify-between p-2.5 bg-white border border-emerald-100 rounded-2xl hover:border-emerald-500 hover:shadow-md transition-all group cursor-pointer relative" data-category-id="{{ $topping->category_id ?? '' }}" data-name="{{ $topping->name }}">
+                                    <div>
+                                        <div class="w-full h-20 sm:h-28 bg-emerald-50 rounded-xl flex items-center justify-center overflow-hidden mb-1.5">
+                                            <img src="{{ format_image_url($topping->image_url, '/images/logo1.png') }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='/images/logo1.png';">
+                                        </div>
+                                        <h4 class="font-bold text-espresso text-xs sm:text-sm group-hover:text-emerald-600 transition-colors line-clamp-2 leading-tight mb-1">{{ $topping->name }}</h4>
+                                    </div>
+                                    <div class="flex items-center justify-between mt-1.5 pt-1.5 border-t border-gray-100">
+                                        <span class="text-xs sm:text-sm text-emerald-600 font-black">+{{ number_format($topping->price, 0, ',', '.') }}đ</span>
+                                        <span class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs group-hover:bg-emerald-500 group-hover:text-white transition-all">+</span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        {{-- Floating Sticky Bar cho Mobile --}}
+                        <div class="lg:hidden shrink-0 bg-espresso text-white p-2.5 rounded-2xl shadow-xl flex items-center justify-between mt-2 border border-white/10">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-7 h-7 rounded-full bg-coral flex items-center justify-center font-black text-xs text-white shadow-sm" id="mobile-cart-count">0</span>
+                                <div>
+                                    <div class="text-[9px] text-white/70 font-bold uppercase tracking-wider">Tạm tính</div>
+                                    <div class="font-black text-sm text-coral total-amount-text">0đ</div>
+                                </div>
+                            </div>
+                            <button onclick="goToStep(2)" class="py-2 px-3.5 bg-coral hover:bg-[#d5523b] text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-1">
+                                Xem đơn hàng &rarr;
+                            </button>
                         </div>
                     </div>
 
-                    <div class="col-span-12 lg:col-span-4 bg-white rounded-2xl border border-espresso/10 p-4 lg:p-6 shadow-sm flex flex-col h-full overflow-hidden">
+                    {{-- Khung Món Đang Chọn (Hiện 100% trên PC, Ẩn trên Mobile để nhường chỗ cho danh sách món) --}}
+                    <div class="hidden lg:flex lg:col-span-4 bg-white rounded-2xl border border-espresso/10 p-4 lg:p-6 shadow-sm flex-col h-full overflow-hidden">
                         <h3 class="text-base font-black text-espresso mb-3 uppercase tracking-wider shrink-0 border-b pb-2 border-dashed">Món Đang Chọn</h3>
                         <div class="flex-1 min-h-0 bg-[#FAF7F2] rounded-2xl border border-gray-200 p-3 mb-4 overflow-y-auto custom-scrollbar flex flex-col gap-2" id="step1-bill-container"></div>
                         <div class="shrink-0 bg-gray-50 rounded-xl p-3 border border-gray-200">
@@ -369,15 +406,35 @@
     </script>
 
     <script>
-        function toggleSidebar() { const sidebar = document.getElementById('sidebar'); sidebar.classList.toggle('w-0'); sidebar.classList.toggle('w-64'); }
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (window.innerWidth < 768) {
+                if (sidebar.classList.contains('-translate-x-full')) {
+                    sidebar.classList.remove('-translate-x-full');
+                    if (backdrop) backdrop.classList.remove('hidden');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    if (backdrop) backdrop.classList.add('hidden');
+                }
+            } else {
+                sidebar.classList.toggle('md:w-0');
+            }
+        }
         function switchPosTab(tab) {
-            document.getElementById('content-tab-products').classList.toggle('hidden', tab !== 'products');
-            document.getElementById('content-tab-products').classList.toggle('block', tab === 'products');
-            document.getElementById('content-tab-toppings').classList.toggle('hidden', tab !== 'toppings');
-            document.getElementById('content-tab-toppings').classList.toggle('block', tab === 'toppings');
-            
-            document.getElementById('btn-tab-products').className = tab === 'products' ? "flex-1 py-2 text-sm font-black uppercase tracking-wider text-coral border-b-2 border-coral transition-colors flex items-center justify-center gap-2" : "flex-1 py-2 text-sm font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-coral transition-colors flex items-center justify-center gap-2";
-            document.getElementById('btn-tab-toppings').className = tab === 'toppings' ? "flex-1 py-2 text-sm font-black uppercase tracking-wider text-emerald-500 border-b-2 border-emerald-500 transition-colors flex items-center justify-center gap-2" : "flex-1 py-2 text-sm font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-coral transition-colors flex items-center justify-center gap-2";
+            const pTab = document.getElementById('content-tab-products');
+            const cTab = document.getElementById('content-tab-combos');
+            const tTab = document.getElementById('content-tab-toppings');
+
+            pTab.classList.toggle('hidden', tab !== 'products'); pTab.classList.toggle('grid', tab === 'products');
+            if (cTab) { cTab.classList.toggle('hidden', tab !== 'combos'); cTab.classList.toggle('grid', tab === 'combos'); }
+            tTab.classList.toggle('hidden', tab !== 'toppings'); tTab.classList.toggle('grid', tab === 'toppings');
+
+            document.getElementById('btn-tab-products').className = tab === 'products' ? "flex-1 py-2 text-xs sm:text-sm font-black uppercase tracking-wider text-coral border-b-2 border-coral transition-colors flex items-center justify-center gap-2" : "flex-1 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-coral transition-colors flex items-center justify-center gap-2";
+            if (document.getElementById('btn-tab-combos')) {
+                document.getElementById('btn-tab-combos').className = tab === 'combos' ? "flex-1 py-2 text-xs sm:text-sm font-black uppercase tracking-wider text-amber-500 border-b-2 border-amber-500 transition-colors flex items-center justify-center gap-2" : "flex-1 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-coral transition-colors flex items-center justify-center gap-2";
+            }
+            document.getElementById('btn-tab-toppings').className = tab === 'toppings' ? "flex-1 py-2 text-xs sm:text-sm font-black uppercase tracking-wider text-emerald-500 border-b-2 border-emerald-500 transition-colors flex items-center justify-center gap-2" : "flex-1 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-coral transition-colors flex items-center justify-center gap-2";
         }
         function switchInnerTab(tabId) {
             document.querySelectorAll('.inner-tab-content').forEach(el => el.classList.add('hidden'));
@@ -636,8 +693,17 @@
         function removeCartItem(cartItemId) { posCart = posCart.filter(i => i.cartItemId !== cartItemId); renderBill(); }
 
         function renderBill() {
-            const step1Container = document.getElementById('step1-bill-container'); const totalDisplays = document.querySelectorAll('.total-amount-text');
-            if (posCart.length === 0) { step1Container.innerHTML = `<div class="h-full flex flex-col justify-center items-center text-gray-400 py-12"><p class="text-xs">Chưa có sản phẩm nào</p></div>`; totalDisplays.forEach(el => el.textContent = "0đ"); return; }
+            const step1Container = document.getElementById('step1-bill-container'); 
+            const totalDisplays = document.querySelectorAll('.total-amount-text');
+            const mobileCountEl = document.getElementById('mobile-cart-count');
+            let totalItemsCount = posCart.reduce((sum, item) => sum + item.quantity, 0);
+            if (mobileCountEl) mobileCountEl.textContent = totalItemsCount;
+
+            if (posCart.length === 0) { 
+                step1Container.innerHTML = `<div class="h-full flex flex-col justify-center items-center text-gray-400 py-12"><p class="text-xs">Chưa có sản phẩm nào</p></div>`; 
+                totalDisplays.forEach(el => el.textContent = "0đ"); 
+                return; 
+            }
             step1Container.innerHTML = ""; let totalAmount = 0;
             posCart.forEach(item => {
                 let toppingTotal = 0; let optionsHtml = [];
@@ -692,8 +758,13 @@
             document.getElementById('search-product').addEventListener('input', filterProducts); 
             document.getElementById('category-filter').addEventListener('change', filterProducts);
             function filterProducts() {
-                const s = document.getElementById('search-product').value.toLowerCase().trim(); const c = document.getElementById('category-filter').value;
-                document.querySelectorAll('.product-item').forEach(i => { i.style.display = (i.getAttribute('data-name').toLowerCase().includes(s) && (c === "" || i.getAttribute('data-category-id') === c)) ? 'flex' : 'none'; });
+                const s = document.getElementById('search-product').value.toLowerCase().trim(); 
+                const c = document.getElementById('category-filter').value;
+                document.querySelectorAll('.product-item').forEach(i => { 
+                    const matchName = i.getAttribute('data-name').toLowerCase().includes(s);
+                    const matchCat = (c === "" || i.getAttribute('data-category-id') === c);
+                    i.style.display = (matchName && matchCat) ? 'flex' : 'none'; 
+                });
             }
         });
     </script>

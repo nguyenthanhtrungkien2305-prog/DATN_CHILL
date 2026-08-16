@@ -39,7 +39,7 @@ class CartController extends Controller
 
         $vouchers = collect();
 
-        // 1. Lấy mã công khai
+        // 1. Lấy mã công khai (Chỉ lấy mã khuyến mãi chung, KHÔNG lấy mã đổi điểm và KHÔNG lấy mã cá nhân)
         $publicVouchers = DB::table('vouchers')
             ->where(function ($q) {
                 $q->whereNull('end_date')->orWhere('end_date', '>=', now());
@@ -51,6 +51,14 @@ class CartController extends Controller
                 $q->whereNull('usage_limit')->orWhereRaw('used_count < usage_limit');
             })
             ->whereNull('assigned_user_id')
+            ->where(function ($q) {
+                $q->where('is_points_exchange', 0)
+                  ->orWhereNull('is_points_exchange');
+            })
+            ->where(function ($q) {
+                $q->whereNull('points_required')
+                  ->orWhere('points_required', '<=', 0);
+            })
             ->get();
 
         foreach ($publicVouchers as $v) {
@@ -454,31 +462,41 @@ class CartController extends Controller
 
         // Kiểm tra xem khách hàng có sở hữu voucher trong kho user_vouchers không
         $userId = auth()->id();
-        $hasUserVoucherRecords = false;
-        $unusedInWallet = 0;
+        $isPointsExchange = (!empty($voucher->is_points_exchange) && $voucher->is_points_exchange == 1) || (!empty($voucher->points_required) && $voucher->points_required > 0);
+        $isAssignedUser = !empty($voucher->assigned_user_id);
 
-        if ($userId && \Illuminate\Support\Facades\Schema::hasTable('user_vouchers')) {
-            $userVoucherQuery = DB::table('user_vouchers')
-                ->where('user_id', $userId)
-                ->where('voucher_id', $voucher->voucher_id);
-            
-            $hasUserVoucherRecords = (clone $userVoucherQuery)->exists();
-            if ($hasUserVoucherRecords) {
-                $unusedInWallet = (clone $userVoucherQuery)->where('is_used', 0)->count();
+        if ($isPointsExchange || $isAssignedUser) {
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vui lòng đăng nhập tài khoản để sử dụng mã voucher từ điểm tích lũy!'
+                ]);
             }
-        }
 
-        $isPointsExchange = isset($voucher->is_points_exchange) ? (bool)$voucher->is_points_exchange : false;
+            if ($isAssignedUser && $voucher->assigned_user_id != $userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Mã giảm giá này là mã quà tặng cá nhân dành riêng cho tài khoản khác!'
+                ]);
+            }
 
-        if ($hasUserVoucherRecords) {
+            $unusedInWallet = 0;
+            if (\Illuminate\Support\Facades\Schema::hasTable('user_vouchers')) {
+                $unusedInWallet = DB::table('user_vouchers')
+                    ->where('user_id', $userId)
+                    ->where('voucher_id', $voucher->voucher_id)
+                    ->where('is_used', 0)
+                    ->count();
+            }
+
             if ($unusedInWallet <= 0) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn đã sử dụng hết số lượt của mã giảm giá này!'
+                    'message' => 'Đây là mã voucher đổi từ điểm thưởng. Chỉ tài khoản đã dùng điểm đổi mã này mới có thể sử dụng (bạn chưa đổi hoặc đã sử dụng hết lượt đổi)!'
                 ]);
             }
-        } elseif (!$isPointsExchange) {
-            // Kiểm tra giới hạn lượt sử dụng / 1 khách hàng (Chỉ áp dụng cho Mã công khai / Mã tặng riêng, KHÔNG áp dụng cho Mã đổi bằng điểm)
+        } else {
+            // Kiểm tra giới hạn lượt sử dụng / 1 khách hàng (Chỉ áp dụng cho Mã công khai)
             $usagePerUser = isset($voucher->usage_per_user) ? $voucher->usage_per_user : 1;
             if ($usagePerUser !== null && $usagePerUser > 0) {
                 $customerPhone = auth()->check() ? auth()->user()->phone : trim($request->input('phone', ''));

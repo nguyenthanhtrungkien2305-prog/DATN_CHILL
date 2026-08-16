@@ -3,7 +3,7 @@
 @section('title', 'Quản lý Đơn Hàng - Chill Chill Admin')
 
 @section('content')
-    <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 shrink-0">
+    <header class="hidden lg:flex h-16 bg-white shadow-sm items-center justify-between px-8 shrink-0">
         <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
             Quản lý Đơn hàng & Tiến độ
         </h2>
@@ -13,7 +13,7 @@
         </div>
     </header>
 
-    <div class="p-8">
+    <div class="p-4 md:p-8">
         {{-- THÔNG BÁO THÀNH CÔNG VÀ LỖI CHẶN LUỒNG --}}
         @if(session('success'))
             <div class="bg-emerald-50 border border-emerald-200 text-emerald-600 px-4 py-3 rounded-xl font-bold relative mb-4 shadow-sm flex items-center gap-2">

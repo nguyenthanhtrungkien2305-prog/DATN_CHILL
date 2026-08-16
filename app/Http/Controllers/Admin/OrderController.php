@@ -89,6 +89,28 @@ class OrderController extends Controller
             return back()->with('error', 'Thao tác từ chối! Bạn không thể nhảy cóc, lùi bước hoặc tự ý hủy đơn hàng đang xử lý.');
         }
 
+        if ($newStatus === 'cancelled') {
+            $usedWallet = (float)($order->used_wallet_amount ?? 0);
+            $isPaid = ($currentStatus === 'processing' || $order->payment_method === 'qr');
+            $cashPaid = $isPaid ? (float)$order->total_amount : 0;
+            $totalRefund = $usedWallet + $cashPaid;
+
+            if ($totalRefund > 0 && !empty($order->user_id)) {
+                DB::table('users')->where('user_id', $order->user_id)->increment('wallet_balance', $totalRefund);
+            }
+
+            if (!empty($order->voucher_id) && !empty($order->user_id) && \Illuminate\Support\Facades\Schema::hasTable('user_vouchers')) {
+                DB::table('user_vouchers')
+                    ->where('user_id', $order->user_id)
+                    ->where('voucher_id', $order->voucher_id)
+                    ->where('is_used', 1)
+                    ->limit(1)
+                    ->update(['is_used' => 0, 'updated_at' => now()]);
+
+                DB::table('vouchers')->where('voucher_id', $order->voucher_id)->decrement('used_count');
+            }
+        }
+
         DB::table('orders')->where('order_id', $id)->update([
             'status' => $newStatus,
             'updated_at' => now('Asia/Ho_Chi_Minh')

@@ -3,11 +3,11 @@
 @section('title', 'Quản lý Danh mục - Chill Chill Admin')
 
 @section('content')
-    <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 shrink-0">
+    <header class="hidden lg:flex h-16 bg-white shadow-sm items-center justify-between px-8 shrink-0">
         <h2 class="text-xl font-semibold text-gray-800">Danh sách Danh mục</h2>
     </header>
 
-    <div class="p-8">
+    <div class="p-4 md:p-8">
         @if(session('success'))
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl relative mb-4 text-sm font-medium">{{ session('success') }}</div>
         @endif
@@ -15,21 +15,21 @@
             <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl relative mb-4 text-sm font-medium">{{ session('error') }}</div>
         @endif
 
-        <div class="flex justify-between items-center mb-6">
-            <p class="text-gray-500 text-sm">Quản lý trạng thái hiển thị của các danh mục đồ uống & thức ăn.</p>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <p class="text-gray-500 text-xs sm:text-sm">Quản lý trạng thái hiển thị của các danh mục đồ uống & thức ăn.</p>
             
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 shrink-0 flex-wrap">
                 <button type="submit" 
                         form="bulkDeleteCategoryForm" 
                         id="bulkDeleteBtn" 
                         onclick="return confirmBulkDelete(event)" 
                         disabled 
-                        class="bg-red-500 text-white px-5 py-2.5 rounded-xl opacity-50 cursor-not-allowed transition font-bold text-sm shadow-md flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        class="bg-red-500 text-white px-3 py-2 rounded-xl opacity-50 cursor-not-allowed transition font-bold text-xs shadow-sm flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     <span>Xóa mục đã chọn (0)</span>
                 </button>
 
-                <a href="{{ route('categories.create') }}" class="bg-[#e8634a] text-white px-6 py-2.5 rounded-xl hover:bg-[#d5523b] transition font-bold text-sm shadow-md">
+                <a href="{{ route('categories.create') }}" class="bg-[#e8634a] text-white px-4 py-2 rounded-xl hover:bg-[#d5523b] transition font-bold text-xs shadow-sm whitespace-nowrap">
                     + Thêm danh mục mới
                 </a>
             </div>
@@ -38,7 +38,8 @@
         <form id="bulkDeleteCategoryForm" action="{{ route('categories.bulk_delete') }}" method="POST">
             @csrf
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <table class="w-full text-left border-collapse">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse min-w-[650px]">
                     <thead>
                         <tr class="bg-gray-50 text-gray-500 text-xs font-bold uppercase border-b">
                             <th class="p-4 w-10 text-center">
@@ -99,6 +100,7 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
                 
                 <div class="p-4 border-t">
                     {{ $categories->links() }}

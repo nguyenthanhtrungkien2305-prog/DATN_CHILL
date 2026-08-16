@@ -10,12 +10,18 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style> body { font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', 'Poppins', sans-serif; } </style>
 </head>
-<body class="bg-gray-100 flex h-screen overflow-hidden antialiased">
+<body class="bg-gray-100 flex h-screen overflow-hidden antialiased relative">
 
-    {{-- SIDEBAR (Menu bên trái đồng bộ) --}}
-    <aside class="w-64 bg-[#2B2623] text-white flex flex-col shrink-0">
-        <div class="h-16 flex items-center justify-center border-b border-white/10 shrink-0">
-            <h1 class="text-xl font-bold tracking-widest text-[#e8634a]">CHILL CHILL ADMIN</h1>
+    {{-- BACKDROP DÙNG CHO MOBILE SIDEBAR --}}
+    <div id="admin-sidebar-backdrop" onclick="toggleAdminSidebar()" class="fixed inset-0 bg-black/50 z-40 lg:hidden hidden transition-opacity"></div>
+
+    {{-- SIDEBAR (Responsive Slide-over Drawer trên Mobile & Tablet) --}}
+    <aside id="admin-sidebar" class="w-64 bg-[#2B2623] text-white flex flex-col shrink-0 fixed lg:static top-0 bottom-0 left-0 z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out h-full">
+        <div class="h-16 flex items-center justify-between px-4 border-b border-white/10 shrink-0">
+            <h1 class="text-lg font-bold tracking-widest text-[#e8634a]">CHILL CHILL ADMIN</h1>
+            <button type="button" onclick="toggleAdminSidebar()" class="lg:hidden text-gray-400 hover:text-white p-1">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
         </div>
         
         {{-- Thêm custom-scrollbar để menu cuộn mượt mà nếu thêm nhiều mục --}}
@@ -101,18 +107,44 @@
             
         </nav>
         <div class="p-4 border-t border-white/10 shrink-0">
-            <a href="/" class="block text-center px-4 py-2 bg-white/10 rounded hover:bg-white/20 transition">← Về trang web</a>
+            <a href="/" class="block text-center px-4 py-2 bg-white/10 rounded hover:bg-white/20 transition text-sm">← Về trang web</a>
         </div>
     </aside>
 
-    {{-- MAIN CONTENT --}}
+    {{-- MAIN CONTENT CONTAINER --}}
     <main class="flex-1 flex flex-col h-screen overflow-y-auto w-full bg-gray-100 relative">
+        {{-- TOPBAR CHO MOBILE/TABLET --}}
+        <header class="lg:hidden bg-[#2B2623] text-white h-14 px-4 flex items-center justify-between shrink-0 shadow-md">
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="toggleAdminSidebar()" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <span class="font-bold text-sm tracking-wider text-[#e8634a]">CHILL CHILL ADMIN</span>
+            </div>
+            <a href="/" class="text-xs bg-white/10 px-2.5 py-1 rounded text-white hover:bg-white/20">Trang chủ</a>
+        </header>
+
         @yield('content')
     </main>
 
+    {{-- SCRIPT TOGGLE ADMIN SIDEBAR --}}
+    <script>
+        function toggleAdminSidebar() {
+            const sidebar = document.getElementById('admin-sidebar');
+            const backdrop = document.getElementById('admin-sidebar-backdrop');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+    </script>
+
     {{-- CSS thanh cuộn tinh tế cho Sidebar --}}
     <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.3); }

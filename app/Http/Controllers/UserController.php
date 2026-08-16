@@ -23,13 +23,14 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email',
+            'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // File ảnh, tối đa 2MB
         ]);
 
         $user = auth()->user(); // Hoặc DB::table('users')->where('user_id', $id)->first() tùy logic của bạn
         
-        // 2. Mảng dữ liệu cần update
+        // 2. Mảng dữ liệu cần update (Số điện thoại chỉ được cập nhật thông qua xác thực SMS OTP)
         $updateData = [
             'name' => $request->name,
             'email' => $request->email,
@@ -90,35 +91,8 @@ class UserController extends Controller
 
         return view('user.orders', compact('orders', 'totalOrdersCount', 'processingOrdersCount', 'completedOrdersCount', 'userPoints'));
     }  
-    public function cancelOrder($id)
-    {
-        $userId = auth()->user()->user_id ?? auth()->id();
 
-        // Dùng DB::table thay vì App\Models\Order để đồng bộ với code của bạn
-        $order = \Illuminate\Support\Facades\DB::table('orders')
-                    ->where('order_id', $id)
-                    ->where('user_id', $userId)
-                    ->first();
-
-        // Nếu không tìm thấy đơn hàng của người này
-        if (!$order) {
-            return back()->with('error', 'Không tìm thấy đơn hàng!');
-        }
-
-        // Chỉ cho phép hủy khi đơn hàng đang ở trạng thái chờ xác nhận
-        if ($order->status == 'pending') {
-            \Illuminate\Support\Facades\DB::table('orders')
-                ->where('order_id', $id)
-                ->update([
-                    'status' => 'canceled', 
-                    'updated_at' => now('Asia/Ho_Chi_Minh')
-                ]);
-                
-            return back()->with('success', 'Đã hủy đơn hàng #' . $id . ' thành công.');
-        }
-
-        return back()->with('error', 'Không thể hủy đơn hàng này do quán đã bắt đầu chuẩn bị đồ uống!');
-    }
+    // ==========================================
     // ==========================================
     // XỬ LÝ GỬI ĐÁNH GIÁ (REVIEW)
     // ==========================================
@@ -315,5 +289,120 @@ class UserController extends Controller
         ]);
 
         return back()->with('success', '🎉 Chúc mừng! Bạn đã đổi thành công mã voucher ' . $voucher->code . ' (-' . $pointsNeeded . ' điểm).');
+    }
+
+    // ==========================================
+    // HIỂN THỊ TRANG ĐỔI MẬT KHẨU
+    // ==========================================
+    public function changePassword()
+    {
+        $user = Auth::user();
+        return view('user.change_password', compact('user'));
+    }
+
+    // ==========================================
+    // XỬ LÝ ĐỔI MẬT KHẨU
+    // ==========================================
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|string|min:6|confirmed',
+        ], [
+            'current_password.required' => 'Vui lòng nhập mật khẩu hiện tại.',
+            'new_password.required' => 'Vui lòng nhập mật khẩu mới.',
+            'new_password.min' => 'Mật khẩu mới phải có ít nhất 6 ký tự.',
+            'new_password.confirmed' => 'Xác nhận mật khẩu mới không trùng khớp.'
+        ]);
+
+        $user = Auth::user();
+
+        if (!\Illuminate\Support\Facades\Hash::check($request->current_password, $user->password)) {
+            return back()->withErrors(['current_password' => 'Mật khẩu hiện tại không chính xác!']);
+        }
+
+        \Illuminate\Support\Facades\DB::table('users')
+            ->where('user_id', $user->user_id)
+            ->update([
+                'password' => \Illuminate\Support\Facades\Hash::make($request->new_password),
+                'updated_at' => now()
+            ]);
+
+        return back()->with('success', '🎉 Đổi mật khẩu thành công! Mật khẩu mới của bạn đã được cập nhật.');
+    }
+
+    // ==========================================
+    // HIỂN THỊ TRANG VÍ SỐ DƯ HOÀN TIỀN
+    // ==========================================
+    public function wallet()
+    {
+        $user = Auth::user();
+        
+        // Lấy danh sách các đơn hàng đã hủy hoặc được hoàn tiền
+        $refundedOrders = DB::table('orders')
+            ->where('user_id', $user->user_id)
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        return view('user.wallet', compact('user', 'refundedOrders'));
+    }
+
+    // ==========================================
+    // HỦY ĐƠN HÀNG VÀ TỰ ĐỘNG HOÀN TIỀN VÀO VÍ
+    // ==========================================
+    public function cancelOrder(Request $request, $id)
+    {
+        $user = Auth::user();
+        $order = DB::table('orders')
+            ->where('order_id', $id)
+            ->where('user_id', $user->user_id)
+            ->first();
+
+        if (!$order) {
+            return back()->with('error', 'Không tìm thấy đơn hàng!');
+        }
+
+        if ($order->status === 'cancelled') {
+            return back()->with('error', 'Đơn hàng này đã bị hủy trước đó!');
+        }
+
+        if (in_array($order->status, ['completed', 'shipping'])) {
+            return back()->with('error', 'Đơn hàng đang giao hoặc đã hoàn thành không thể hủy!');
+        }
+
+        $oldStatus = $order->status;
+
+        // Cập nhật trạng thái đơn hàng sang cancelled
+        DB::table('orders')->where('order_id', $id)->update([
+            'status' => 'cancelled',
+            'updated_at' => now()
+        ]);
+
+        // Hoàn trả 1 lượt voucher về kho user_vouchers nếu có sử dụng
+        if (!empty($order->voucher_id) && !empty($user->user_id) && \Illuminate\Support\Facades\Schema::hasTable('user_vouchers')) {
+            DB::table('user_vouchers')
+                ->where('user_id', $user->user_id)
+                ->where('voucher_id', $order->voucher_id)
+                ->where('is_used', 1)
+                ->limit(1)
+                ->update(['is_used' => 0, 'updated_at' => now()]);
+
+            DB::table('vouchers')->where('voucher_id', $order->voucher_id)->decrement('used_count');
+        }
+
+        // TÍNH TOÁN HOÀN TIỀN CẢ VÍ LẪN TIỀN MẶT/QR ĐÃ THANH TOÁN
+        $usedWallet = (float)($order->used_wallet_amount ?? 0);
+        $isPaid = ($oldStatus === 'processing' || $order->payment_method === 'qr');
+        $cashPaid = $isPaid ? (float)$order->total_amount : 0;
+
+        $totalRefund = $usedWallet + $cashPaid;
+        $refundMsg = 'Đã hủy đơn hàng #' . $id . ' thành công!';
+
+        if ($totalRefund > 0) {
+            DB::table('users')->where('user_id', $user->user_id)->increment('wallet_balance', $totalRefund);
+            $refundMsg = '🎉 Đơn hàng #' . $id . ' đã được hủy! Số tiền ' . number_format($totalRefund, 0, ',', '.') . 'đ (bao gồm tiền ví đã khấu trừ) đã được tự động hoàn về Ví nằm ở mục Tiền hoàn trong menu Tài khoản của bạn.';
+        }
+
+        return back()->with('success', $refundMsg);
     }
 }

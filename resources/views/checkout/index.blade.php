@@ -30,28 +30,15 @@
 
                 {{-- KHOẢNG 1: GIAO HÀNG TẬN NƠI --}}
                 <div id="section-delivery" class="space-y-6 block">
-                    <div class="bg-white p-6 md:p-8 rounded-[24px] shadow-sm border border-espresso/5">
-                        <h2 class="font-bold text-xl text-espresso mb-4 flex items-center gap-2">
-                            <span class="bg-coral text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span> 
-                            Thông tin người nhận
-                        </h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-espresso/80 mb-2">Họ và tên</label>
-                                <input type="text" name="customer_name" id="req_name" value="{{ $user->name ?? '' }}" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-coral bg-[#FAF7F2]">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-espresso/80 mb-2">Số điện thoại</label>
-                                <input type="text" name="customer_phone" id="req_phone" value="{{ $user->phone ?? '' }}" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-coral bg-[#FAF7F2]">
-                            </div>
-                        </div>
-                    </div>
+                    {{-- Ẩn thông tin người nhận, lấy trực tiếp từ Profile --}}
+                    <input type="hidden" name="customer_name" id="req_name" value="{{ $user->name ?? '' }}">
+                    <input type="hidden" name="customer_phone" id="req_phone" value="{{ $user->phone ?? '' }}">
 
-                    {{-- BLOCK ĐỊA CHỈ (ĐÃ CẢI TIẾN THEO YÊU CẦU) --}}
+                    {{-- BLOCK ĐỊA CHỈ GIAO HÀNG --}}
                     <div class="bg-white p-6 md:p-8 rounded-[24px] shadow-sm border border-espresso/5">
                         <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
                             <h2 class="font-bold text-xl text-espresso flex items-center gap-2">
-                                <span class="bg-coral text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span> 
+                                <span class="bg-coral text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span> 
                                 Địa chỉ giao hàng <span class="text-xs font-normal text-gray-400 ml-1">({{ count($addresses) }}/4)</span>
                             </h2>
                             
@@ -264,14 +251,29 @@
                             <span class="font-medium text-coral">- {{ number_format(session()->has('voucher') ? session('voucher')['discount_amount'] : 0, 0, ',', '.') }}đ</span>
                         </div>
                         <div class="flex justify-between text-espresso/80 text-sm" id="shipping-fee-row"><span>Phí vận chuyển</span><span class="font-medium text-green-500">Miễn phí</span></div>
-                    </div>
                     @php
                         $discount = session()->has('voucher') ? session('voucher')['discount_amount'] : 0;
                         $finalTotal = max(0, $subTotal - $discount);
                     @endphp
+
+                    @if(auth()->check() && auth()->user()->wallet_balance > 0)
+                        <div class="bg-gradient-to-r from-amber-50 to-orange-50 p-4 rounded-2xl border border-amber-200 mb-4">
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <div class="flex items-center gap-2.5">
+                                    <input type="checkbox" name="use_wallet_balance" value="1" id="chk-use-wallet" onchange="toggleWalletDeduction({{ (float)auth()->user()->wallet_balance }}, {{ $finalTotal }})" class="w-4 h-4 accent-coral rounded cursor-pointer">
+                                    <div>
+                                        <span class="font-bold text-xs text-espresso block">Sử dụng Số dư Ví hoàn tiền</span>
+                                        <span class="text-[11px] text-espresso/60">Số dư hiện có: <strong class="text-coral">{{ number_format(auth()->user()->wallet_balance, 0, ',', '.') }}đ</strong></span>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-bold text-coral" id="wallet-deduction-badge">-0đ</span>
+                            </label>
+                        </div>
+                    @endif
+
                     <div class="flex justify-between items-end mb-8 pt-4 border-t border-espresso/10">
                         <span class="font-bold text-espresso">Tổng thanh toán</span>
-                        <span class="font-black text-3xl text-coral">{{ number_format($finalTotal, 0, ',', '.') }}đ</span>
+                        <span class="font-black text-3xl text-coral" id="checkout-final-total">{{ number_format($finalTotal, 0, ',', '.') }}đ</span>
                     </div>
                     <button type="submit" id="btn-submit-order" onclick="return validateOrder()" class="w-full py-4 bg-coral text-white rounded-full font-bold text-lg hover:bg-[#d5523b] shadow-lg shadow-coral/30 transition-all">
                         Chốt Đơn Ngay
@@ -412,12 +414,45 @@
         activeBtn.querySelector('.check-icon').classList.remove('hidden');
     }
 
-    // === VALIDATE SUBMIT ===
+    // === VALIDATE SUBMIT & PROFILE COMPLETENESS ===
     function validateOrder() {
-        if (document.getElementById('order_type').value === 'dine_in' && !document.getElementById('table_number').value) {
-            alert('Vui lòng chọn số bàn bạn đang ngồi nhé!'); return false; 
+        const orderType = document.getElementById('order_type').value;
+        const phoneInput = document.getElementById('req_phone');
+        const phone = phoneInput ? phoneInput.value.trim() : '';
+
+        // 1. Kiểm tra Số điện thoại
+        if (!phone || phone.length < 9) {
+            showProfileRequiredModal('Bạn cần cập nhật <strong>Số điện thoại</strong> trước khi mua hàng để chúng tôi tiện liên hệ nhé!');
+            return false;
         }
+
+        // 2. Nếu là Giao hàng tận nơi -> Kiểm tra Địa chỉ giao hàng
+        if (orderType === 'delivery') {
+            const checkedAddress = document.querySelector('input[name="shipping_address"]:checked');
+            if (!checkedAddress || !checkedAddress.value.trim()) {
+                showProfileRequiredModal('Bạn cần cập nhật <strong>Địa chỉ giao hàng</strong> trước khi đặt đơn nhé!');
+                return false;
+            }
+        }
+
+        // 3. Nếu là Tại quán -> Kiểm tra số bàn
+        if (orderType === 'dine_in' && !document.getElementById('table_number').value) {
+            alert('Vui lòng chọn số bàn bạn đang ngồi nhé!'); 
+            return false; 
+        }
+
         return true; 
+    }
+
+    function showProfileRequiredModal(msg) {
+        if (msg) {
+            document.getElementById('profile-req-desc').innerHTML = msg;
+        }
+        document.getElementById('profileRequiredModal').classList.remove('hidden');
+    }
+
+    function closeProfileRequiredModal() {
+        document.getElementById('profileRequiredModal').classList.add('hidden');
     }
 
     // === API ĐỊA CHỈ & MODAL ===
@@ -508,5 +543,46 @@
             if (data.success) { window.location.reload(); } else { alert(data.message); }
         });
     }
+
+    function toggleWalletDeduction(walletBalance, baseTotal) {
+        const chk = document.getElementById('chk-use-wallet');
+        const badge = document.getElementById('wallet-deduction-badge');
+        const totalDisplay = document.getElementById('checkout-final-total');
+
+        if (chk && chk.checked) {
+            const deduction = Math.min(walletBalance, baseTotal);
+            const newTotal = Math.max(0, baseTotal - deduction);
+            if (badge) badge.innerText = '-' + new Intl.NumberFormat('vi-VN').format(deduction) + 'đ';
+            if (totalDisplay) totalDisplay.innerText = new Intl.NumberFormat('vi-VN').format(newTotal) + 'đ';
+        } else {
+            if (badge) badge.innerText = '-0đ';
+            if (totalDisplay) totalDisplay.innerText = new Intl.NumberFormat('vi-VN').format(baseTotal) + 'đ';
+        }
+    }
 </script>
+
+{{-- MODAL CẦN CẬP NHẬT THÔNG TIN TRƯỚC KHI MUA HÀNG --}}
+<div id="profileRequiredModal" class="fixed inset-0 bg-espresso/60 backdrop-blur-sm z-[110] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl relative border border-cream text-center">
+        <button type="button" onclick="closeProfileRequiredModal()" class="absolute top-5 right-5 text-espresso/40 hover:text-coral text-2xl font-bold focus:outline-none">&times;</button>
+        <div class="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        </div>
+
+        <h3 class="font-serif font-bold text-2xl text-espresso mb-2">⚠️ Cần cập nhật thông tin!</h3>
+        <p class="text-sm text-espresso/70 mb-6 leading-relaxed" id="profile-req-desc">
+            Bạn cần cập nhật thông tin cá nhân (<strong>Số điện thoại, Địa chỉ giao hàng</strong>) trước khi mua hàng để chúng tôi giao món đến bạn nhé.
+        </p>
+
+        <div class="space-y-3">
+            <a href="{{ route('user.profile') }}" class="w-full py-3.5 bg-coral text-white rounded-full font-bold text-sm hover:bg-espresso transition-colors shadow-lg shadow-coral/30 flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                Cập nhật thông tin ngay
+            </a>
+            <button type="button" onclick="closeProfileRequiredModal()" class="w-full py-3 text-espresso/60 hover:text-espresso font-medium text-sm transition-colors">
+                Đóng
+            </button>
+        </div>
+    </div>
+</div>
 @endsection
