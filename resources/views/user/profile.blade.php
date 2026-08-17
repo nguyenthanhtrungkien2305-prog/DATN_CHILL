@@ -86,17 +86,16 @@
                             <span>Số điện thoại</span>
                             <span id="profile-phone-badge">
                                 @if($user->phone)
-                                    <span class="text-[11px] text-green-600 font-bold bg-green-50 px-2.5 py-1 rounded-lg border border-green-200">✓ Đã xác thực</span>
+                                    <span class="text-[11px] text-green-600 font-bold bg-green-50 px-2.5 py-1 rounded-lg border border-green-200">Đã xác thực</span>
                                 @else
-                                    <span class="text-[11px] text-amber-600 font-bold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">⚠️ Chưa có SĐT</span>
+                                    <span class="text-[11px] text-amber-600 font-bold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">Chưa có SĐT</span>
                                 @endif
                             </span>
                         </label>
                         <div class="relative flex items-center">
-                            <input type="text" id="profile-phone-display" value="{{ $user->phone ?? 'Chưa cập nhật SĐT' }}" readonly class="w-full px-4 py-3 bg-[#FAF7F2] border border-transparent rounded-xl text-espresso font-semibold cursor-default pr-36">
-                            <button type="button" onclick="openSmsOtpModal()" class="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-espresso text-white text-xs rounded-xl font-bold hover:bg-coral transition-all shadow-sm flex items-center gap-1.5">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                                <span>{{ $user->phone ? 'Đổi Số ĐT' : 'Xác thực SĐT' }}</span>
+                            <input type="text" id="profile-phone-display" value="{{ $user->phone ?? 'Chưa cập nhật SĐT' }}" readonly class="w-full px-4 py-3 bg-[#FAF7F2] border border-transparent rounded-xl text-espresso font-semibold cursor-default pr-32">
+                            <button type="button" onclick="openSmsOtpModal()" class="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-espresso text-white text-xs rounded-xl font-bold hover:bg-coral transition-all shadow-sm">
+                                {{ $user->phone ? 'Đổi Số ĐT' : 'Xác thực SĐT' }}
                             </button>
                         </div>
                     </div>
@@ -145,10 +144,7 @@
         </button>
 
         {{-- Header Modal --}}
-        <div class="text-center mb-6">
-            <div class="w-14 h-14 rounded-2xl bg-coral/10 text-coral flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner">
-                📱
-            </div>
+        <div class="text-center mb-6 pt-2">
             <h3 class="font-serif font-black text-2xl text-espresso">Xác thực Số điện thoại</h3>
             <p class="text-xs text-espresso/60 mt-1">Mã xác thực OTP gồm 6 chữ số sẽ được gửi qua SMS đến số điện thoại của bạn</p>
         </div>
@@ -157,7 +153,7 @@
         <div class="space-y-4">
             {{-- Bước 1: Nhập SĐT --}}
             <div>
-                <label class="block text-xs font-bold text-espresso mb-1.5">Số điện thoại của bạn</label>
+                <label class="block text-xs font-bold text-espresso mb-1.5">Số điện thoại</label>
                 <div class="relative flex items-center">
                     <input type="text" id="modal-phone-input" value="{{ $user->phone ?? '' }}" placeholder="Nhập Số điện thoại (Ví dụ: 0912345678)" class="w-full px-4 py-3 bg-[#FAF7F2] border border-espresso/10 rounded-2xl text-sm font-semibold text-espresso focus:outline-none focus:border-coral focus:bg-white transition-all pr-28">
                     <button type="button" id="btn-modal-send-sms" onclick="sendModalSmsOtp()" class="absolute right-1.5 top-1/2 -translate-y-1/2 px-3.5 py-2 bg-espresso text-white text-xs rounded-xl font-bold hover:bg-coral transition-colors shadow-sm">
@@ -180,7 +176,7 @@
                 <div id="modal-sms-msg" class="hidden text-xs font-medium p-3 rounded-xl bg-green-50 text-green-700 border border-green-200"></div>
 
                 {{-- Nút bấm xác nhận --}}
-                <button type="button" id="btn-modal-verify-sms" onclick="verifyModalSmsOtp()" class="w-full py-3.5 bg-coral text-white rounded-2xl font-bold text-sm hover:bg-espresso transition-colors shadow-lg shadow-coral/20 flex items-center justify-center gap-2">
+                <button type="button" id="btn-modal-verify-sms" onclick="verifyModalSmsOtp()" class="w-full py-3.5 bg-coral text-white rounded-2xl font-bold text-sm hover:bg-espresso transition-colors shadow-lg shadow-coral/20 flex items-center justify-center">
                     <span>Xác nhận & Cập nhật Số điện thoại</span>
                 </button>
             </div>
@@ -325,12 +321,12 @@
                 document.getElementById('profile-phone-display').value = data.phone;
                 const badge = document.getElementById('profile-phone-badge');
                 if (badge) {
-                    badge.innerHTML = '<span class="text-[11px] text-green-600 font-bold bg-green-50 px-2.5 py-1 rounded-lg border border-green-200">✓ Đã xác thực</span>';
+                    badge.innerHTML = '<span class="text-[11px] text-green-600 font-bold bg-green-50 px-2.5 py-1 rounded-lg border border-green-200">Đã xác thực</span>';
                 }
                 if (typeof showToast === 'function') {
-                    showToast('🎉 ' + data.message, 'success');
+                    showToast(data.message, 'success');
                 } else {
-                    alert('🎉 ' + data.message);
+                    alert(data.message);
                 }
             } else {
                 if (typeof showToast === 'function') {
