@@ -84,44 +84,20 @@
                     <div>
                         <label class="block text-sm font-bold text-espresso mb-2 flex items-center justify-between">
                             <span>Số điện thoại</span>
-                            @if($user->phone)
-                                <span class="text-[11px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-md border border-green-200">✓ Đã xác thực</span>
-                            @else
-                                <span class="text-[11px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">⚠️ Chưa có SĐT</span>
-                            @endif
+                            <span id="profile-phone-badge">
+                                @if($user->phone)
+                                    <span class="text-[11px] text-green-600 font-bold bg-green-50 px-2.5 py-1 rounded-lg border border-green-200">✓ Đã xác thực</span>
+                                @else
+                                    <span class="text-[11px] text-amber-600 font-bold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">⚠️ Chưa có SĐT</span>
+                                @endif
+                            </span>
                         </label>
                         <div class="relative flex items-center">
-                            <input type="text" id="profile-phone-display" value="{{ $user->phone ?? 'Chưa cập nhật SĐT' }}" readonly class="w-full px-4 py-3 bg-gray-100 border border-transparent rounded-xl text-espresso font-semibold cursor-not-allowed pr-36">
-                            <button type="button" onclick="toggleSmsOtpBox()" class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-espresso text-white text-xs rounded-lg font-semibold hover:bg-coral transition-colors">
-                                Xác thực SĐT
+                            <input type="text" id="profile-phone-display" value="{{ $user->phone ?? 'Chưa cập nhật SĐT' }}" readonly class="w-full px-4 py-3 bg-[#FAF7F2] border border-transparent rounded-xl text-espresso font-semibold cursor-default pr-36">
+                            <button type="button" onclick="openSmsOtpModal()" class="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-espresso text-white text-xs rounded-xl font-bold hover:bg-coral transition-all shadow-sm flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                <span>{{ $user->phone ? 'Đổi Số ĐT' : 'Xác thực SĐT' }}</span>
                             </button>
-                        </div>
-
-                        {{-- Khối nhập & Xác minh SĐT qua SMS OTP --}}
-                        <div id="profile-sms-block" class="hidden mt-3 bg-gradient-to-r from-amber-50 to-orange-50 p-4 border border-amber-200 rounded-2xl space-y-3">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-bold text-espresso">Xác thực / Thay đổi Số điện thoại qua SMS OTP:</span>
-                                <button type="button" onclick="toggleSmsOtpBox()" class="text-xs text-gray-400 hover:text-coral font-bold">✕ Đóng</button>
-                            </div>
-
-                            <div class="relative flex items-center">
-                                <input type="text" id="profile-phone-input" placeholder="Nhập Số điện thoại mới (Ví dụ: 0912345678)" class="w-full px-3.5 py-2.5 bg-white border border-amber-300 rounded-xl text-sm focus:outline-none focus:border-coral pr-28">
-                                <button type="button" id="btn-send-profile-sms" onclick="sendProfileSmsOtp()" class="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-espresso text-white text-xs rounded-lg font-semibold hover:bg-coral transition-colors">
-                                    Gửi mã SMS
-                                </button>
-                            </div>
-
-                            <div id="profile-otp-input-row" class="hidden flex gap-2">
-                                <input type="text" id="profile-sms-code" maxlength="6" placeholder="Mã OTP 6 chữ số" class="w-full h-10 text-center text-sm font-mono tracking-widest border border-amber-300 rounded-xl focus:outline-none focus:border-coral bg-white">
-                                <button type="button" onclick="verifyProfileSmsOtp()" class="px-4 h-10 bg-coral text-white text-xs rounded-xl font-bold hover:bg-espresso transition-colors shrink-0 flex items-center gap-1">
-                                    <span>Xác minh & Lưu SĐT</span>
-                                </button>
-                            </div>
-                            <div id="profile-sms-msg" class="text-xs font-medium hidden"></div>
-                        </div>
-
-                        <div id="profile-sms-verified-badge" class="hidden mt-2 bg-green-50 text-green-700 border border-green-200 px-3 py-2 rounded-xl text-xs font-bold">
-                            🎉 Số điện thoại đã được xác thực và cập nhật thành công vào hệ thống!
                         </div>
                     </div>
                 </div>
@@ -159,16 +135,89 @@
     </div>
 </div>
 
+{{-- POPUP MODAL XÁC THỰC SỐ ĐIỆN THOẠI QUA SMS OTP --}}
+<div id="sms-otp-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+    <div class="bg-white rounded-[32px] shadow-2xl border border-espresso/10 max-w-md w-full p-6 sm:p-8 relative overflow-hidden transform transition-all">
+        
+        {{-- Nút đóng modal --}}
+        <button type="button" onclick="closeSmsOtpModal()" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:bg-coral hover:text-white flex items-center justify-center text-sm font-bold transition-colors">
+            ✕
+        </button>
+
+        {{-- Header Modal --}}
+        <div class="text-center mb-6">
+            <div class="w-14 h-14 rounded-2xl bg-coral/10 text-coral flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner">
+                📱
+            </div>
+            <h3 class="font-serif font-black text-2xl text-espresso">Xác thực Số điện thoại</h3>
+            <p class="text-xs text-espresso/60 mt-1">Mã xác thực OTP gồm 6 chữ số sẽ được gửi qua SMS đến số điện thoại của bạn</p>
+        </div>
+
+        {{-- Nội dung form trong Modal --}}
+        <div class="space-y-4">
+            {{-- Bước 1: Nhập SĐT --}}
+            <div>
+                <label class="block text-xs font-bold text-espresso mb-1.5">Số điện thoại của bạn</label>
+                <div class="relative flex items-center">
+                    <input type="text" id="modal-phone-input" value="{{ $user->phone ?? '' }}" placeholder="Nhập Số điện thoại (Ví dụ: 0912345678)" class="w-full px-4 py-3 bg-[#FAF7F2] border border-espresso/10 rounded-2xl text-sm font-semibold text-espresso focus:outline-none focus:border-coral focus:bg-white transition-all pr-28">
+                    <button type="button" id="btn-modal-send-sms" onclick="sendModalSmsOtp()" class="absolute right-1.5 top-1/2 -translate-y-1/2 px-3.5 py-2 bg-espresso text-white text-xs rounded-xl font-bold hover:bg-coral transition-colors shadow-sm">
+                        Gửi mã SMS
+                    </button>
+                </div>
+            </div>
+
+            {{-- Bước 2: Nhập OTP (Ẩn cho tới khi bấm Gửi mã) --}}
+            <div id="modal-otp-step" class="hidden space-y-4 pt-3 border-t border-gray-100">
+                <div>
+                    <label class="block text-xs font-bold text-espresso mb-1.5 flex items-center justify-between">
+                        <span>Nhập mã xác nhận (6 chữ số)</span>
+                        <span id="modal-otp-countdown" class="text-[11px] text-coral font-bold"></span>
+                    </label>
+                    <input type="text" id="modal-sms-code" maxlength="6" placeholder="• • • • • •" class="w-full h-12 text-center text-xl font-mono font-black tracking-[0.4em] border-2 border-amber-300 rounded-2xl focus:outline-none focus:border-coral bg-amber-50/40 text-espresso transition-all">
+                </div>
+
+                {{-- Thông báo demo OTP / SMS message --}}
+                <div id="modal-sms-msg" class="hidden text-xs font-medium p-3 rounded-xl bg-green-50 text-green-700 border border-green-200"></div>
+
+                {{-- Nút bấm xác nhận --}}
+                <button type="button" id="btn-modal-verify-sms" onclick="verifyModalSmsOtp()" class="w-full py-3.5 bg-coral text-white rounded-2xl font-bold text-sm hover:bg-espresso transition-colors shadow-lg shadow-coral/20 flex items-center justify-center gap-2">
+                    <span>Xác nhận & Cập nhật Số điện thoại</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
 <script>
     const CSRF_TOKEN = '{{ csrf_token() }}';
 
-    function toggleSmsOtpBox() {
-        const block = document.getElementById('profile-sms-block');
-        block.classList.toggle('hidden');
+    function openSmsOtpModal() {
+        const modal = document.getElementById('sms-otp-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        const phoneInput = document.getElementById('modal-phone-input');
+        if (phoneInput && !phoneInput.value) {
+            phoneInput.focus();
+        }
     }
 
-    function sendProfileSmsOtp() {
-        const phoneInput = document.getElementById('profile-phone-input');
+    function closeSmsOtpModal() {
+        const modal = document.getElementById('sms-otp-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    // Đóng modal khi bấm phím ESC hoặc bấm ra ngoài nền đen
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeSmsOtpModal();
+    });
+    document.getElementById('sms-otp-modal')?.addEventListener('click', function(e) {
+        if (e.target === this) closeSmsOtpModal();
+    });
+
+    function sendModalSmsOtp() {
+        const phoneInput = document.getElementById('modal-phone-input');
         const phone = phoneInput ? phoneInput.value.trim() : '';
 
         if (!phone || !/^(0[3|5|7|8|9])+([0-9]{8})$/.test(phone)) {
@@ -180,7 +229,7 @@
             return;
         }
 
-        const btn = document.getElementById('btn-send-profile-sms');
+        const btn = document.getElementById('btn-modal-send-sms');
         btn.disabled = true;
         btn.innerHTML = 'Đang gửi...';
 
@@ -203,16 +252,18 @@
             btn.disabled = false;
             btn.innerHTML = 'Gửi lại SMS';
             if (data.success) {
-                document.getElementById('profile-otp-input-row').classList.remove('hidden');
-                const msgEl = document.getElementById('profile-sms-msg');
+                document.getElementById('modal-otp-step').classList.remove('hidden');
+                const msgEl = document.getElementById('modal-sms-msg');
                 if (msgEl) {
                     msgEl.classList.remove('hidden');
-                    msgEl.className = 'text-xs font-medium text-green-600 block mt-1';
                     msgEl.innerText = data.message;
                 }
                 if (data.demo_otp) {
-                    const codeInput = document.getElementById('profile-sms-code');
-                    if (codeInput) codeInput.value = data.demo_otp;
+                    const codeInput = document.getElementById('modal-sms-code');
+                    if (codeInput) {
+                        codeInput.value = data.demo_otp;
+                        codeInput.focus();
+                    }
                 }
                 if (typeof showToast === 'function') {
                     showToast(data.message || 'Đã gửi mã OTP thành công!', 'success');
@@ -236,8 +287,8 @@
         });
     }
 
-    function verifyProfileSmsOtp() {
-        const code = document.getElementById('profile-sms-code').value.trim();
+    function verifyModalSmsOtp() {
+        const code = document.getElementById('modal-sms-code').value.trim();
         if (code.length !== 6) {
             if (typeof showToast === 'function') {
                 showToast('Vui lòng nhập đủ 6 chữ số mã OTP SMS!', 'error');
@@ -246,6 +297,10 @@
             }
             return;
         }
+
+        const verifyBtn = document.getElementById('btn-modal-verify-sms');
+        verifyBtn.disabled = true;
+        verifyBtn.innerHTML = 'Đang xác thực...';
 
         fetch('{{ route("auth.verify_phone_otp") }}', {
             method: 'POST',
@@ -263,14 +318,19 @@
             return res.json();
         })
         .then(data => {
+            verifyBtn.disabled = false;
+            verifyBtn.innerHTML = 'Xác nhận & Cập nhật Số điện thoại';
             if (data.success) {
-                document.getElementById('profile-sms-block').classList.add('hidden');
-                document.getElementById('profile-sms-verified-badge').classList.remove('hidden');
+                closeSmsOtpModal();
                 document.getElementById('profile-phone-display').value = data.phone;
+                const badge = document.getElementById('profile-phone-badge');
+                if (badge) {
+                    badge.innerHTML = '<span class="text-[11px] text-green-600 font-bold bg-green-50 px-2.5 py-1 rounded-lg border border-green-200">✓ Đã xác thực</span>';
+                }
                 if (typeof showToast === 'function') {
-                    showToast('🎉 Xác thực & Cập nhật SĐT thành công!', 'success');
+                    showToast('🎉 ' + data.message, 'success');
                 } else {
-                    alert('🎉 Xác thực & Cập nhật SĐT thành công!');
+                    alert('🎉 ' + data.message);
                 }
             } else {
                 if (typeof showToast === 'function') {
@@ -281,6 +341,8 @@
             }
         })
         .catch(err => {
+            verifyBtn.disabled = false;
+            verifyBtn.innerHTML = 'Xác nhận & Cập nhật Số điện thoại';
             if (typeof showToast === 'function') {
                 showToast(err.message || 'Có lỗi xảy ra khi xác thực OTP!', 'error');
             } else {
