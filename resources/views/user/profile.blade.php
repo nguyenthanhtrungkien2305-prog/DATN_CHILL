@@ -172,7 +172,11 @@
         const phone = phoneInput ? phoneInput.value.trim() : '';
 
         if (!phone || !/^(0[3|5|7|8|9])+([0-9]{8})$/.test(phone)) {
-            alert('Vui lòng nhập đúng định dạng Số điện thoại Việt Nam (10 chữ số)!');
+            if (typeof showToast === 'function') {
+                showToast('Vui lòng nhập đúng định dạng Số điện thoại Việt Nam (10 chữ số)!', 'error');
+            } else {
+                alert('Vui lòng nhập đúng định dạng Số điện thoại Việt Nam (10 chữ số)!');
+            }
             return;
         }
 
@@ -184,34 +188,62 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': CSRF_TOKEN
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Accept': 'application/json'
             },
             body: JSON.stringify({ phone: phone, check_exists: false })
         })
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(errData => { throw new Error(errData.message || 'Lỗi gửi mã OTP'); });
+            }
+            return res.json();
+        })
         .then(data => {
             btn.disabled = false;
             btn.innerHTML = 'Gửi lại SMS';
             if (data.success) {
                 document.getElementById('profile-otp-input-row').classList.remove('hidden');
                 const msgEl = document.getElementById('profile-sms-msg');
-                msgEl.className = 'text-xs font-medium text-green-600 block mt-1';
-                msgEl.innerText = data.message;
+                if (msgEl) {
+                    msgEl.classList.remove('hidden');
+                    msgEl.className = 'text-xs font-medium text-green-600 block mt-1';
+                    msgEl.innerText = data.message;
+                }
+                if (data.demo_otp) {
+                    const codeInput = document.getElementById('profile-sms-code');
+                    if (codeInput) codeInput.value = data.demo_otp;
+                }
+                if (typeof showToast === 'function') {
+                    showToast(data.message || 'Đã gửi mã OTP thành công!', 'success');
+                }
             } else {
-                alert(data.message || 'Lỗi gửi mã SMS OTP');
+                if (typeof showToast === 'function') {
+                    showToast(data.message || 'Lỗi gửi mã SMS OTP', 'error');
+                } else {
+                    alert(data.message || 'Lỗi gửi mã SMS OTP');
+                }
             }
         })
         .catch(err => {
             btn.disabled = false;
             btn.innerHTML = 'Gửi mã SMS';
-            alert('Không thể kết nối máy chủ gửi SMS. Vui lòng thử lại!');
+            if (typeof showToast === 'function') {
+                showToast(err.message || 'Không thể kết nối máy chủ gửi SMS. Vui lòng thử lại!', 'error');
+            } else {
+                alert(err.message || 'Không thể kết nối máy chủ gửi SMS. Vui lòng thử lại!');
+            }
         });
     }
 
     function verifyProfileSmsOtp() {
         const code = document.getElementById('profile-sms-code').value.trim();
         if (code.length !== 6) {
-            alert('Vui lòng nhập đủ 6 chữ số mã OTP SMS!');
+            if (typeof showToast === 'function') {
+                showToast('Vui lòng nhập đủ 6 chữ số mã OTP SMS!', 'error');
+            } else {
+                alert('Vui lòng nhập đủ 6 chữ số mã OTP SMS!');
+            }
             return;
         }
 
@@ -219,23 +251,41 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': CSRF_TOKEN
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Accept': 'application/json'
             },
             body: JSON.stringify({ otp_code: code })
         })
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(errData => { throw new Error(errData.message || 'Xác thực OTP thất bại!'); });
+            }
+            return res.json();
+        })
         .then(data => {
             if (data.success) {
                 document.getElementById('profile-sms-block').classList.add('hidden');
                 document.getElementById('profile-sms-verified-badge').classList.remove('hidden');
                 document.getElementById('profile-phone-display').value = data.phone;
-                showToast('🎉 Xác thực & Cập nhật SĐT thành công!', 'success');
+                if (typeof showToast === 'function') {
+                    showToast('🎉 Xác thực & Cập nhật SĐT thành công!', 'success');
+                } else {
+                    alert('🎉 Xác thực & Cập nhật SĐT thành công!');
+                }
             } else {
-                alert(data.message || 'Xác thực OTP thất bại!');
+                if (typeof showToast === 'function') {
+                    showToast(data.message || 'Xác thực OTP thất bại!', 'error');
+                } else {
+                    alert(data.message || 'Xác thực OTP thất bại!');
+                }
             }
         })
         .catch(err => {
-            alert('Có lỗi xảy ra khi xác thực OTP!');
+            if (typeof showToast === 'function') {
+                showToast(err.message || 'Có lỗi xảy ra khi xác thực OTP!', 'error');
+            } else {
+                alert(err.message || 'Có lỗi xảy ra khi xác thực OTP!');
+            }
         });
     }
 

@@ -61,13 +61,14 @@ Route::middleware(['guest'])->group(function () {
     Route::get('/dang-nhap', function () { return view('auth.login'); })->name('login');
     Route::post('/dang-nhap', [AuthController::class, 'login'])->name('login.post');
     Route::post('/dang-ky', [AuthController::class, 'register'])->name('register.post');
-
-    // Routes OTP SMS & Gmail Quên mật khẩu
-    Route::post('/auth/send-phone-otp', [AuthController::class, 'sendPhoneOtp'])->name('auth.send_phone_otp');
-    Route::post('/auth/verify-phone-otp', [AuthController::class, 'verifyPhoneOtp'])->name('auth.verify_phone_otp');
-    Route::post('/auth/forgot-password/send-otp', [AuthController::class, 'sendForgotPasswordOtp'])->name('auth.send_forgot_otp');
-    Route::post('/auth/forgot-password/reset', [AuthController::class, 'resetPasswordWithOtp'])->name('auth.reset_password_otp');
 });
+
+// Routes OTP SMS & Gmail Quên mật khẩu (Dùng được cho cả khách và tài khoản đang đăng nhập)
+Route::post('/auth/send-phone-otp', [AuthController::class, 'sendPhoneOtp'])->name('auth.send_phone_otp');
+Route::post('/auth/verify-phone-otp', [AuthController::class, 'verifyPhoneOtp'])->name('auth.verify_phone_otp');
+Route::post('/auth/forgot-password/send-otp', [AuthController::class, 'sendForgotPasswordOtp'])->name('auth.send_forgot_otp');
+Route::post('/auth/forgot-password/reset', [AuthController::class, 'resetPasswordWithOtp'])->name('auth.reset_password_otp');
+
 
 // Route đăng xuất (Ai đăng nhập rồi cũng dùng được)
 Route::get('/dang-xuat', [AuthController::class, 'logout'])->name('logout');
