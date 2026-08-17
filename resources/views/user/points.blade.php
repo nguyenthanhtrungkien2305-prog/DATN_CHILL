@@ -63,6 +63,16 @@
                 </div>
             @endif
 
+            @if(isset($pendingOrdersCount) && $pendingOrdersCount > 0)
+                <div class="bg-amber-50 border border-amber-300/80 text-amber-900 px-5 py-3.5 rounded-2xl text-xs font-medium flex items-center justify-between shadow-xs">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-lg">⏳</span>
+                        <span>Bạn đang có <strong>{{ $pendingOrdersCount }} đơn hàng đang chờ duyệt/chế biến</strong>. Điểm tích lũy sẽ tự động được cộng vào ví ngay khi quán hoàn thành đơn!</span>
+                    </div>
+                    <a href="{{ route('user.orders') }}" class="text-xs font-bold text-coral hover:underline shrink-0 ml-2">Xem đơn ➔</a>
+                </div>
+            @endif
+
             {{-- 1. THẺ ĐIỂM TÍCH LŨY THÀNH VIÊN --}}
             <div class="bg-gradient-to-br from-[#3e2723] via-[#4a2e29] to-[#1b100e] text-white p-6 rounded-[28px] shadow-xl relative overflow-hidden border border-amber-500/20">
                 <div class="absolute -right-6 -bottom-6 w-36 h-36 bg-coral/10 rounded-full blur-2xl"></div>
@@ -82,6 +92,18 @@
                         <span class="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider {{ $badgeBg }} shadow-sm">
                             {{ $rank }}
                         </span>
+                    </div>
+                </div>
+
+                {{-- Thống kê nhanh Đơn hoàn thành & Tổng tiền tích lũy --}}
+                <div class="mt-5 pt-4 border-t border-white/10 grid grid-cols-2 gap-4 relative z-10 text-xs">
+                    <div class="bg-white/5 backdrop-blur-xs p-3 rounded-2xl border border-white/10">
+                        <span class="text-white/60 block text-[10px] uppercase font-bold">Đơn đã hoàn thành</span>
+                        <span class="font-black text-white text-sm mt-0.5 block">{{ number_format($completedOrders->count()) }} đơn</span>
+                    </div>
+                    <div class="bg-white/5 backdrop-blur-xs p-3 rounded-2xl border border-white/10">
+                        <span class="text-white/60 block text-[10px] uppercase font-bold">Tổng chi tiêu tích lũy</span>
+                        <span class="font-black text-amber-400 text-sm mt-0.5 block">{{ number_format($completedOrders->sum('total_amount'), 0, ',', '.') }}đ</span>
                     </div>
                 </div>
             </div>

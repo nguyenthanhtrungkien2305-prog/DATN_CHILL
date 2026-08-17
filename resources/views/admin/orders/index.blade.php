@@ -111,34 +111,26 @@
                                 <form action="{{ route('admin.orders.update_status', $order->order_id) }}" method="POST" class="m-0">
                                     @csrf
                                     <select name="status" onchange="this.form.submit()" 
-                                        class="w-full text-xs font-bold rounded-lg px-3 py-2 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#e8634a]/50 transition-colors text-center
-                                        {{ $order->status == 'pending' ? 'bg-red-50 text-red-600 border-red-100 cursor-pointer' : '' }}
-                                        {{ $order->status == 'processing' ? 'bg-blue-50 text-blue-600 border-blue-100 cursor-pointer' : '' }}
-                                        {{ $order->status == 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 opacity-70 cursor-not-allowed' : '' }}
-                                        {{ $order->status == 'cancelled' ? 'bg-gray-100 text-gray-500 border-gray-200 opacity-70 cursor-not-allowed' : '' }}"
-                                        {{ in_array($order->status, ['completed', 'cancelled']) ? 'disabled' : '' }}>
+                                        class="w-full text-xs font-bold rounded-xl px-3 py-2 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-coral/50 transition-all text-center cursor-pointer shadow-2xs
+                                        {{ $order->status == 'pending' ? 'bg-red-50 text-red-600 border-red-200' : '' }}
+                                        {{ $order->status == 'processing' ? 'bg-blue-50 text-blue-600 border-blue-200' : '' }}
+                                        {{ $order->status == 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : '' }}
+                                        {{ $order->status == 'cancelled' ? 'bg-gray-100 text-gray-500 border-gray-200' : '' }}">
                                         
-                                        {{-- 1. Nếu đang "Chờ", hiển thị nhưng khóa nếu không phải --}}
-                                        <option value="pending" {{ $order->status == 'pending' ? 'selected' : 'disabled hidden' }}>
-                                            Chờ xác nhận
+                                        <option value="pending" {{ $order->status == 'pending' ? 'selected' : '' }}>
+                                            🟡 Chờ xác nhận
                                         </option>
                                         
-                                        {{-- 2. Nếu không nằm ở Chờ hoặc Pha chế thì khóa --}}
-                                        <option value="processing" {{ $order->status == 'processing' ? 'selected' : '' }} 
-                                            {{ !in_array($order->status, ['pending', 'processing']) ? 'disabled hidden' : '' }}>
-                                            Đang pha chế
+                                        <option value="processing" {{ $order->status == 'processing' ? 'selected' : '' }}>
+                                            🔵 Đang pha chế
                                         </option>
                                         
-                                        {{-- 3. Chỉ Pha chế mới được Hoàn thành, hoặc đã Hoàn thành rồi --}}
-                                        <option value="completed" {{ $order->status == 'completed' ? 'selected' : '' }} 
-                                            {{ !in_array($order->status, ['processing', 'completed']) ? 'disabled hidden' : '' }}>
-                                            Đã hoàn thành
+                                        <option value="completed" {{ $order->status == 'completed' ? 'selected' : '' }}>
+                                            🟢 Đã hoàn thành
                                         </option>
                                         
-                                        {{-- 4. Chỉ có thể hủy từ lúc Chờ xác nhận --}}
-                                        <option value="cancelled" {{ $order->status == 'cancelled' ? 'selected' : '' }} 
-                                            {{ !in_array($order->status, ['pending', 'cancelled']) ? 'disabled hidden' : '' }}>
-                                            Đã hủy
+                                        <option value="cancelled" {{ $order->status == 'cancelled' ? 'selected' : '' }}>
+                                            🔴 Đã hủy
                                         </option>
 
                                     </select>

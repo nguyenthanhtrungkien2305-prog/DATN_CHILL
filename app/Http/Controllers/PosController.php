@@ -133,9 +133,15 @@ class PosController extends Controller
 
     public function newOrders()
     {
+        // Tự động hủy các đơn chưa xử lý quá 24h
+        DB::table('orders')
+            ->whereIn('status', ['pending', 'processing'])
+            ->where('created_at', '<', now('Asia/Ho_Chi_Minh')->subHours(24))
+            ->update(['status' => 'cancelled', 'updated_at' => now('Asia/Ho_Chi_Minh')]);
+
         $pendingOrders = DB::table('orders')
             ->where('status', 'pending')
-            ->orderBy('created_at', 'asc') 
+            ->orderBy('created_at', 'desc') 
             ->get();
             
         $toppings = DB::table('products')

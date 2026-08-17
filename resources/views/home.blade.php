@@ -1,18 +1,36 @@
 @extends('layouts.app')
 
 @section('content')
-    <!-- Full-Page Hero Banner Section (Tràn đỉnh màn hình, hiển thị trọn vẹn) -->
-    <section class="relative w-full overflow-hidden bg-espresso pt-0">
+    <!-- Full-Page Hero Banner Section (Slide động sắc nét, chuyển slide tức thì 60fps) -->
+    <section class="relative w-full overflow-hidden bg-espresso pt-0 group">
         <div class="relative w-full min-h-[360px] sm:min-h-[520px] lg:min-h-[640px] flex items-center justify-center">
             
-            {{-- Full-Width Background Image (Hiển thị đầy đủ không bị xén) --}}
-            <img id="hero-banner-bg" 
-                 src="{{ format_image_url($heroBanner->image_url ?? '/images/banner1.png', '/images/banner1.png') }}?v=1812" 
-                 alt="{{ $heroBanner->title ?? 'Chill Chill Hero Banner' }}" 
-                 class="w-full h-auto max-h-[85vh] sm:max-h-screen object-contain sm:object-cover object-center transition-opacity duration-500 ease-in-out" />
+            {{-- Slide 1: Back to School / Trà chanh --}}
+            <div class="hero-slide absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out opacity-100 z-10" data-slide-index="0">
+                <img src="{{ format_image_url($heroBanner->image_url ?? '/images/banner1.png', '/images/banner1.png') }}?v=1812" 
+                     alt="Chill Chill Hero Banner 1" 
+                     class="w-full h-auto max-h-[85vh] sm:max-h-screen object-contain sm:object-cover object-center"
+                     onerror="this.onerror=null; this.src='/images/banner1.png';" />
+            </div>
+
+            {{-- Slide 2: Cà phê Phin & Cà phê Muối --}}
+            <div class="hero-slide absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out opacity-0 z-0 pointer-events-none" data-slide-index="1">
+                <img src="{{ format_image_url('/images/banner2.png') }}?v=1812" 
+                     alt="Chill Chill Hero Banner 2" 
+                     class="w-full h-auto max-h-[85vh] sm:max-h-screen object-contain sm:object-cover object-center"
+                     onerror="this.onerror=null; this.src='/images/banner2.png';" />
+            </div>
+
+            {{-- Slide 3: Bánh Ngọt & Trà Chiều --}}
+            <div class="hero-slide absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out opacity-0 z-0 pointer-events-none" data-slide-index="2">
+                <img src="{{ format_image_url('/images/banner3.png') }}?v=1812" 
+                     alt="Chill Chill Hero Banner 3" 
+                     class="w-full h-auto max-h-[85vh] sm:max-h-screen object-contain sm:object-cover object-center"
+                     onerror="this.onerror=null; this.src='/images/banner3.png';" />
+            </div>
 
             {{-- Nút Chuyển Slide Banner Căn Giữa --}}
-            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2.5 bg-black/40 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/20 shadow-lg">
+            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5 bg-black/40 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/20 shadow-lg">
                 <button onclick="changeHeroBanner(0)" class="h-3 w-8 rounded-full bg-coral transition-all duration-300 hero-banner-dot" title="Banner 1"></button>
                 <button onclick="changeHeroBanner(1)" class="h-3 w-3 rounded-full bg-white/50 hover:bg-white transition-all duration-300 hero-banner-dot" title="Banner 2"></button>
                 <button onclick="changeHeroBanner(2)" class="h-3 w-3 rounded-full bg-white/50 hover:bg-white transition-all duration-300 hero-banner-dot" title="Banner 3"></button>
@@ -543,31 +561,25 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const heroImages = [
-                "{{ format_image_url($heroBanner->image_url ?? '/images/banner1.png', '/images/banner1.png') }}?v=1812",
-                "{{ format_image_url('/images/banner2.png') }}?v=1812",
-                "{{ format_image_url('/images/banner3.png') }}?v=1812"
-            ];
-            let currentHeroIdx = 0;
+            const slides = document.querySelectorAll('.hero-slide');
+            const dots = document.querySelectorAll('.hero-banner-dot');
+            if (!slides.length) return;
 
-            // Preload images into browser cache so switching is instantaneous
-            heroImages.forEach(function(src) {
-                const img = new Image();
-                img.src = src;
-            });
+            let currentHeroIdx = 0;
+            let slideTimer = null;
 
             window.changeHeroBanner = function(idx) {
                 currentHeroIdx = idx;
-                const bgImg = document.getElementById('hero-banner-bg');
-                if (bgImg) {
-                    bgImg.style.opacity = '0.2';
-                    setTimeout(() => {
-                        bgImg.src = heroImages[currentHeroIdx];
-                        bgImg.style.opacity = '1';
-                    }, 200);
-                }
+                slides.forEach((slide, i) => {
+                    if (i === idx) {
+                        slide.classList.remove('opacity-0', 'z-0', 'pointer-events-none');
+                        slide.classList.add('opacity-100', 'z-10');
+                    } else {
+                        slide.classList.remove('opacity-100', 'z-10');
+                        slide.classList.add('opacity-0', 'z-0', 'pointer-events-none');
+                    }
+                });
 
-                const dots = document.querySelectorAll('.hero-banner-dot');
                 dots.forEach((dot, i) => {
                     if (i === idx) {
                         dot.className = 'h-3 w-8 rounded-full bg-coral transition-all duration-300 hero-banner-dot';
@@ -577,10 +589,15 @@
                 });
             };
 
-            setInterval(() => {
-                currentHeroIdx = (currentHeroIdx + 1) % heroImages.length;
-                window.changeHeroBanner(currentHeroIdx);
-            }, 6000);
+            function startTimer() {
+                if (slideTimer) clearInterval(slideTimer);
+                slideTimer = setInterval(() => {
+                    currentHeroIdx = (currentHeroIdx + 1) % slides.length;
+                    window.changeHeroBanner(currentHeroIdx);
+                }, 5000);
+            }
+
+            startTimer();
         });
     </script>
 @endsection

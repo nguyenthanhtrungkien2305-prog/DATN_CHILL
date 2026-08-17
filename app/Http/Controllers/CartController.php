@@ -38,6 +38,8 @@ class CartController extends Controller
         \App\Http\Controllers\Admin\VoucherController::cleanupExpiredVouchers();
 
         $vouchers = collect();
+        $userId = auth()->id() ?? (auth()->check() ? auth()->user()->user_id : null);
+        $customerPhone = auth()->check() ? auth()->user()->phone : null;
 
         // 1. Lấy mã công khai (Chỉ lấy mã khuyến mãi chung, KHÔNG lấy mã đổi điểm và KHÔNG lấy mã cá nhân)
         $publicVouchers = DB::table('vouchers')
@@ -62,13 +64,48 @@ class CartController extends Controller
             ->get();
 
         foreach ($publicVouchers as $v) {
+            // Lọc bỏ mã nếu tài khoản này đã dùng hết lượt cho phép (Mặc định 1 lần/tài khoản)
+            $usagePerUser = isset($v->usage_per_user) ? (int)$v->usage_per_user : (isset($v->user_limit) ? (int)$v->user_limit : 1);
+            if ($usagePerUser <= 0) $usagePerUser = 1;
+
+            if ($userId) {
+                // Kiểm tra xem khách có voucher chưa sử dụng trong ví user_vouchers không
+                $unusedWalletCount = DB::table('user_vouchers')
+                    ->where('user_id', $userId)
+                    ->where('voucher_id', $v->voucher_id)
+                    ->where('is_used', 0)
+                    ->count();
+
+                // Nếu không có lượt chưa dùng trong ví, kiểm tra số đơn đã dùng trong quá khứ
+                if ($unusedWalletCount == 0) {
+                    $usedCount = DB::table('orders')
+                        ->where('voucher_id', $v->voucher_id)
+                        ->where('user_id', $userId)
+                        ->where('status', '!=', 'cancelled')
+                        ->where('status', '!=', 'canceled')
+                        ->count();
+
+                    if ($usedCount >= $usagePerUser) {
+                        continue; // Đã dùng hết lượt -> Ẩn mã này ngay lập tức!
+                    }
+                }
+            } elseif (!empty($customerPhone)) {
+                $usedCount = DB::table('orders')
+                    ->where('voucher_id', $v->voucher_id)
+                    ->where('customer_phone', $customerPhone)
+                    ->where('status', '!=', 'cancelled')
+                    ->where('status', '!=', 'canceled')
+                    ->count();
+
+                if ($usedCount >= $usagePerUser) {
+                    continue; // Đã dùng hết lượt -> Ẩn mã này ngay lập tức!
+                }
+            }
             $vouchers->push($v);
         }
 
-        // 2. Lấy mã cá nhân của user đang đăng nhập
-        if (auth()->check()) {
-            $userId = auth()->id() ?? auth()->user()->user_id;
-
+        // 2. Lấy mã cá nhân của user đang đăng nhập (chưa dùng)
+        if ($userId) {
             $myVouchers = DB::table('user_vouchers')
                 ->join('vouchers', 'user_vouchers.voucher_id', '=', 'vouchers.voucher_id')
                 ->where('user_vouchers.user_id', $userId)
@@ -121,6 +158,8 @@ class CartController extends Controller
         foreach ($cart as $item) {
             $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
         }
+
+        self::checkAndRecalculateVoucher();
 
         $availableVouchers = $this->getApplicableVouchers($subTotal);
 
@@ -476,6 +515,7 @@ class CartController extends Controller
                 ]);
             }
 
+<<<<<<< Updated upstream
             if ($isAssignedUser && $voucher->assigned_user_id != $userId) {
                 return response()->json([
                     'success' => false,
@@ -491,6 +531,10 @@ class CartController extends Controller
                     ->where('is_used', 0)
                     ->count();
             }
+=======
+        $usagePerUser = isset($voucher->usage_per_user) ? (int)$voucher->usage_per_user : (isset($voucher->user_limit) ? (int)$voucher->user_limit : 1);
+        if ($usagePerUser <= 0) $usagePerUser = 1;
+>>>>>>> Stashed changes
 
             if ($unusedInWallet <= 0) {
                 return response()->json([
@@ -499,32 +543,38 @@ class CartController extends Controller
                 ]);
             }
         } else {
+<<<<<<< Updated upstream
             // Kiểm tra giới hạn lượt sử dụng / 1 khách hàng (Chỉ áp dụng cho Mã công khai)
             $usagePerUser = isset($voucher->usage_per_user) ? $voucher->usage_per_user : 1;
             if ($usagePerUser !== null && $usagePerUser > 0) {
                 $customerPhone = auth()->check() ? auth()->user()->phone : trim($request->input('phone', ''));
+=======
+            // Kiểm tra số lượt đã sử dụng theo lịch sử đơn hàng của tài khoản / số điện thoại
+            $customerPhone = auth()->check() ? auth()->user()->phone : trim($request->input('phone', ''));
+>>>>>>> Stashed changes
 
-                $userUsedCount = 0;
-                if ($userId) {
-                    $userUsedCount = DB::table('orders')
-                        ->where('voucher_id', $voucher->voucher_id)
-                        ->where('user_id', $userId)
-                        ->where('status', '!=', 'cancelled')
-                        ->count();
-                } elseif (!empty($customerPhone)) {
-                    $userUsedCount = DB::table('orders')
-                        ->where('voucher_id', $voucher->voucher_id)
-                        ->where('customer_phone', $customerPhone)
-                        ->where('status', '!=', 'cancelled')
-                        ->count();
-                }
+            $userUsedCount = 0;
+            if ($userId) {
+                $userUsedCount = DB::table('orders')
+                    ->where('voucher_id', $voucher->voucher_id)
+                    ->where('user_id', $userId)
+                    ->where('status', '!=', 'cancelled')
+                    ->where('status', '!=', 'canceled')
+                    ->count();
+            } elseif (!empty($customerPhone)) {
+                $userUsedCount = DB::table('orders')
+                    ->where('voucher_id', $voucher->voucher_id)
+                    ->where('customer_phone', $customerPhone)
+                    ->where('status', '!=', 'cancelled')
+                    ->where('status', '!=', 'canceled')
+                    ->count();
+            }
 
-                if ($userUsedCount >= $usagePerUser) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Mã giảm giá này chỉ áp dụng tối đa {$usagePerUser} lần cho mỗi khách hàng. Bạn đã sử dụng mã này rồi!"
-                    ]);
-                }
+            if ($userUsedCount >= $usagePerUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Mã giảm giá này chỉ áp dụng tối đa {$usagePerUser} lần cho mỗi khách hàng. Bạn đã sử dụng mã này rồi!"
+                ]);
             }
         }
 
@@ -562,6 +612,46 @@ class CartController extends Controller
 
         if (empty($cart) || !$voucher || $subTotal < $voucher->min_order) {
             session()->forget('voucher'); return;
+        }
+
+        // BẢO VỆ NGHIÊM NGẶT: Kiểm tra xem tài khoản hiện tại đã dùng hết lượt của voucher này chưa!
+        $userId = auth()->id() ?? (auth()->check() ? auth()->user()->user_id : null);
+        $customerPhone = auth()->check() ? auth()->user()->phone : null;
+        $usagePerUser = isset($voucher->usage_per_user) ? (int)$voucher->usage_per_user : (isset($voucher->user_limit) ? (int)$voucher->user_limit : 1);
+        if ($usagePerUser <= 0) $usagePerUser = 1;
+
+        if ($userId) {
+            $unusedWalletCount = DB::table('user_vouchers')
+                ->where('user_id', $userId)
+                ->where('voucher_id', $voucher->voucher_id)
+                ->where('is_used', 0)
+                ->count();
+
+            if ($unusedWalletCount == 0) {
+                $usedOrderCount = DB::table('orders')
+                    ->where('voucher_id', $voucher->voucher_id)
+                    ->where('user_id', $userId)
+                    ->where('status', '!=', 'cancelled')
+                    ->where('status', '!=', 'canceled')
+                    ->count();
+
+                if ($usedOrderCount >= $usagePerUser) {
+                    session()->forget('voucher');
+                    return;
+                }
+            }
+        } elseif (!empty($customerPhone)) {
+            $usedOrderCount = DB::table('orders')
+                ->where('voucher_id', $voucher->voucher_id)
+                ->where('customer_phone', $customerPhone)
+                ->where('status', '!=', 'cancelled')
+                ->where('status', '!=', 'canceled')
+                ->count();
+
+            if ($usedOrderCount >= $usagePerUser) {
+                session()->forget('voucher');
+                return;
+            }
         }
 
         $discount = $voucher->discount_type === 'percent' ? $subTotal * ($voucher->discount_value / 100) : $voucher->discount_value;

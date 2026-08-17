@@ -166,6 +166,7 @@ class UserController extends Controller
         \App\Http\Controllers\Admin\VoucherController::cleanupExpiredVouchers();
 
         $user = \Illuminate\Support\Facades\DB::table('users')->where('user_id', $userId)->first();
+        $userPhone = $user->phone ?? null;
 
         // 1. Đảm bảo bảng vouchers có các cột cần thiết
         if (!\Illuminate\Support\Facades\Schema::hasColumn('vouchers', 'points_required')) {
@@ -180,7 +181,48 @@ class UserController extends Controller
             });
         }
 
-        // 2. Lấy danh sách Voucher ĐỔI ĐIỂM (công khai trên sàn đổi điểm)
+        // 2. Lấy danh sách các đơn hàng ĐÃ HOÀN THÀNH (khớp theo user_id HOẶC Số điện thoại)
+        $completedOrders = \Illuminate\Support\Facades\DB::table('orders')
+            ->where(function ($q) use ($userId, $userPhone) {
+                $q->where('user_id', $userId);
+                if (!empty($userPhone)) {
+                    $q->orWhere('customer_phone', $userPhone);
+                }
+            })
+            ->where('status', 'completed')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // 3. TÍNH TOÁN & ĐỒNG BỘ ĐIỂM TÍCH LŨY THỰC TẾ REALTIME
+        $totalSpent = $completedOrders->sum('total_amount');
+        $earnedPoints = (int)floor($totalSpent / 10000);
+
+        $spentPoints = (int)\Illuminate\Support\Facades\DB::table('user_vouchers')
+            ->join('vouchers', 'user_vouchers.voucher_id', '=', 'vouchers.voucher_id')
+            ->where('user_vouchers.user_id', $userId)
+            ->sum('vouchers.points_required');
+
+        $calculatedBalance = max(0, $earnedPoints - $spentPoints);
+
+        // Cập nhật số điểm thực tế về CSDL để đồng bộ 100%
+        \Illuminate\Support\Facades\DB::table('users')
+            ->where('user_id', $userId)
+            ->update(['point' => $calculatedBalance]);
+
+        $user = \Illuminate\Support\Facades\DB::table('users')->where('user_id', $userId)->first();
+
+        // Lấy số đơn hàng đang xử lý (Pending/Processing)
+        $pendingOrdersCount = \Illuminate\Support\Facades\DB::table('orders')
+            ->where(function ($q) use ($userId, $userPhone) {
+                $q->where('user_id', $userId);
+                if (!empty($userPhone)) {
+                    $q->orWhere('customer_phone', $userPhone);
+                }
+            })
+            ->whereIn('status', ['pending', 'processing'])
+            ->count();
+
+        // 4. Lấy danh sách Voucher ĐỔI ĐIỂM (công khai trên sàn đổi điểm)
         $availableVouchers = \Illuminate\Support\Facades\DB::table('vouchers')
             ->where(function ($query) {
                 $query->where('is_points_exchange', 1)->orWhereNull('is_points_exchange');
@@ -197,7 +239,7 @@ class UserController extends Controller
             }
         }
 
-        // 3. Lấy kho voucher của người dùng này (gồm voucher đổi điểm + voucher cá nhân được gán)
+        // 5. Lấy kho voucher của người dùng này
         $rawMyVouchers = \Illuminate\Support\Facades\DB::table('user_vouchers')
             ->join('vouchers', 'user_vouchers.voucher_id', '=', 'vouchers.voucher_id')
             ->where('user_vouchers.user_id', $userId)
@@ -205,7 +247,6 @@ class UserController extends Controller
             ->orderBy('user_vouchers.id', 'desc')
             ->get();
 
-        // Gom nhóm theo voucher_id để đếm số lượng khả dụng (x1, x2, x3...)
         $groupedVouchers = [];
         foreach ($rawMyVouchers as $mv) {
             $key = $mv->voucher_id;
@@ -222,14 +263,7 @@ class UserController extends Controller
         }
         $myVouchers = collect(array_values($groupedVouchers));
 
-        // 4. Lấy lịch sử tích điểm từ các đơn hàng hoàn thành
-        $completedOrders = \Illuminate\Support\Facades\DB::table('orders')
-            ->where('user_id', $userId)
-            ->where('status', 'completed')
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        // 5. Lấy lịch sử đổi Voucher bằng điểm của người dùng
+        // 6. Lấy lịch sử đổi Voucher bằng điểm của người dùng
         $redeemHistory = \Illuminate\Support\Facades\DB::table('user_vouchers')
             ->join('vouchers', 'user_vouchers.voucher_id', '=', 'vouchers.voucher_id')
             ->where('user_vouchers.user_id', $userId)
@@ -250,7 +284,7 @@ class UserController extends Controller
             }
         }
 
-        return view('user.points', compact('user', 'availableVouchers', 'myVouchers', 'completedOrders', 'redeemHistory'));
+        return view('user.points', compact('user', 'availableVouchers', 'myVouchers', 'completedOrders', 'redeemHistory', 'pendingOrdersCount'));
     }
 
     // ==========================================

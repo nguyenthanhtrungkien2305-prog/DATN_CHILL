@@ -11,6 +11,17 @@ class OrderController extends Controller
 {
     public function index(Request $request)
     {
+        $now = Carbon::now('Asia/Ho_Chi_Minh');
+
+        // TỰ ĐỘNG HỦY CÁC ĐƠN HÀNG CHƯA XỬ LÝ ĐÃ QUÁ 24H (QUÁ NGÀY HÔM SAU)
+        DB::table('orders')
+            ->whereIn('status', ['pending', 'processing'])
+            ->where('created_at', '<', $now->copy()->subHours(24))
+            ->update([
+                'status' => 'cancelled',
+                'updated_at' => $now
+            ]);
+
         // 1. Thống kê nhanh WIDGETS
         $countPending = DB::table('orders')->where('status', 'pending')->count();
         $countProcessing = DB::table('orders')->where('status', 'processing')->count();
@@ -19,21 +30,18 @@ class OrderController extends Controller
             ->whereDate('created_at', Carbon::today())
             ->count();
 
-        // 2. Xử lý Logic Truy vấn và Sắp xếp
+        // 2. Xử lý Logic Truy vấn và Sắp xếp (ĐƠN MỚI NHẤT LUÔN LÊN TRÊN CÙNG)
         $query = DB::table('orders');
         $statusFilter = $request->get('status', 'incomplete'); // Mặc định hiển thị Chưa hoàn thành
 
         // Lọc theo Tab trạng thái
         if ($statusFilter === 'incomplete') {
-            // Đơn chưa hoàn thành -> Lọc Pending & Processing -> Xếp Cũ nhất lên trước (asc)
             $query->whereIn('status', ['pending', 'processing'])
-                  ->orderBy('created_at', 'asc');
+                  ->orderBy('created_at', 'desc');
         } elseif ($statusFilter !== 'all') {
-            // Các Tab khác (Đã hoàn thành, Đã hủy) -> Xếp Mới nhất lên trước (desc)
             $query->where('status', $statusFilter)
                   ->orderBy('created_at', 'desc');
         } else {
-            // Tab Tất cả -> Xếp Mới nhất lên trước
             $query->orderBy('created_at', 'desc');
         }
 
@@ -53,7 +61,6 @@ class OrderController extends Controller
         ));
     }
 
-   // Cập nhật tiến độ đơn hàng (Đã khóa quy tắc luồng)
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
@@ -69,6 +76,7 @@ class OrderController extends Controller
         $currentStatus = $order->status;
         $newStatus = $request->status;
 
+<<<<<<< Updated upstream
         // BẢNG QUY TẮC LUỒNG TRẠNG THÁI (State Machine)
         $validTransitions = [
             // Từ "Chờ xác nhận": Chỉ được sang "Đang pha chế" hoặc "Hủy"
@@ -111,10 +119,20 @@ class OrderController extends Controller
             }
         }
 
+=======
+>>>>>>> Stashed changes
         DB::table('orders')->where('order_id', $id)->update([
             'status' => $newStatus,
             'updated_at' => now('Asia/Ho_Chi_Minh')
         ]);
+
+        // Cộng điểm tích lũy cho khách hàng khi chuyển sang hoàn thành (10.000đ = 1 điểm)
+        if ($order && $order->user_id && $currentStatus !== 'completed' && $newStatus === 'completed') {
+            $pointsEarned = (int) floor($order->total_amount / 10000);
+            if ($pointsEarned > 0) {
+                DB::table('users')->where('user_id', $order->user_id)->increment('point', $pointsEarned);
+            }
+        }
 
         return back()->with('success', 'Đã cập nhật tiến độ cho đơn hàng #' . $id);
     }

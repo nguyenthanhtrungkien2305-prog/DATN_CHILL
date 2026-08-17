@@ -111,16 +111,16 @@
                             @endif
 
                             @if(!empty($item['toppings']))
-                                <div class="bg-[#FAF7F2] p-3 rounded-xl mb-3 border border-espresso/5 w-full md:w-max">
+                                <div class="bg-[#FAF7F2] p-3 rounded-2xl mb-3 border border-espresso/5 w-full max-w-full">
                                     <p class="text-xs font-bold text-espresso/50 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                                        <svg class="w-3.5 h-3.5 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                                         Topping đi kèm
                                     </p>
                                     <div class="flex flex-wrap gap-2">
                                         @foreach($item['toppings'] as $top)
-                                            <div class="px-3 py-1 bg-white text-coral border border-coral/20 rounded-lg text-xs font-medium flex items-center gap-1 shadow-sm">
-                                                {{ $top['name'] }} 
-                                                <span class="bg-coral text-white text-[10px] px-1.5 py-0.5 rounded-md ml-1">x{{ $top['qty'] }}</span>
+                                            <div class="px-3 py-1 bg-white text-coral border border-coral/20 rounded-lg text-xs font-medium flex items-center gap-1 shadow-xs">
+                                                <span>{{ $top['name'] }}</span>
+                                                <span class="bg-coral text-white text-[10px] px-1.5 py-0.5 rounded-md ml-1 shrink-0">x{{ $top['qty'] }}</span>
                                             </div>
                                         @endforeach
                                     </div>

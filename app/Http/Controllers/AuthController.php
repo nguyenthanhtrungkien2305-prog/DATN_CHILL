@@ -87,23 +87,21 @@ class AuthController extends Controller
             'password.required' => 'Vui lòng nhập mật khẩu.'
         ]);
 
-        $password = $request->password;
+        $identity = trim($identity);
+        $password = trim($request->password);
 
-        $fieldType = 'name'; 
-        if (filter_var($identity, FILTER_VALIDATE_EMAIL)) {
-            $fieldType = 'email'; 
-        } elseif (preg_match('/^[0-9]+$/', $identity)) {
-            $fieldType = 'phone'; 
-        }
+        $user = User::where('name', $identity)
+            ->orWhere('phone', $identity)
+            ->orWhere('email', $identity)
+            ->first();
 
-        if (Auth::attempt([$fieldType => $identity, 'password' => $password], $request->has('remember'))) {
-            $user = Auth::user();
-
+        if ($user && Hash::check($password, $user->password)) {
             // Kiểm tra nếu tài khoản bị khóa
             if (!empty($user->is_locked)) {
-                Auth::logout();
                 return back()->withErrors(['login_error' => '🔒 Tài khoản của bạn đã bị KHÓA bởi Quản trị viên! Vui lòng liên hệ hỗ trợ.'])->withInput();
             }
+
+            Auth::login($user, $request->has('remember'));
 
             if ($user->role === 'staff') {
                 return redirect()->route('staff.shifts')->with('success', 'Đăng nhập thành công! Vui lòng Check-in để mở khóa POS.');

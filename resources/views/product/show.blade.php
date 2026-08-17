@@ -93,12 +93,12 @@
 
                 @if(!$isToppingCategory && !$isBanhNgot)
                 <div class="mb-6 pt-6 border-t border-espresso/10">
-                    <button type="button" onclick="openToppingModal()" class="w-full py-4 rounded-xl border-2 border-dashed border-coral text-coral font-bold flex items-center justify-center gap-2 hover:bg-coral/5 transition-colors">
+                    <button type="button" id="customization-btn" onclick="openToppingModal()" class="w-full py-4 rounded-xl border-2 border-dashed border-coral text-coral font-bold flex items-center justify-center gap-2 hover:bg-coral/5 transition-all">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                        Tùy chỉnh Đồ uống & Topping
+                        <span id="customization-btn-text">+ Tùy chỉnh Đồ uống & Topping</span>
                     </button>
                     
-                    <div id="selected-toppings-container" class="flex flex-wrap gap-2 mt-4 hidden"></div>
+                    <div id="selected-toppings-container" class="mt-3 hidden"></div>
                 </div>
                 @endif
 
@@ -426,20 +426,28 @@
 
     function applyToppings() {
         let container = document.getElementById('selected-toppings-container');
+        let btnText = document.getElementById('customization-btn-text');
+        let btnBox = document.getElementById('customization-btn');
         let html = '';
-        currentToppingPrice = 0; 
+        currentToppingPrice = 0;
+        let selectedCount = 0; 
         
         // 1. Hiển thị Topping đã chọn
         document.querySelectorAll('.topping-input').forEach(input => {
             let qty = parseInt(input.value);
             if (qty > 0) {
+                selectedCount += qty;
                 let name = input.getAttribute('data-name');
                 let price = parseFloat(input.getAttribute('data-price'));
                 currentToppingPrice += (price * qty);
                 
+                let priceText = (price * qty) > 0 ? ` (+${new Intl.NumberFormat('vi-VN').format(price * qty)}đ)` : '';
+                
                 html += `
-                    <div class="px-4 py-1.5 bg-coral/10 text-coral border border-coral/20 rounded-full text-sm font-medium flex items-center gap-1 shadow-sm">
-                        ${name} <span class="text-xs bg-coral text-white px-1.5 rounded-full ml-1">x${qty}</span>
+                    <div class="px-3.5 py-1.5 bg-coral text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-xs">
+                        <span>✨ ${name}</span>
+                        <span class="bg-white/30 text-white px-1.5 py-0.5 rounded-full text-[10px]">x${qty}</span>
+                        <span class="text-[11px] font-semibold">${priceText}</span>
                     </div>
                 `;
             }
@@ -451,23 +459,52 @@
         
         currentOptionsPrice = iceRadio ? (parseFloat(iceRadio.getAttribute('data-extra-price')) || 0) : 0;
         
-        let iceText = iceRadio ? iceRadio.nextElementSibling.innerText.split('\n')[0].trim() : '100% Đá';
-        let sugarText = sugarRadio ? sugarRadio.nextElementSibling.innerText.trim() : '100% Đường';
+        let iceText = iceRadio ? iceRadio.nextElementSibling.innerText.split('\n')[0].trim() : '';
+        let sugarText = sugarRadio ? sugarRadio.nextElementSibling.innerText.trim() : '';
 
-        // Chỉ hiển thị tag nếu khách có thay đổi so với Mặc định
-        if (iceText && iceText !== '100% Đá (Mặc định)') {
-            html += `<div class="px-4 py-1.5 bg-blue-50 text-blue-500 border border-blue-200 rounded-full text-sm font-medium shadow-sm">${iceText}</div>`;
+        if (iceText && !iceText.includes('Mặc định') && !iceText.includes('100% Đá')) {
+            selectedCount++;
+            html += `<div class="px-3.5 py-1.5 bg-sky-100 text-sky-700 border border-sky-200 rounded-full text-xs font-bold shadow-xs">🧊 ${iceText}</div>`;
         }
-        if (sugarText && sugarText !== '100% Đường (Mặc định)') {
-            html += `<div class="px-4 py-1.5 bg-amber-50 text-amber-500 border border-amber-200 rounded-full text-sm font-medium shadow-sm">${sugarText}</div>`;
+        if (sugarText && !sugarText.includes('Mặc định') && !sugarText.includes('100% Đường')) {
+            selectedCount++;
+            html += `<div class="px-3.5 py-1.5 bg-amber-100 text-amber-800 border border-amber-200 rounded-full text-xs font-bold shadow-xs">🍯 ${sugarText}</div>`;
         }
 
         if (html !== '') {
-            container.innerHTML = html;
+            container.innerHTML = `
+                <div class="w-full bg-[#FAF7F2] border border-coral/25 rounded-2xl p-4 transition-all">
+                    <div class="flex items-center justify-between mb-2.5">
+                        <span class="text-xs font-bold uppercase tracking-wider text-coral flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Đã chọn tùy chỉnh (${selectedCount}):
+                        </span>
+                        <button type="button" onclick="openToppingModal()" class="text-xs font-bold text-coral hover:underline flex items-center gap-1">
+                            Sửa tùy chỉnh ✎
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        ${html}
+                    </div>
+                </div>
+            `;
             container.classList.remove('hidden');
+
+            if (btnText) {
+                btnText.innerHTML = `✓ Đã chọn tùy chỉnh (${selectedCount})`;
+            }
+            if (btnBox) {
+                btnBox.className = "w-full py-3.5 rounded-xl border-2 border-coral bg-coral/10 text-coral font-bold flex items-center justify-center gap-2 hover:bg-coral/20 transition-all shadow-xs";
+            }
         } else {
             container.innerHTML = '';
             container.classList.add('hidden');
+            if (btnText) {
+                btnText.innerHTML = `+ Tùy chỉnh Đồ uống & Topping`;
+            }
+            if (btnBox) {
+                btnBox.className = "w-full py-4 rounded-xl border-2 border-dashed border-coral text-coral font-bold flex items-center justify-center gap-2 hover:bg-coral/5 transition-colors";
+            }
         }
 
         calculateTotalPrice();
