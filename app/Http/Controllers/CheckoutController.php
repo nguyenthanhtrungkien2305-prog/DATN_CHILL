@@ -207,6 +207,7 @@ class CheckoutController extends Controller
 
         // Lưu vào Database
         $orderId = \DB::table('orders')->insertGetId([
+            'user_id' => auth()->check() ? auth()->id() : null,
             'customer_name' => $request->customer_name ?? $request->recipient_name ?? (auth()->check() ? auth()->user()->name : 'Khách Vãng Lai'),
             'customer_phone' => $request->customer_phone ?? $request->phone ?? (auth()->check() ? auth()->user()->phone : ''),
             'shipping_address' => $request->shipping_address ?? $request->address ?? '',

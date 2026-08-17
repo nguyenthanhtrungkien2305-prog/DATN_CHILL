@@ -24,7 +24,7 @@
 
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
-                <p class="text-gray-500 text-sm">Quản lý tập trung các Banner hiển thị trên **Trang Chủ** (Hero Section, Promo Voucher) và trang sản phẩm.</p>
+                <p class="text-gray-500 text-sm">Quản lý tập trung các Banner hiển thị trên <strong>Trang Chủ</strong> (Hero Section, Promo Voucher) và trang sản phẩm.</p>
                 <p class="text-xs text-gray-400 mt-0.5">Dễ dàng sửa tiêu đề, mô tả, nút điều hướng và hình ảnh bất cứ khi nào có sản phẩm mới hoặc chương trình ưu đãi.</p>
             </div>
             <div class="flex items-center gap-3 shrink-0">
