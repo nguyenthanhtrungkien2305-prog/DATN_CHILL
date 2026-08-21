@@ -36,15 +36,16 @@
             {{-- KHU VỰC ẢNH SẢN PHẨM & ẢNH PHỤ (CĂN GIỮA NẰM TRONG KHU VỰC ẢNH) --}}
             <div class="order-1 md:order-1 md:col-span-5 flex flex-col items-center gap-4 w-full">
                 <div class="bg-cream rounded-[28px] overflow-hidden w-full max-w-[380px] aspect-square relative shadow-inner group border border-espresso/5">
-                    <img id="main-image" src="{{ $gallery[0] ?? $product->image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover mix-blend-multiply transition-all duration-300 group-hover:scale-105" />
+                    <img id="main-image" src="{{ format_image_url($gallery[0] ?? $product->image_url, '/images/logo1.jpg', $product->name) }}" alt="{{ $product->name }}" class="w-full h-full object-cover mix-blend-multiply transition-all duration-300 group-hover:scale-105" onerror="this.onerror=null; this.src='/images/logo1.jpg';" />
                 </div>
 
                 {{-- DANH SÁCH ẢNH PHỤ CĂN GIỮA BÊN DƯỚI ẢNH CHÍNH (TỐI ĐA 4 ẢNH PHỤ) --}}
                 @if(count($gallery) > 0)
                 <div class="flex flex-wrap justify-center items-center gap-3 w-full max-w-[380px]">
                     @foreach($gallery as $index => $img)
-                        <div class="thumb-item bg-cream rounded-2xl overflow-hidden w-16 h-16 md:w-18 md:h-18 shrink-0 aspect-square cursor-pointer border-2 transition-all duration-300 transform {{ $index === 0 ? 'border-coral ring-2 ring-coral/40 scale-105 shadow-md opacity-100' : 'border-gray-200/60 opacity-70 hover:opacity-100 hover:border-coral' }}" onclick="changeMainImage(this, '{{ $img }}')">
-                            <img src="{{ $img }}" class="w-full h-full object-cover mix-blend-multiply pointer-events-none" />
+                        @php $thumbUrl = format_image_url($img, '/images/logo1.jpg', $product->name); @endphp
+                        <div class="thumb-item bg-cream rounded-2xl overflow-hidden w-16 h-16 md:w-18 md:h-18 shrink-0 aspect-square cursor-pointer border-2 transition-all duration-300 transform {{ $index === 0 ? 'border-coral ring-2 ring-coral/40 scale-105 shadow-md opacity-100' : 'border-gray-200/60 opacity-70 hover:opacity-100 hover:border-coral' }}" onclick="changeMainImage(this, '{{ $thumbUrl }}')">
+                            <img src="{{ $thumbUrl }}" class="w-full h-full object-cover mix-blend-multiply pointer-events-none" onerror="this.onerror=null; this.src='/images/logo1.jpg';" />
                         </div>
                     @endforeach
                 </div>
@@ -64,10 +65,18 @@
                     <span class="text-espresso/60 text-sm">({{ $avgRating }}/5 sao - {{ $reviewCount }} đánh giá)</span>
                 </div>
 
-                <div class="mb-6 flex items-end gap-4">
-                    <span id="product-price" class="text-4xl font-black text-espresso">
+                <div class="mb-6 flex items-end gap-3 flex-wrap">
+                    <span id="product-price" class="text-4xl font-black text-coral">
                         {{ $variants->count() > 0 ? number_format($variants[0]->price, 0, ',', '.') : 0 }} đ
                     </span>
+                    @if(($product->discount_percent ?? 0) > 0 && $variants->count() > 0)
+                        <span id="product-original-price" class="text-xl text-gray-400 line-through font-semibold mb-1">
+                            {{ number_format($variants[0]->original_price ?? $variants[0]->price, 0, ',', '.') }} đ
+                        </span>
+                        <span class="bg-[#e8634a] text-white text-xs font-black px-2.5 py-1 rounded-xl shadow-sm mb-1.5 uppercase">
+                            -{{ $product->discount_percent }}%
+                        </span>
+                    @endif
                 </div>
 
                 <p class="text-espresso/80 leading-relaxed mb-8 line-clamp-3">{{ $product->description }}</p>
@@ -81,6 +90,7 @@
                                 <input type="radio" name="size" class="peer sr-only" 
                                        value="{{ $variant->variant_id }}" 
                                        data-price="{{ $variant->price }}" 
+                                       data-original-price="{{ $variant->original_price ?? $variant->price }}"
                                        {{ $index === 0 ? 'checked' : '' }}>
                                 <div class="px-6 py-2 rounded-full border border-espresso/20 text-espresso peer-checked:bg-espresso peer-checked:text-white peer-checked:border-espresso hover:border-espresso transition-all">
                                     {{ $variant->size_name }}
@@ -196,7 +206,7 @@
                     <article class="product-card bg-white rounded-[24px] p-4 flex flex-col relative group border border-transparent hover:border-coral/20 shadow-sm">
                         <div class="w-full aspect-square rounded-[16px] overflow-hidden bg-cream relative mb-4">
                             <a href="{{ route('product.show', $related->slug) }}" class="block w-full h-full">
-                                <img src="{{ $related->image_url ?? 'https://via.placeholder.com/400' }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                <img src="{{ format_image_url($related->image_url, '/images/logo1.jpg', $related->name) }}" alt="{{ $related->name }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.onerror=null; this.src='/images/logo1.jpg';" />
                             </a>
                         </div>
                         <h3 class="font-serif font-bold text-lg text-espresso mb-1 group-hover:text-coral transition-colors">
@@ -339,6 +349,11 @@
         let variantRadio = document.querySelector('input[name="size"]:checked');
         if(variantRadio) {
             currentVariantPrice = parseFloat(variantRadio.getAttribute('data-price'));
+            let origPrice = parseFloat(variantRadio.getAttribute('data-original-price'));
+            let origEl = document.getElementById('product-original-price');
+            if (origEl && origPrice) {
+                origEl.innerText = new Intl.NumberFormat('vi-VN').format(origPrice) + ' đ';
+            }
         }
 
         let total = currentVariantPrice + currentToppingPrice + currentOptionsPrice;

@@ -71,7 +71,12 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 @forelse($products as $product)
-                    <div class="reveal-up hover-lift hover-glow bg-white rounded-3xl p-4 border border-espresso/5 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                    @php
+                        $pOrig = (float)($product->price ?? 0);
+                        $pDisc = (int)($product->discount_percent ?? 0);
+                        $pSale = $pDisc > 0 ? round($pOrig * (100 - $pDisc) / 100) : $pOrig;
+                    @endphp
+                    <div class="reveal-up hover-lift hover-glow bg-white rounded-3xl p-4 border border-espresso/5 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group relative">
                         <div>
                             {{-- Khung chứa ảnh cao hơn (h-64 sm:h-72) để hiển thị đầy đủ hình ảnh --}}
                             <div class="relative overflow-hidden rounded-2xl mb-4 h-64 sm:h-72 bg-cream flex items-center justify-center">
@@ -81,6 +86,11 @@
                                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                          onerror="this.onerror=null; this.src='/images/logo1.jpg';" />
                                 </a>
+                                @if($pDisc > 0)
+                                    <span class="absolute top-3 left-3 bg-[#e8634a] text-white text-[11px] font-black px-2.5 py-1 rounded-xl shadow-md uppercase tracking-wider">
+                                        -{{ $pDisc }}%
+                                    </span>
+                                @endif
                                 <span class="absolute top-3 right-3 bg-coral text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md animate-bounce-slow">
                                     🔥 {{ $product->total_sold > 0 ? 'Đã bán ' . number_format($product->total_sold) : 'Best Seller' }}
                                 </span>
@@ -94,7 +104,14 @@
 
                         {{-- Giá & Nút Mua ngay --}}
                         <div class="flex items-center justify-between pt-4 mt-4 border-t border-espresso/5 gap-2">
-                            <span class="text-lg font-black text-coral">{{ number_format($product->price, 0, ',', '.') }}đ</span>
+                            @if($pDisc > 0)
+                                <div>
+                                    <span class="text-lg font-black text-coral block">{{ number_format($pSale, 0, ',', '.') }}đ</span>
+                                    <span class="text-xs text-gray-400 line-through font-semibold">{{ number_format($pOrig, 0, ',', '.') }}đ</span>
+                                </div>
+                            @else
+                                <span class="text-lg font-black text-coral">{{ number_format($pOrig, 0, ',', '.') }}đ</span>
+                            @endif
 
                             <div class="flex items-center gap-1.5">
                                 {{-- Nút Thêm vào giỏ --}}
@@ -105,7 +122,7 @@
                                 </button>
 
                                 {{-- Nút Mua Ngay --}}
-                                <button onclick="quickAddToCart({{ $product->product_id }}); window.location.href='{{ route('cart.index') }}';"
+                                <button onclick="quickAddToCart({{ $product->product_id }}, '{{ route('cart.index') }}')"
                                         class="px-3.5 py-1.5 rounded-full bg-coral text-white font-bold text-xs uppercase tracking-wider hover:bg-[#d5523b] btn-pulse shadow-md shadow-coral/25 transition-all whitespace-nowrap">
                                     Mua ngay
                                 </button>
@@ -139,7 +156,12 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 @forelse($cakeProducts as $cake)
-                    <div class="reveal-up hover-lift hover-glow bg-[#FAF7F2]/40 rounded-3xl p-4 border border-espresso/5 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                    @php
+                        $cOrig = (float)($cake->price ?? 0);
+                        $cDisc = (int)($cake->discount_percent ?? 0);
+                        $cSale = $cDisc > 0 ? round($cOrig * (100 - $cDisc) / 100) : $cOrig;
+                    @endphp
+                    <div class="reveal-up hover-lift hover-glow bg-[#FAF7F2]/40 rounded-3xl p-4 border border-espresso/5 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group relative">
                         <div>
                             {{-- Khung chứa ảnh --}}
                             <div class="relative overflow-hidden rounded-2xl mb-4 h-64 sm:h-72 bg-cream flex items-center justify-center">
@@ -149,6 +171,11 @@
                                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                          onerror="this.onerror=null; this.src='/images/banhngot.png';" />
                                 </a>
+                                @if($cDisc > 0)
+                                    <span class="absolute top-3 left-3 bg-[#e8634a] text-white text-[11px] font-black px-2.5 py-1 rounded-xl shadow-md uppercase tracking-wider">
+                                        -{{ $cDisc }}%
+                                    </span>
+                                @endif
                                 <span class="absolute top-3 right-3 bg-coral text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md">
                                     🍰 {{ $cake->total_sold > 0 ? 'Đã bán ' . number_format($cake->total_sold) : 'Bánh Bán Chạy' }}
                                 </span>
@@ -162,7 +189,14 @@
 
                         {{-- Giá & Nút Mua ngay --}}
                         <div class="flex items-center justify-between pt-4 mt-4 border-t border-espresso/5 gap-2">
-                            <span class="text-lg font-black text-coral">{{ number_format($cake->price, 0, ',', '.') }}đ</span>
+                            @if($cDisc > 0)
+                                <div>
+                                    <span class="text-lg font-black text-coral block">{{ number_format($cSale, 0, ',', '.') }}đ</span>
+                                    <span class="text-xs text-gray-400 line-through font-semibold">{{ number_format($cOrig, 0, ',', '.') }}đ</span>
+                                </div>
+                            @else
+                                <span class="text-lg font-black text-coral">{{ number_format($cOrig, 0, ',', '.') }}đ</span>
+                            @endif
 
                             <div class="flex items-center gap-1.5">
                                 {{-- Nút Thêm vào giỏ --}}
@@ -173,7 +207,7 @@
                                 </button>
 
                                 {{-- Nút Mua Ngay --}}
-                                <button onclick="quickAddToCart({{ $cake->product_id }}); window.location.href='{{ route('cart.index') }}';"
+                                <button onclick="quickAddToCart({{ $cake->product_id }}, '{{ route('cart.index') }}')"
                                         class="px-3.5 py-1.5 rounded-full bg-coral text-white font-bold text-xs uppercase tracking-wider hover:bg-[#d5523b] btn-pulse shadow-md shadow-coral/25 transition-all whitespace-nowrap">
                                     Mua ngay
                                 </button>
@@ -290,9 +324,10 @@
 
                         <div>
                             <a href="{{ route('combo.show', $combo->combo_id) }}" class="block relative overflow-hidden rounded-2xl mb-4 h-52 bg-cream">
-                                <img src="{{ asset($combo->image_url ?? 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600&auto=format&fit=crop') }}"
+                                <img src="{{ format_image_url($combo->image_url ?? $combo->image, '/images/logo1.jpg', $combo->name) }}"
                                      alt="{{ $combo->name }}"
-                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                     onerror="this.onerror=null; this.src='/images/logo1.jpg';">
                             </a>
 
                             <a href="{{ route('combo.show', $combo->combo_id) }}" class="block font-bold text-espresso text-xl hover:text-coral transition-colors">

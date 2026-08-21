@@ -75,10 +75,10 @@
                                         <input type="checkbox" name="ids[]" value="{{ $combo->combo_id }}" class="row-checkbox w-4 h-4 accent-[#e8634a] rounded cursor-pointer">
                                     </td>
                                     <td class="p-4">
-                                        <img src="{{ format_image_url($combo->image_url, '/images/logo1.png') }}" 
+                                        <img src="{{ format_image_url($combo->image_url ?? $combo->image, '/images/logo1.jpg', $combo->name) }}" 
                                              alt="{{ $combo->name }}" 
                                              class="w-16 h-16 object-cover rounded-xl border border-gray-200 shadow-sm"
-                                             onerror="this.onerror=null; this.src='/images/logo1.png';">
+                                             onerror="this.onerror=null; this.src='/images/logo1.jpg';">
                                     </td>
                                     <td class="p-4">
                                         <div class="font-bold text-gray-800 text-base">{{ $combo->name }}</div>

@@ -12,7 +12,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Tự động quét và áp dụng giảm giá từ 2% - 10% cho 5 sản phẩm có lượt mua ít nhất vào mỗi Thứ Hai lúc 00:00
+        $schedule->command('products:auto-discount-low-sales --count=5 --min=2 --max=10')->weeklyOn(1, '00:00');
     }
 
     /**

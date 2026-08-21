@@ -29,9 +29,8 @@
                     <span>Tích điểm & Ưu đãi</span>
                     <span class="bg-coral/20 text-coral text-[10px] md:text-xs font-black px-2 py-0.5 rounded-full">{{ auth()->user()->point ?? 0 }}p</span>
                 </a>
-                <a href="{{ route('user.wallet') }}" class="whitespace-nowrap px-4 py-2.5 md:py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white text-xs md:text-sm transition-colors flex items-center gap-2 shrink-0">
-                    <span>Tiền hoàn</span>
-                    <span class="bg-coral text-white text-[10px] md:text-xs font-bold px-2 py-0.5 rounded-full">{{ number_format(auth()->user()->wallet_balance ?? 0, 0, ',', '.') }}đ</span>
+                <a href="{{ route('user.address') }}" class="whitespace-nowrap px-4 py-2.5 md:py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white text-xs md:text-sm transition-colors flex items-center gap-2 shrink-0">
+                    <span>Địa chỉ nhận hàng</span>
                 </a>
                 <a href="{{ route('user.change_password') }}" class="whitespace-nowrap px-4 py-2.5 md:py-3 rounded-xl hover:bg-white/5 text-cream/70 hover:text-white text-xs md:text-sm transition-colors shrink-0">Đổi mật khẩu</a>
             </nav>
@@ -252,10 +251,10 @@
                     @endif
 
                     @if(in_array($order->status, ['pending', 'processing']))
-                        <form action="{{ route('user.orders.cancel', $order->order_id) }}" method="POST" class="mt-4 text-right" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng #{{ $order->order_id }} không? {{ ($order->status == 'processing' || $order->payment_method == 'qr') ? 'Số tiền ' . number_format($order->total_amount, 0, ',', '.') . 'đ đã thanh toán sẽ được tự động chuyển về Ví nằm ở mục Tiền hoàn trong menu Tài khoản của bạn!' : '' }}');">
+                        <form action="{{ route('user.orders.cancel', $order->order_id) }}" method="POST" class="mt-4 text-right" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng #{{ $order->order_id }} không?');">
                             @csrf
                             <button type="submit" class="px-5 py-2.5 bg-red-50 text-red-600 font-bold text-xs rounded-xl hover:bg-red-600 hover:text-white transition-colors border border-red-200 inline-flex items-center gap-1.5 shadow-sm">
-                                <span>✕ Hủy đơn hàng {{ ($order->status == 'processing' || $order->payment_method == 'qr') ? '(Hoàn tiền vào mục Tiền hoàn)' : '' }}</span>
+                                <span>✕ Hủy đơn hàng</span>
                             </button>
                         </form>
                     @endif

@@ -17,12 +17,23 @@ class PosController extends Controller
         $productsQuery = DB::table('products')
             ->leftJoin('product_variants', 'products.product_id', '=', 'product_variants.product_id')
             ->select('products.*', DB::raw('MIN(product_variants.price) as price'))
-            ->groupBy('products.product_id');
+            ->groupBy(
+                'products.product_id', 'products.name', 'products.slug', 
+                'products.description', 'products.status', 'products.image_url', 
+                'products.category_id', 'products.created_at', 'products.updated_at', 
+                'products.discount_percent', 'products.is_featured'
+            );
 
         if ($toppingCatId) {
             $productsQuery->where('products.category_id', '!=', $toppingCatId);
         }
-        $products = $productsQuery->get();
+        $products = $productsQuery->get()->map(function($p) {
+            $orig = (float)$p->price;
+            $disc = (int)($p->discount_percent ?? 0);
+            $p->original_price = $orig;
+            $p->price = $disc > 0 ? round($orig * (100 - $disc) / 100) : $orig;
+            return $p;
+        });
 
         $toppings = [];
         if ($toppingCatId) {
@@ -30,13 +41,44 @@ class PosController extends Controller
                 ->leftJoin('product_variants', 'products.product_id', '=', 'product_variants.product_id')
                 ->select('products.*', DB::raw('MIN(product_variants.price) as price'))
                 ->where('products.category_id', $toppingCatId)
-                ->groupBy('products.product_id')
+                ->groupBy(
+                    'products.product_id', 'products.name', 'products.slug', 
+                    'products.description', 'products.status', 'products.image_url', 
+                    'products.category_id', 'products.created_at', 'products.updated_at', 
+                    'products.discount_percent', 'products.is_featured'
+                )
                 ->get();
         }
 
         $combos = DB::table('combos')->where('status', 1)->get();
+
+        // Lấy toàn bộ biến thể kích cỡ của các sản phẩm kèm giá đã giảm (nếu có)
+        $rawVariants = DB::table('product_variants')
+            ->leftJoin('sizes', 'product_variants.size_id', '=', 'sizes.size_id')
+            ->select('product_variants.*', 'sizes.name as size_name')
+            ->orderBy('product_variants.price', 'asc')
+            ->get();
+
+        $productDiscounts = DB::table('products')->pluck('discount_percent', 'product_id')->toArray();
+
+        $productVariants = [];
+        foreach ($rawVariants as $v) {
+            $pId = $v->product_id;
+            $disc = (int)($productDiscounts[$pId] ?? 0);
+            $origPrice = (float)$v->price;
+            $salePrice = $disc > 0 ? round($origPrice * (100 - $disc) / 100) : $origPrice;
+
+            $productVariants[$pId][] = [
+                'variant_id' => $v->variant_id,
+                'size_id' => $v->size_id,
+                'size_name' => $v->size_name ?? 'Mặc định',
+                'original_price' => $origPrice,
+                'price' => $salePrice,
+                'discount_percent' => $disc,
+            ];
+        }
         
-        return view('staff.pos', compact('products', 'categories', 'toppings', 'combos'));
+        return view('staff.pos', compact('products', 'categories', 'toppings', 'combos', 'productVariants'));
     }
 
     public function searchCustomers(Request $request)

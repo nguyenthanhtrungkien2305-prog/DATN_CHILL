@@ -55,7 +55,7 @@
                     @if($index === 0 && $posts->currentPage() == 1 && empty($selectedCatSlug))
                         <article class="reveal-zoom hover-lift lg:col-span-3 bg-[#FFF9ED] rounded-[32px] overflow-hidden group shadow-sm hover:shadow-xl transition-all duration-400 border border-espresso/5 grid grid-cols-1 lg:grid-cols-12">
                             <a href="{{ route('post.show', $p->slug) }}" class="lg:col-span-7 aspect-[16/10] overflow-hidden relative block">
-                                <img src="{{ asset($p->thumbnail ?: 'images/banner1.png') }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="{{ $p->title }}">
+                                <img src="{{ format_image_url($p->thumbnail, '/images/banner1.png') }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="{{ $p->title }}" onerror="this.onerror=null; this.src='/images/banner1.png';">
                             </a>
                             <div class="lg:col-span-5 p-8 md:p-10 flex flex-col justify-between">
                                 <div>
@@ -82,7 +82,7 @@
                         {{-- Thẻ bài viết chuẩn --}}
                         <article class="reveal-up hover-lift bg-[#FFF9ED] rounded-[32px] overflow-hidden group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-400 border border-espresso/5 flex flex-col">
                             <a href="{{ route('post.show', $p->slug) }}" class="w-full aspect-[4/3] overflow-hidden relative block">
-                                <img src="{{ asset($p->thumbnail ?: 'images/caphe.png') }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="{{ $p->title }}">
+                                <img src="{{ format_image_url($p->thumbnail, '/images/caphe.png') }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="{{ $p->title }}" onerror="this.onerror=null; this.src='/images/caphe.png';">
                             </a>
                             <div class="p-6 md:p-8 flex-1 flex flex-col">
                                 <div class="flex justify-between items-center mb-3 text-xs font-bold uppercase tracking-widest">

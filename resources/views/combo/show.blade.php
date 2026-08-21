@@ -41,7 +41,7 @@
             {{-- KHU VỰC ẢNH COMBO --}}
             <div class="order-1 md:order-1 md:col-span-5 flex flex-col items-center gap-4 w-full">
                 <div class="bg-cream rounded-[28px] overflow-hidden w-full max-w-[420px] aspect-square relative shadow-inner group border border-espresso/5">
-                    <img id="main-image" src="{{ asset($combo->image_url ?? 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600&auto=format&fit=crop') }}" alt="{{ $combo->name }}" class="w-full h-full object-cover transition-all duration-300 group-hover:scale-105" />
+                    <img id="main-image" src="{{ format_image_url($combo->image_url ?? $combo->image, '/images/logo1.jpg', $combo->name) }}" alt="{{ $combo->name }}" class="w-full h-full object-cover transition-all duration-300 group-hover:scale-105" onerror="this.onerror=null; this.src='/images/logo1.jpg';" />
                     
                     @if($combo->original_price > $combo->price)
                         @php
@@ -99,7 +99,7 @@
                         @foreach($combo->products as $prod)
                             <li class="py-2.5 flex items-center justify-between">
                                 <div class="flex items-center gap-3 min-w-0">
-                                    <img src="{{ asset($prod->image_url ?? 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=100&auto=format&fit=crop') }}" class="w-10 h-10 object-cover rounded-lg border border-amber-200 shrink-0">
+                                    <img src="{{ format_image_url($prod->image_url, '/images/logo1.jpg', $prod->name) }}" alt="{{ $prod->name }}" class="w-10 h-10 object-cover rounded-lg border border-amber-200 shrink-0" onerror="this.onerror=null; this.src='/images/logo1.jpg';">
                                     <span class="text-sm font-bold text-espresso line-clamp-1">{{ $prod->name }}</span>
                                 </div>
                                 <span class="font-bold text-xs text-coral bg-white px-2.5 py-1 rounded-lg border border-coral/20 shrink-0 ml-2">
@@ -210,7 +210,7 @@
                     <article class="product-card bg-white rounded-[24px] p-4 flex flex-col relative group border border-transparent hover:border-coral/20 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1">
                         <div class="w-full aspect-square rounded-[16px] overflow-hidden bg-cream relative mb-4">
                             <a href="{{ route('combo.show', $other->combo_id) }}" class="block w-full h-full">
-                                <img src="{{ asset($other->image_url ?? 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=400&auto=format&fit=crop') }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                <img src="{{ format_image_url($other->image_url ?? $other->image, '/images/logo1.jpg', $other->name) }}" alt="{{ $other->name }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.onerror=null; this.src='/images/logo1.jpg';" />
                             </a>
                             @if($other->original_price > $other->price)
                                 @php

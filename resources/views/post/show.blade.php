@@ -40,7 +40,7 @@
         {{-- Ảnh bìa đại diện --}}
         @if($post->thumbnail)
             <div class="w-full aspect-[16/9] rounded-[32px] overflow-hidden shadow-lg border border-espresso/5 mb-12">
-                <img src="{{ asset($post->thumbnail) }}" class="w-full h-full object-cover" alt="{{ $post->title }}">
+                <img src="{{ format_image_url($post->thumbnail, '/images/banner1.png') }}" class="w-full h-full object-cover" alt="{{ $post->title }}" onerror="this.onerror=null; this.src='/images/banner1.png';">
             </div>
         @endif
 

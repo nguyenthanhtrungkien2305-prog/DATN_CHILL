@@ -366,23 +366,234 @@ class UserController extends Controller
     }
 
     // ==========================================
-    // HIỂN THỊ TRANG VÍ SỐ DƯ HOÀN TIỀN
+    // QUẢN LÝ ĐỊA CHỈ NHẬN HÀNG
     // ==========================================
-    public function wallet()
+    public function addresses()
     {
         $user = Auth::user();
-        
-        // Lấy danh sách các đơn hàng đã hủy hoặc được hoàn tiền
-        $refundedOrders = DB::table('orders')
-            ->where('user_id', $user->user_id)
-            ->orderBy('updated_at', 'desc')
-            ->get();
+        $addresses = [];
+        if ($user && $user->address) {
+            $decoded = json_decode($user->address, true);
+            if (is_array($decoded)) {
+                foreach ($decoded as $item) {
+                    if (is_array($item)) {
+                        $addresses[] = $item;
+                    } else if (is_string($item)) {
+                        $addresses[] = [
+                            'name' => $user->name ?? '',
+                            'phone' => $user->phone ?? '',
+                            'district' => '',
+                            'ward' => '',
+                            'street' => $item,
+                            'full_address' => $item
+                        ];
+                    }
+                }
+            } else if (is_string($user->address)) {
+                $addresses[] = [
+                    'name' => $user->name ?? '',
+                    'phone' => $user->phone ?? '',
+                    'district' => '',
+                    'ward' => '',
+                    'street' => $user->address,
+                    'full_address' => $user->address
+                ];
+            }
+        }
 
-        return view('user.wallet', compact('user', 'refundedOrders'));
+        return view('user.address', compact('user', 'addresses'));
+    }
+
+    public function storeAddress(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => ['required', 'regex:/^(0[3|5|7|8|9])+([0-9]{8})$/'],
+            'district' => 'required|string|max:255',
+            'street' => 'required|string|max:255',
+        ], [
+            'name.required' => 'Vui lòng nhập tên người nhận.',
+            'phone.required' => 'Vui lòng nhập số điện thoại nhận hàng.',
+            'phone.regex' => 'Số điện thoại không hợp lệ (gồm 10 chữ số bắt đầu bằng đầu số VN).',
+            'district.required' => 'Vui lòng chọn Quận/Huyện tại TP.HCM.',
+            'street.required' => 'Vui lòng nhập số nhà, tên đường chi tiết.',
+        ]);
+
+        $user = Auth::user();
+        $inputPhone = trim($request->phone);
+
+        // Kiểm tra OTP nếu số điện thoại nhận hàng mới khác với SĐT tài khoản
+        if ($inputPhone !== $user->phone) {
+            $verifiedPhone = session('verified_phone');
+            $isVerified = session('phone_otp_verified') && ($verifiedPhone === $inputPhone);
+            if (!$isVerified) {
+                return back()->with('error', 'Số điện thoại mới (' . $inputPhone . ') chưa được xác thực bằng mã OTP. Vui lòng xác thực mã OTP trước khi lưu!')->withInput();
+            }
+        }
+
+        $addresses = [];
+        if ($user->address) {
+            $decoded = json_decode($user->address, true);
+            $addresses = is_array($decoded) ? $decoded : [$user->address];
+        }
+
+        if (count($addresses) >= 5) {
+            return back()->with('error', 'Bạn chỉ được lưu tối đa 5 địa chỉ nhận hàng!');
+        }
+
+        $name = trim($request->name);
+        $district = trim($request->district);
+        $ward = trim($request->ward ?? '');
+        $street = trim($request->street);
+
+        $fullParts = [];
+        if ($street) $fullParts[] = $street;
+        if ($ward) $fullParts[] = $ward;
+        if ($district) $fullParts[] = $district;
+        $fullParts[] = 'TP. Hồ Chí Minh';
+        $fullAddressText = implode(', ', $fullParts);
+
+        $addressObj = [
+            'name' => $name,
+            'phone' => $inputPhone,
+            'district' => $district,
+            'ward' => $ward,
+            'street' => $street,
+            'full_address' => $fullAddressText
+        ];
+
+        $addresses[] = $addressObj;
+
+        DB::table('users')->where('user_id', $user->user_id)->update([
+            'address' => json_encode(array_values($addresses), JSON_UNESCAPED_UNICODE),
+            'updated_at' => now(),
+        ]);
+
+        return back()->with('success', '🎉 Đã thêm địa chỉ nhận hàng mới thành công!');
+    }
+
+    public function updateAddress(Request $request)
+    {
+        $request->validate([
+            'index' => 'required|integer',
+            'name' => 'required|string|max:255',
+            'phone' => ['required', 'regex:/^(0[3|5|7|8|9])+([0-9]{8})$/'],
+            'district' => 'required|string|max:255',
+            'street' => 'required|string|max:255',
+        ], [
+            'name.required' => 'Vui lòng nhập tên người nhận.',
+            'phone.required' => 'Vui lòng nhập số điện thoại nhận hàng.',
+            'phone.regex' => 'Số điện thoại không hợp lệ (gồm 10 chữ số bắt đầu bằng đầu số VN).',
+            'district.required' => 'Vui lòng chọn Quận/Huyện tại TP.HCM.',
+            'street.required' => 'Vui lòng nhập số nhà, tên đường chi tiết.',
+        ]);
+
+        $user = Auth::user();
+        $index = (int)$request->index;
+        $inputPhone = trim($request->phone);
+
+        if ($user->address) {
+            $addresses = json_decode($user->address, true);
+            if (is_array($addresses) && isset($addresses[$index])) {
+                $oldAddr = $addresses[$index];
+                $oldPhone = is_array($oldAddr) ? ($oldAddr['phone'] ?? '') : '';
+
+                // Kiểm tra OTP nếu SĐT mới khác SĐT tài khoản VÀ khác SĐT cũ của địa chỉ này
+                if ($inputPhone !== $user->phone && $inputPhone !== $oldPhone) {
+                    $verifiedPhone = session('verified_phone');
+                    $isVerified = session('phone_otp_verified') && ($verifiedPhone === $inputPhone);
+                    if (!$isVerified) {
+                        return back()->with('error', 'Số điện thoại mới (' . $inputPhone . ') chưa được xác thực bằng mã OTP. Vui lòng xác thực mã OTP trước khi cập nhật!')->withInput();
+                    }
+                }
+
+                $name = trim($request->name);
+                $district = trim($request->district);
+                $ward = trim($request->ward ?? '');
+                $street = trim($request->street);
+
+                $fullParts = [];
+                if ($street) $fullParts[] = $street;
+                if ($ward) $fullParts[] = $ward;
+                if ($district) $fullParts[] = $district;
+                $fullParts[] = 'TP. Hồ Chí Minh';
+                $fullAddressText = implode(', ', $fullParts);
+
+                $addressObj = [
+                    'name' => $name,
+                    'phone' => $inputPhone,
+                    'district' => $district,
+                    'ward' => $ward,
+                    'street' => $street,
+                    'full_address' => $fullAddressText
+                ];
+
+                $addresses[$index] = $addressObj;
+
+                DB::table('users')->where('user_id', $user->user_id)->update([
+                    'address' => json_encode(array_values($addresses), JSON_UNESCAPED_UNICODE),
+                    'updated_at' => now(),
+                ]);
+                return back()->with('success', '🎉 Cập nhật địa chỉ nhận hàng thành công!');
+            }
+        }
+
+        return back()->with('error', 'Không thể tìm thấy địa chỉ cần sửa!');
+    }
+
+    public function deleteAddress(Request $request)
+    {
+        $request->validate([
+            'index' => 'required|integer',
+        ]);
+
+        $user = Auth::user();
+        $index = (int)$request->index;
+
+        if ($user->address) {
+            $addresses = json_decode($user->address, true);
+            if (is_array($addresses) && isset($addresses[$index])) {
+                unset($addresses[$index]);
+                DB::table('users')->where('user_id', $user->user_id)->update([
+                    'address' => json_encode(array_values($addresses), JSON_UNESCAPED_UNICODE),
+                    'updated_at' => now(),
+                ]);
+                return back()->with('success', '🗑️ Đã xóa địa chỉ thành công!');
+            }
+        }
+
+        return back()->with('error', 'Không thể xóa địa chỉ này!');
+    }
+
+    public function setDefaultAddress(Request $request)
+    {
+        $request->validate([
+            'index' => 'required|integer',
+        ]);
+
+        $user = Auth::user();
+        $index = (int)$request->index;
+
+        if ($user->address) {
+            $addresses = json_decode($user->address, true);
+            if (is_array($addresses) && isset($addresses[$index])) {
+                $targetAddress = $addresses[$index];
+                unset($addresses[$index]);
+                array_unshift($addresses, $targetAddress);
+
+                DB::table('users')->where('user_id', $user->user_id)->update([
+                    'address' => json_encode(array_values($addresses), JSON_UNESCAPED_UNICODE),
+                    'updated_at' => now(),
+                ]);
+                return back()->with('success', '⭐ Đã đặt làm địa chỉ mặc định thành công!');
+            }
+        }
+
+        return back()->with('error', 'Thao tác không hợp lệ!');
     }
 
     // ==========================================
-    // HỦY ĐƠN HÀNG VÀ TỰ ĐỘNG HOÀN TIỀN VÀO VÍ
+    // HỦY ĐƠN HÀNG
     // ==========================================
     public function cancelOrder(Request $request, $id)
     {
@@ -404,8 +615,6 @@ class UserController extends Controller
             return back()->with('error', 'Đơn hàng đang giao hoặc đã hoàn thành không thể hủy!');
         }
 
-        $oldStatus = $order->status;
-
         // Cập nhật trạng thái đơn hàng sang cancelled
         DB::table('orders')->where('order_id', $id)->update([
             'status' => 'cancelled',
@@ -424,19 +633,6 @@ class UserController extends Controller
             DB::table('vouchers')->where('voucher_id', $order->voucher_id)->decrement('used_count');
         }
 
-        // TÍNH TOÁN HOÀN TIỀN CẢ VÍ LẪN TIỀN MẶT/QR ĐÃ THANH TOÁN
-        $usedWallet = (float)($order->used_wallet_amount ?? 0);
-        $isPaid = ($oldStatus === 'processing' || $order->payment_method === 'qr');
-        $cashPaid = $isPaid ? (float)$order->total_amount : 0;
-
-        $totalRefund = $usedWallet + $cashPaid;
-        $refundMsg = 'Đã hủy đơn hàng #' . $id . ' thành công!';
-
-        if ($totalRefund > 0) {
-            DB::table('users')->where('user_id', $user->user_id)->increment('wallet_balance', $totalRefund);
-            $refundMsg = '🎉 Đơn hàng #' . $id . ' đã được hủy! Số tiền ' . number_format($totalRefund, 0, ',', '.') . 'đ (bao gồm tiền ví đã khấu trừ) đã được tự động hoàn về Ví nằm ở mục Tiền hoàn trong menu Tài khoản của bạn.';
-        }
-
-        return back()->with('success', $refundMsg);
+        return back()->with('success', '🎉 Đơn hàng #' . $id . ' đã được hủy thành công!');
     }
 }

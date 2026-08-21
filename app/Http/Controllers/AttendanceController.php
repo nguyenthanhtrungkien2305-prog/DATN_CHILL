@@ -274,58 +274,25 @@ class AttendanceController extends Controller
             return response()->json(['success' => false, 'message' => 'TỪ CHỐI: Bạn không có lịch làm việc nào được duyệt trong ngày hôm nay!']);
         }
 
-        // 3. [MỚI CHỐNG LỖI DB] Kiểm tra xem hôm nay đã hoàn thành xong việc chưa?
-        $alreadyWorkedToday = \Illuminate\Support\Facades\DB::table('attendances')
-            ->where('user_id', $userId)
-            ->where('date', $now->format('Y-m-d'))
-            ->whereNotNull('check_out')
-            ->count();
-
-        // Nếu số lần đã Check-out trong ngày >= số ca được duyệt hôm nay -> Chặn lại
-        if ($alreadyWorkedToday >= $todayShifts->count()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bạn đã hoàn thành toàn bộ (' . $todayShifts->count() . ') ca làm việc của ngày hôm nay. Hãy nghỉ ngơi và quay lại vào ngày mai nhé!'
-            ]);
-        }
-
-        // 4. KIỂM TRA KHUNG GIỜ CHECK-IN (Chỉ cho phép check-in trước hoặc sau giờ vào ca tối đa 10 phút)
-        $isValidTime = false;
-        $shiftTimeMessage = '';
+        // 3. Tính toán scheduledEndTime dựa trên ca được duyệt hôm nay (Đã bỏ giới hạn trước/sau 10 phút)
         $scheduledEndTime = null;
-
         foreach ($todayShifts as $shift) {
             $startTime = \Carbon\Carbon::parse($shift->shift_date . ' ' . $shift->start_time);
             $endTime = $startTime->copy()->addHours($shift->duration);
-            
-            $allowedStart = $startTime->copy()->subMinutes(10);
-            $allowedEnd = $startTime->copy()->addMinutes(10);
 
-            $shiftTimeMessage .= '[' . $startTime->format('H:i') . ' (Mở Check-in từ ' . $allowedStart->format('H:i') . ' đến ' . $allowedEnd->format('H:i') . ')] ';
-
-            if ($now->gte($allowedStart) && $now->lte($allowedEnd)) {
-                $isValidTime = true;
+            if (!$scheduledEndTime || $endTime->gt($scheduledEndTime)) {
                 $scheduledEndTime = $endTime;
-
-                // Nối các ca liền kề phía sau nếu có
-                foreach ($todayShifts as $nextShift) {
-                    $nextStart = \Carbon\Carbon::parse($nextShift->shift_date . ' ' . $nextShift->start_time);
-                    if ($nextStart->eq($scheduledEndTime)) {
-                        $scheduledEndTime = $nextStart->copy()->addHours($nextShift->duration);
-                    }
-                }
-                break; 
             }
         }
 
-        if (!$isValidTime) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'TỪ CHỐI CHECK-IN: Bạn chỉ được phép Check-in trước hoặc sau giờ vào ca tối đa 10 phút! Khung giờ cho phép của bạn hôm nay: ' . $shiftTimeMessage
-            ]);
+        // Nếu ca kết thúc trước hiện tại do vào trễ, gia hạn theo thời lượng ca để nhân viên làm việc
+        if ($scheduledEndTime && $now->gte($scheduledEndTime)) {
+            $firstShift = $todayShifts->first();
+            $duration = (int)($firstShift->duration ?? 4);
+            $scheduledEndTime = $now->copy()->addHours($duration);
         }
 
-        // 5. Hoàn toàn hợp lệ -> Tạo bản ghi Check-in mới
+        // 4. Tạo bản ghi Check-in mới
         \Illuminate\Support\Facades\DB::table('attendances')->insert([
             'user_id' => $userId,
             'date' => $now->format('Y-m-d'),
@@ -335,7 +302,7 @@ class AttendanceController extends Controller
             'updated_at' => $now
         ]);
 
-        // 6. Gắn nhân viên vào ca làm việc để được tính hoa hồng ca này
+        // 5. Gắn nhân viên vào ca làm việc để được tính hoa hồng ca này
         $shiftIndex = floor($now->hour / 4) + 1;
         $startHour = ($shiftIndex - 1) * 4;
         $startTime = sprintf('%02d:00:00', $startHour);

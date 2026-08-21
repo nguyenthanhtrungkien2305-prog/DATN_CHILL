@@ -185,6 +185,12 @@ class CartController extends Controller
     // 2. Thêm sản phẩm vào giỏ (Đã dùng Bộ lọc)
     public function add(Request $request)
     {
+        $cart = session()->get('cart', []);
+        if (empty($cart) && auth()->check()) {
+            self::loadCartFromDatabase();
+            $cart = session()->get('cart', []);
+        }
+
         $productId = $request->input('product_id', $request->input('productId', $request->input('id')));
         $variantId = $request->input('variant_id', $request->input('variantId'));
         $quantity = (int)($request->input('quantity', 1));
@@ -241,7 +247,9 @@ class CartController extends Controller
 
         // Tạo khóa giỏ hàng bằng json_encode để tránh lỗi Serialize
         $cartKey = md5($productId . '_' . $variantId . '_' . $iceLevel . '_' . $sugarLevel . '_' . json_encode($cleanToppings));
-        $cart = session()->get('cart', []);
+        $basePrice = (float) $variant->price;
+        $discount = (int) ($product->discount_percent ?? 0);
+        $finalPrice = $discount > 0 ? round($basePrice * (100 - $discount) / 100) : $basePrice;
 
         if (isset($cart[$cartKey])) {
             $cart[$cartKey]['quantity'] += $quantity;
@@ -252,7 +260,9 @@ class CartController extends Controller
                 'image' => $product->image_url,
                 'variant_id' => $variant->variant_id,
                 'size_name' => DB::table('sizes')->where('size_id', $variant->size_id)->value('name') ?? 'Mặc định',
-                'price' => (float) $variant->price,
+                'price' => $finalPrice,
+                'original_price' => $basePrice,
+                'discount_percent' => $discount,
                 'quantity' => $quantity,
                 'toppings' => $toppingDetails,
                 'topping_total' => $toppingTotal,
@@ -708,6 +718,24 @@ class CartController extends Controller
     }
 
     /**
+     * XÓA SẠCH GIỎ HÀNG CẢ TRONG SESSION VÀ DATABASE (Dùng sau khi đặt hàng thành công)
+     */
+    public static function clearCart()
+    {
+        session()->forget('cart');
+        session()->forget('voucher');
+        session()->forget('voucher_opt_out');
+
+        $userId = auth()->id() ?? (auth()->check() ? (auth()->user()->user_id ?? auth()->user()->id) : null);
+        if ($userId && \Illuminate\Support\Facades\Schema::hasTable('carts') && \Illuminate\Support\Facades\Schema::hasTable('cart_items')) {
+            $cartId = DB::table('carts')->where('user_id', $userId)->value('cart_id');
+            if ($cartId) {
+                DB::table('cart_items')->where('cart_id', $cartId)->delete();
+            }
+        }
+    }
+
+    /**
      * NẠP GIỎ HÀNG TỪ CSDL (CHỐNG MẤT GIỎ KHI ĐĂNG NHẬP HOẶC MOUNT SESSION)
      */
     public static function loadCartFromDatabase()
@@ -763,6 +791,9 @@ class CartController extends Controller
                 }
 
                 $cartKey = md5($productId . '_' . $variantId . '_' . $iceLevel . '_' . $sugarLevel . '_' . json_encode($cleanToppings));
+                $basePrice = (float) $variant->price;
+                $discount = (int) ($product->discount_percent ?? 0);
+                $finalPrice = $discount > 0 ? round($basePrice * (100 - $discount) / 100) : $basePrice;
 
                 $cart[$cartKey] = [
                     'product_id' => $product->product_id,
@@ -770,7 +801,9 @@ class CartController extends Controller
                     'image' => $product->image_url,
                     'variant_id' => $variant->variant_id,
                     'size_name' => DB::table('sizes')->where('size_id', $variant->size_id)->value('name') ?? 'Mặc định',
-                    'price' => (float) $variant->price,
+                    'price' => $finalPrice,
+                    'original_price' => $basePrice,
+                    'discount_percent' => $discount,
                     'quantity' => $quantity,
                     'toppings' => $toppingDetails,
                     'topping_total' => $toppingTotal,

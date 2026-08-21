@@ -205,9 +205,23 @@ class CheckoutController extends Controller
             }
         }
 
+        // Lấy thông tin User và Ca làm việc hiện tại
+        $currentUserId = auth()->check() ? (auth()->user()->user_id ?? auth()->id()) : null;
+        
+        $nowTime = now('Asia/Ho_Chi_Minh');
+        $shiftIndex = floor($nowTime->hour / 4) + 1;
+        $startHour = ($shiftIndex - 1) * 4;
+        $startTime = sprintf('%02d:00:00', $startHour);
+        $shiftId = \DB::table('shifts')
+            ->where('date', $nowTime->format('Y-m-d'))
+            ->where('start_time', $startTime)
+            ->value('id');
+
         // Lưu vào Database
         $orderId = \DB::table('orders')->insertGetId([
-            'user_id' => auth()->check() ? auth()->id() : null,
+            'user_id' => $currentUserId,
+            'voucher_id' => $voucherId,
+            'shift_id' => $shiftId,
             'customer_name' => $request->customer_name ?? $request->recipient_name ?? (auth()->check() ? auth()->user()->name : 'Khách Vãng Lai'),
             'customer_phone' => $request->customer_phone ?? $request->phone ?? (auth()->check() ? auth()->user()->phone : ''),
             'shipping_address' => $request->shipping_address ?? $request->address ?? '',
@@ -258,9 +272,8 @@ class CheckoutController extends Controller
             }
         }
 
-        // Xóa giỏ hàng và voucher sau khi đặt xong
-        session()->forget('cart');
-        session()->forget('voucher');
+        // Xóa giỏ hàng cả trong Session và Database sau khi đặt xong
+        \App\Http\Controllers\CartController::clearCart();
 
         // Chuyển hướng nếu là thanh toán QR VÀ số tiền còn phải trả > 0
         if ($request->payment_method === 'qr' && $finalAmount > 0) {

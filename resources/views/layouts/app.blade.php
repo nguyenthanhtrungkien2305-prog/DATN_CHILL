@@ -451,7 +451,7 @@
         };
 
         // === THÊM NHANH VÀO GIỎ HÀNG KHÔNG RELOAD TRANG ===
-        function quickAddToCart(productId) {
+        function quickAddToCart(productId, redirectUrl = null) {
             let payload = {
                 _token: '{{ csrf_token() }}',
                 product_id: productId,
@@ -472,6 +472,11 @@
                 if(data.success) {
                     showToast('🎉 ' + data.message, 'success');
                     updateCartBadge(data.cart_count);
+                    if (redirectUrl) {
+                        setTimeout(() => {
+                            window.location.href = redirectUrl;
+                        }, 250);
+                    }
                 } else {
                     showToast('Lỗi: ' + data.message, 'error');
                 }

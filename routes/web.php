@@ -89,7 +89,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/tai-khoan/cap-nhat', [UserController::class, 'updateProfile'])->name('user.update_profile');
     Route::get('/tai-khoan/doi-mat-khau', [UserController::class, 'changePassword'])->name('user.change_password');
     Route::post('/tai-khoan/doi-mat-khau', [UserController::class, 'updatePassword'])->name('user.update_password');
-    Route::get('/tai-khoan/so-du-hoan-tien', [UserController::class, 'wallet'])->name('user.wallet');
+    Route::get('/tai-khoan/dia-chi', [UserController::class, 'addresses'])->name('user.address');
+    Route::post('/tai-khoan/dia-chi/store', [UserController::class, 'storeAddress'])->name('user.address.store');
+    Route::post('/tai-khoan/dia-chi/update', [UserController::class, 'updateAddress'])->name('user.address.update');
+    Route::post('/tai-khoan/dia-chi/delete', [UserController::class, 'deleteAddress'])->name('user.address.delete');
+    Route::post('/tai-khoan/dia-chi/set-default', [UserController::class, 'setDefaultAddress'])->name('user.address.setDefault');
     Route::get('/tai-khoan/don-hang', [UserController::class, 'orders'])->name('user.orders');
     Route::post('/tai-khoan/don-hang/{id}/cancel', [UserController::class, 'cancelOrder'])->name('user.orders.cancel');
     Route::get('/tai-khoan/tich-diem', [UserController::class, 'points'])->name('user.points');
@@ -197,6 +201,13 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     Route::resource('products', AdminProductController::class);
     Route::post('products/bulk-delete', [AdminProductController::class, 'bulkDelete'])->name('products.bulk_delete');
     Route::post('products/{id}/toggle-featured', [AdminProductController::class, 'toggleFeatured'])->name('products.toggle_featured');
+
+    // THEO DÕI LƯỢT BÁN & GIẢM GIÁ KÍCH CẦU SẢN PHẨM:
+    Route::get('product-sales', [\App\Http\Controllers\Admin\ProductSalesController::class, 'index'])->name('admin.product_sales.index');
+    Route::post('product-sales/{id}/discount', [\App\Http\Controllers\Admin\ProductSalesController::class, 'updateDiscount'])->name('admin.product_sales.discount');
+    Route::post('product-sales/bulk-discount', [\App\Http\Controllers\Admin\ProductSalesController::class, 'bulkDiscount'])->name('admin.product_sales.bulk_discount');
+    Route::post('product-sales/bulk-reset', [\App\Http\Controllers\Admin\ProductSalesController::class, 'bulkResetDiscount'])->name('admin.product_sales.bulk_reset');
+    Route::post('product-sales/auto-discount', [\App\Http\Controllers\Admin\ProductSalesController::class, 'autoDiscount'])->name('admin.product_sales.auto_discount');
 
     Route::resource('combos', AdminComboController::class);
     Route::post('combos/bulk-delete', [AdminComboController::class, 'bulkDelete'])->name('combos.bulk_delete');

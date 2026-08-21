@@ -47,9 +47,10 @@
 
                         <div>
                             <a href="{{ route('combo.show', $combo->combo_id) }}" class="block relative overflow-hidden rounded-2xl mb-5 h-56 bg-cream">
-                                <img src="{{ asset($combo->image_url ?? 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600&auto=format&fit=crop') }}"
+                                <img src="{{ format_image_url($combo->image_url ?? $combo->image, '/images/logo1.jpg', $combo->name) }}"
                                      alt="{{ $combo->name }}"
-                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                     onerror="this.onerror=null; this.src='/images/logo1.jpg';">
                             </a>
 
                             <a href="{{ route('combo.show', $combo->combo_id) }}" class="block font-bold text-espresso text-2xl hover:text-coral transition-colors">

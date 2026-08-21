@@ -322,8 +322,11 @@
                                     $pId = $product->product_id;
                                     $pSlug = $product->slug ?? $pId;
                                     $pImage = format_image_url($product->image_url ?? null, '/images/logo1.jpg', $product->name);
+                                    $origPrice = (float)($product->price ?? 0);
+                                    $disc = (int)($product->discount_percent ?? 0);
+                                    $salePrice = $disc > 0 ? round($origPrice * (100 - $disc) / 100) : $origPrice;
                                 @endphp
-                                <div class="reveal-up hover-lift hover-glow bg-white rounded-3xl p-4 border border-espresso/5 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group h-full">
+                                <div class="reveal-up hover-lift hover-glow bg-white rounded-3xl p-4 border border-espresso/5 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group h-full relative">
                                     <div>
                                         {{-- Ảnh sản phẩm --}}
                                         <div class="relative overflow-hidden rounded-2xl mb-3 h-52 bg-cream">
@@ -333,6 +336,11 @@
                                                      alt="{{ $product->name }}"
                                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                                             </a>
+                                            @if($disc > 0)
+                                                <span class="absolute top-2.5 left-2.5 bg-[#e8634a] text-white text-[11px] font-black px-2.5 py-1 rounded-xl shadow-md uppercase tracking-wider">
+                                                    -{{ $disc }}%
+                                                </span>
+                                            @endif
                                         </div>
 
                                         {{-- Tên sản phẩm --}}
@@ -343,9 +351,16 @@
                                         <p class="text-xs text-espresso/60 mt-1 line-clamp-2 min-h-[32px]">{{ $product->description ?? 'Hương vị thơm ngon khó cưỡng, chuẩn vị pha chế.' }}</p>
 
                                         {{-- Giá bán --}}
-                                        <div class="mt-3 text-base sm:text-lg font-black text-coral">
-                                            {{ number_format($product->price ?? 0, 0, ',', '.') }}đ
-                                        </div>
+                                        @if($disc > 0)
+                                            <div class="mt-3 flex items-center gap-2">
+                                                <span class="text-base sm:text-lg font-black text-coral">{{ number_format($salePrice, 0, ',', '.') }}đ</span>
+                                                <span class="text-xs text-gray-400 line-through">{{ number_format($origPrice, 0, ',', '.') }}đ</span>
+                                            </div>
+                                        @else
+                                            <div class="mt-3 text-base sm:text-lg font-black text-coral">
+                                                {{ number_format($origPrice, 0, ',', '.') }}đ
+                                            </div>
+                                        @endif
                                     </div>
 
                                     {{-- Nút Thêm Vào Giỏ --}}
@@ -376,8 +391,11 @@
                                     $pId = $product->product_id;
                                     $pSlug = $product->slug ?? $pId;
                                     $pImage = format_image_url($product->image_url ?? null, '/images/logo1.jpg', $product->name);
+                                    $origPrice = (float)($product->price ?? 0);
+                                    $disc = (int)($product->discount_percent ?? 0);
+                                    $salePrice = $disc > 0 ? round($origPrice * (100 - $disc) / 100) : $origPrice;
                                 @endphp
-                                <div class="bg-white rounded-3xl p-4 border border-espresso/5 shadow-sm hover:shadow-lg transition-all flex flex-col sm:flex-row items-center gap-5">
+                                <div class="bg-white rounded-3xl p-4 border border-espresso/5 shadow-sm hover:shadow-lg transition-all flex flex-col sm:flex-row items-center gap-5 relative">
                                     <div class="relative w-full sm:w-36 h-36 shrink-0 overflow-hidden rounded-2xl bg-cream">
                                         <a href="{{ route('product.show', $pSlug) }}">
                                             <img src="{{ $pImage }}" 
@@ -385,6 +403,11 @@
                                                  alt="{{ $product->name }}" 
                                                  class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
                                         </a>
+                                        @if($disc > 0)
+                                            <span class="absolute top-2 left-2 bg-[#e8634a] text-white text-[10px] font-black px-2 py-0.5 rounded-lg shadow-md">
+                                                -{{ $disc }}%
+                                            </span>
+                                        @endif
                                     </div>
                                     <div class="flex-1 min-w-0 space-y-1.5 text-center sm:text-left">
                                         <a href="{{ route('product.show', $pSlug) }}" class="block font-serif font-bold text-espresso text-lg hover:text-coral transition-colors truncate">
@@ -393,9 +416,16 @@
                                         <p class="text-xs text-espresso/60 line-clamp-2 leading-relaxed">{{ $product->description }}</p>
                                     </div>
                                     <div class="flex flex-col items-center sm:items-end justify-between shrink-0 gap-3 border-t sm:border-t-0 pt-3 sm:pt-0 border-espresso/5 w-full sm:w-auto">
-                                        <span class="text-xl font-black text-coral">
-                                            {{ number_format($product->price ?? 0, 0, ',', '.') }}đ
-                                        </span>
+                                        @if($disc > 0)
+                                            <div class="text-right">
+                                                <span class="text-xl font-black text-coral block">{{ number_format($salePrice, 0, ',', '.') }}đ</span>
+                                                <span class="text-xs text-gray-400 line-through">{{ number_format($origPrice, 0, ',', '.') }}đ</span>
+                                            </div>
+                                        @else
+                                            <span class="text-xl font-black text-coral">
+                                                {{ number_format($origPrice, 0, ',', '.') }}đ
+                                            </span>
+                                        @endif
                                         <button type="button"
                                                 onclick="quickAddToCart({{ $pId }})"
                                                 class="px-5 py-2.5 rounded-xl bg-coral text-white font-bold text-xs hover:bg-[#d5523b] transition-all shadow-md flex items-center gap-2">

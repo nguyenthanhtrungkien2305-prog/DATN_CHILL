@@ -45,6 +45,12 @@
                 <span>Quản lý Sản phẩm</span>
             </a>
 
+            {{-- Theo dõi lượt bán & Giảm giá kích cầu --}}
+            <a href="{{ route('admin.product_sales.index') }}" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('admin.product_sales.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">
+                <span>Lượt bán & Giảm giá</span>
+            </a>
+
             {{-- Quản lý Combo --}}
             <a href="{{ route('combos.index') }}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap {{ request()->routeIs('combos.*') ? 'bg-[#e8634a] text-white font-medium' : 'hover:bg-white/10' }}">

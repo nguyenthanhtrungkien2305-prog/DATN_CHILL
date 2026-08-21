@@ -36,13 +36,21 @@ class ProductController extends Controller
             ->orderBy('product_variants.price', 'asc') // Sắp xếp giá từ thấp đến cao
             ->get();
 
+        $discount = (int)($product->discount_percent ?? 0);
+        foreach ($variants as $v) {
+            $v->original_price = $v->price;
+            if ($discount > 0) {
+                $v->price = round($v->price * (100 - $discount) / 100);
+            }
+        }
+
         // 4. Lấy sản phẩm liên quan (Cùng danh mục)
         $relatedProducts = DB::table('products')
             ->join('product_variants', 'products.product_id', '=', 'product_variants.product_id')
             ->where('category_id', $product->category_id)
             ->where('products.product_id', '!=', $product->product_id)
             ->select('products.*', DB::raw('MIN(product_variants.price) as min_price'))
-            ->groupBy('products.product_id', 'products.name', 'products.slug', 'products.description', 'products.status', 'products.image_url', 'products.category_id', 'products.created_at', 'products.updated_at')
+            ->groupBy('products.product_id', 'products.name', 'products.slug', 'products.description', 'products.status', 'products.image_url', 'products.category_id', 'products.created_at', 'products.updated_at', 'products.discount_percent', 'products.is_featured')
             ->limit(4)
             ->get();
 
@@ -176,7 +184,8 @@ class ProductController extends Controller
             ->groupBy(
                 'products.product_id', 'products.name', 'products.slug', 
                 'products.description', 'products.status', 'products.image_url', 
-                'products.category_id', 'products.created_at', 'products.updated_at'
+                'products.category_id', 'products.created_at', 'products.updated_at',
+                'products.discount_percent', 'products.is_featured'
             );
 
         // 3. Xử lý Lọc theo Danh mục

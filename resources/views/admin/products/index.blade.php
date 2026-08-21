@@ -75,7 +75,7 @@
                             </td>
                             <td class="p-4 font-bold text-gray-900">{{ $product->product_id }}</td>
                             <td class="p-4">
-                                <img src="{{ format_image_url($product->image_url, '/images/logo1.png') }}" alt="{{ $product->name }}" class="w-12 h-12 rounded object-cover border" onerror="this.onerror=null; this.src='/images/logo1.png';">
+                                <img src="{{ format_image_url($product->image_url, '/images/logo1.jpg', $product->name) }}" alt="{{ $product->name }}" class="w-12 h-12 rounded object-cover border" onerror="this.onerror=null; this.src='/images/logo1.jpg';">
                             </td>
                             <td class="p-4 font-medium text-gray-900">{{ $product->name }}</td>
                             <td class="p-4">{{ $product->category_name ?? 'Không có' }}</td>

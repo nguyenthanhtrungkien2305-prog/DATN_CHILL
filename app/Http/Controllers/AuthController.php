@@ -221,11 +221,12 @@ class AuthController extends Controller
             return response()->json(['success' => false, 'message' => 'Mã OTP không chính xác. Vui lòng kiểm tra lại!'], 400);
         }
 
-        // Đánh dấu đã xác thực thành công số điện thoại
+        // Đánh dấu đã xác thực thành công số điện thoại trong session
         session(['phone_otp_verified' => true, 'verified_phone' => $pendingPhone]);
 
-        // NẾU NGƯỜI DÙNG ĐÃ ĐĂNG NHẬP (Cập nhật từ trang Hồ sơ) -> Cập nhật trực tiếp CSDL
-        if (Auth::check()) {
+        // NẾU NGƯỜI DÙNG ĐÃ ĐĂNG NHẬP VÀ YÊU CẦU CẬP NHẬT SĐT CÁ NHÂN -> Cập nhật trực tiếp CSDL
+        $shouldUpdateUserPhone = $request->boolean('update_user_phone', true);
+        if (Auth::check() && $shouldUpdateUserPhone) {
             $userId = Auth::user()->user_id ?? Auth::id();
             \Illuminate\Support\Facades\DB::table('users')->where('user_id', $userId)->update([
                 'phone' => $pendingPhone,

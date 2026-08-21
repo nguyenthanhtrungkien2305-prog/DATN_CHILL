@@ -61,7 +61,9 @@ class HomeController extends Controller
                 'products.image_url',
                 'products.category_id',
                 'products.created_at',
-                'products.updated_at'
+                'products.updated_at',
+                'products.discount_percent',
+                'products.is_featured'
             )
             ->orderBy($hasOrderItems ? 'total_sold' : 'products.created_at', 'desc')
             ->orderBy('products.created_at', 'desc')
@@ -107,7 +109,9 @@ class HomeController extends Controller
                 'products.image_url',
                 'products.category_id',
                 'products.created_at',
-                'products.updated_at'
+                'products.updated_at',
+                'products.discount_percent',
+                'products.is_featured'
             )
             ->orderBy($hasOrderItems ? 'total_sold' : 'products.created_at', 'desc')
             ->orderBy('products.created_at', 'desc')
@@ -146,7 +150,9 @@ class HomeController extends Controller
                     'products.image_url',
                     'products.category_id',
                     'products.created_at',
-                    'products.updated_at'
+                    'products.updated_at',
+                    'products.discount_percent',
+                    'products.is_featured'
                 )
                 ->orderBy($hasOrderItems ? 'total_sold' : 'products.created_at', 'desc')
                 ->limit(4 - $cakeProducts->count())

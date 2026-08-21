@@ -59,7 +59,7 @@
                         </button>
 
                         <div class="{{ $isStandaloneTopping ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-24 h-24 sm:w-32 sm:h-32' }} rounded-2xl overflow-hidden bg-cream shrink-0 relative">
-                            <img src="{{ $item['image'] ?? 'https://via.placeholder.com/200' }}" class="w-full h-full object-cover">
+                            <img src="{{ format_image_url($item['image'] ?? null, '/images/logo1.jpg', $item['name'] ?? null) }}" alt="{{ $item['name'] ?? '' }}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/images/logo1.jpg';">
                             @if($isCombo)
                                 <span class="absolute bottom-1 right-1 bg-coral text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase shadow-md">Combo</span>
                             @endif

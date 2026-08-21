@@ -58,9 +58,15 @@
                             @endif
 
                             @foreach($addresses as $index => $addr)
+                                @php
+                                    $formattedAddrVal = is_array($addr) ? (($addr['name'] ?? $user->name) . ' (' . ($addr['phone'] ?? $user->phone) . ') - ' . ($addr['full_address'] ?? '')) : $addr;
+                                    $displayName = is_array($addr) ? ($addr['name'] ?? '') : '';
+                                    $displayPhone = is_array($addr) ? ($addr['phone'] ?? '') : '';
+                                    $displayFull = is_array($addr) ? ($addr['full_address'] ?? '') : $addr;
+                                @endphp
                                 {{-- Chỉ hiện 2 địa chỉ đầu, từ địa chỉ thứ 3 trở đi sẽ bị ẩn (gắn class extra-address) --}}
                                 <label class="cursor-pointer relative address-item {{ $index >= 2 ? 'hidden extra-address' : '' }}">
-                                    <input type="radio" name="shipping_address" value="{{ $addr }}" class="peer sr-only req-address-radio" {{ $index === 0 ? 'checked' : '' }} required>
+                                    <input type="radio" name="shipping_address" value="{{ $formattedAddrVal }}" class="peer sr-only req-address-radio" {{ $index === 0 ? 'checked' : '' }} required>
                                     <div class="p-5 rounded-xl border-2 border-gray-100 peer-checked:border-coral peer-checked:bg-coral/5 hover:border-coral/30 transition-all h-full relative group shadow-sm">
                                         
                                         {{-- Nút Xóa (Dấu X - Chỉ hiện khi di chuột vào) --}}
@@ -68,13 +74,20 @@
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                         </button>
 
-                                        <div class="flex items-center gap-2 mb-2 pr-6">
+                                        <div class="flex items-center gap-2 mb-1.5 pr-6">
                                             <svg class="w-5 h-5 text-coral hidden peer-checked:block" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
                                             <span class="font-bold text-espresso text-sm {{ $index === 0 ? 'text-coral' : '' }}">
                                                 {{ $index === 0 ? 'Địa chỉ Mặc định' : 'Địa chỉ ' . ($index + 1) }}
                                             </span>
                                         </div>
-                                        <p class="text-sm text-espresso/70 leading-relaxed line-clamp-2 pr-2" title="{{ $addr }}">{{ $addr }}</p>
+
+                                        @if($displayName && $displayPhone)
+                                            <div class="text-xs font-bold text-espresso mb-1">
+                                                {{ $displayName }} <span class="font-semibold text-espresso/70">({{ $displayPhone }})</span>
+                                            </div>
+                                        @endif
+
+                                        <p class="text-xs text-espresso/70 leading-relaxed line-clamp-2 pr-2" title="{{ $displayFull }}">{{ $displayFull }}</p>
                                     </div>
                                 </label>
                             @endforeach
@@ -142,7 +155,7 @@
                             @endphp
                             <div class="flex gap-4 items-start">
                                 <div class="w-16 h-16 rounded-xl bg-cream overflow-hidden shrink-0">
-                                    <img src="{{ $item['image'] ?? 'https://via.placeholder.com/100' }}" class="w-full h-full object-cover">
+                                    <img src="{{ format_image_url($item['image'] ?? null, '/images/logo1.jpg', $item['name'] ?? null) }}" alt="{{ $item['name'] ?? '' }}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/images/logo1.jpg';">
                                 </div>
                                 <div class="flex-1">
                                     <h4 class="font-bold text-espresso text-sm line-clamp-1">{{ $item['name'] }}</h4>
