@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký ca làm - Điểm Cộng Coffee</title>
+    <link rel="preload" as="style" href="http://localhost/build/assets/app-alCFGsrb.css" /><link rel="modulepreload" href="http://localhost/build/assets/app-CObaEtiK.js" /><link rel="stylesheet" href="http://localhost/build/assets/app-alCFGsrb.css" /><script type="module" src="http://localhost:8000/build/assets/app-CObaEtiK.js"></script>    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { espresso: '#3e2723', coral: '#ff7043', cream: '#fbe9e7' } } } }
+    </script>
+</head>
+<body class="bg-[#FAF7F2] font-sans antialiased h-screen flex overflow-hidden">
+
+    <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-[90] md:hidden hidden transition-opacity"></div>
+
+<div id="sidebar" class="bg-white h-screen border-r border-espresso/10 flex flex-col shrink-0 transition-all duration-300 ease-in-out fixed md:relative top-0 bottom-0 left-0 z-[100] transform -translate-x-full md:translate-x-0 w-64 md:w-64 overflow-hidden shadow-2xl">
+    <div class="h-[64px] bg-espresso text-white flex items-center justify-between font-bold tracking-widest shrink-0 px-4 border-b border-white/10">
+        <span class="whitespace-nowrap">MENU QUẢN LÝ</span>
+        <button type="button" onclick="toggleSidebar()" class="md:hidden text-white/70 hover:text-white p-1">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto py-4">
+        
+        
+        <div class="">
+            
+            <a href="http://localhost/staff/new-orders" class="flex items-center justify-between px-6 py-4 whitespace-nowrap transition-colors hover:bg-coral/10 hover:text-coral text-espresso border-b border-gray-50 font-bold">
+                <span>Đơn hàng mới</span>
+                <span id="new-order-badge" class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    0
+                </span>
+            </a>
+            
+            <a href="http://localhost/staff/pos" class="flex items-center gap-4 px-6 py-4 whitespace-nowrap transition-colors hover:bg-coral/10 hover:text-coral text-espresso/80 border-b border-gray-50 font-medium">
+                <span>Bán hàng (POS)</span>
+            </a>
+            <div class="my-2 border-t-2 border-gray-100 mx-4"></div>
+        </div>
+        
+        
+        <a href="http://localhost/staff/shifts" class="flex items-center gap-4 px-6 py-4 whitespace-nowrap transition-colors bg-coral/10 text-coral border-r-4 border-coral font-bold">
+            <span>Quản lý Ca làm</span>
+        </a>
+
+        <a href="http://localhost/staff/commission" class="flex items-center gap-4 px-6 py-4 whitespace-nowrap transition-colors hover:bg-coral/10 hover:text-coral text-espresso/80 border-b border-gray-50 font-medium">
+            <span>Báo cáo Hoa hồng</span>
+        </a>
+
+        <a href="http://localhost/staff/salary" class="flex items-center gap-4 px-6 py-4 whitespace-nowrap transition-colors hover:bg-coral/10 hover:text-coral text-espresso/80 border-b border-gray-50 font-medium">
+            <span>Bảng lương</span>
+        </a>
+    </div>
+
+    
+    <div class="mt-auto p-4 border-t border-espresso/10 space-y-3 bg-gray-50/50">
+                    <button onclick="attemptCheckOut()" class="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-coral bg-coral/10 border border-coral/20 font-bold hover:bg-coral hover:text-white transition-all">
+                <span class="text-sm uppercase tracking-wider">KẾT CA (Check-out)</span>
+            </button>
+        
+        <a href="http://localhost/dang-xuat" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-red-500 font-bold border border-red-100 hover:bg-red-50 transition-colors">
+            <span>Đăng xuất</span>
+        </a>
+    </div>
+</div>
+
+<script>
+    function attemptCheckIn() {
+        fetch("http://localhost/staff/attendance/checkin", {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': "gb3fWPFwzN0lStP3Zav9CH2jMYh4ZfBCHreKwWVv" // Nơi hay bị kẹt cache nhất
+            }
+        })
+        .then(async res => {
+            // Nếu phát hiện kẹt Cache (Lỗi 419) -> Tự động F5 lại trang
+            if (res.status === 419) {
+                alert("Mã bảo mật bị kẹt do Cache máy tính. Hệ thống đang tự động làm mới...");
+                window.location.reload(true); 
+                throw new Error("419 CSRF Token Expired");
+            }
+            if (!res.ok) throw new Error("Lỗi Server: " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            alert(data.message);
+            if (data.success) window.location.reload();
+        })
+        .catch(err => {
+            if (err.message !== "419 CSRF Token Expired") {
+                console.error(err);
+                alert("Lỗi kết nối ngầm! Vui lòng ấn F12 xem tab Console.");
+            }
+        });
+    }
+
+    function attemptCheckOut() {
+        fetch("http://localhost/staff/attendance/checkout", {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': "gb3fWPFwzN0lStP3Zav9CH2jMYh4ZfBCHreKwWVv"
+            }
+        })
+        .then(async res => {
+            if (res.status === 419) {
+                alert("Mã bảo mật bị kẹt do Cache máy tính. Hệ thống đang tự động làm mới...");
+                window.location.reload(true);
+                throw new Error("419 CSRF Token Expired");
+            }
+            if (!res.ok) throw new Error("Lỗi Server: " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.href = "http://localhost/staff/shifts"; 
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(err => {
+            if (err.message !== "419 CSRF Token Expired") {
+                console.error(err);
+                alert("Lỗi kết nối ngầm! Vui lòng ấn F12 xem tab Console.");
+            }
+        });
+    }
+
+    </script>
+    <div class="flex-1 flex flex-col h-screen overflow-hidden">
+        <div class="h-[64px] bg-espresso text-white px-4 lg:px-6 flex justify-between items-center shadow-md shrink-0 z-10">
+            <div class="font-bold text-lg flex items-center gap-3">
+                <button onclick="toggleSidebar()" class="p-2 bg-white/10 hover:bg-coral rounded-lg transition-colors flex items-center justify-center focus:outline-none group">
+                    <svg class="w-5 h-5 text-white group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <h1 class="font-serif font-bold tracking-widest uppercase text-base sm:text-lg">Quản Lý Lịch Làm Việc</h1>
+            </div>
+        </div>
+
+        <div class="p-6 flex-1 overflow-y-auto custom-scrollbar">
+            
+            
+            <div class="bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-3xl p-6 text-white shadow-lg shadow-emerald-500/20 mb-6 flex justify-between items-center relative overflow-hidden">
+                <div class="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+                <div class="z-10">
+                    <h2 class="text-white/90 font-bold uppercase tracking-wider text-sm">Tổng số giờ làm (Tháng 08/2026)</h2>
+                    <p class="text-5xl font-black mt-1">0 <span class="text-xl font-bold opacity-80">giờ</span></p>
+                </div>
+            </div>
+
+            
+            <div class="flex space-x-4 md:space-x-6 mb-6 border-b border-gray-200 overflow-x-auto custom-scrollbar pb-1">
+                <button onclick="switchTab('schedule')" id="tab-btn-schedule" class="pb-3 px-2 font-black text-coral border-b-4 border-coral transition-all uppercase tracking-wider text-xs md:text-sm whitespace-nowrap shrink-0">
+                    Lịch Cá Nhân (Tuần Này)
+                </button>
+                <button onclick="switchTab('register')" id="tab-btn-register" class="pb-3 px-2 font-bold text-gray-400 border-b-4 border-transparent hover:text-coral transition-all uppercase tracking-wider text-xs md:text-sm flex items-center gap-2 whitespace-nowrap shrink-0">
+                    Đăng Ký Ca Mới & Danh Sách Chờ
+                                                        </button>
+                <button onclick="switchTab('statistics')" id="tab-btn-statistics" class="pb-3 px-2 font-bold text-gray-400 border-b-4 border-transparent hover:text-coral transition-all uppercase tracking-wider text-xs md:text-sm flex items-center gap-2 whitespace-nowrap shrink-0">
+                    Thống Kê Giờ Làm Thực Tế
+                </button>
+            </div>
+
+            
+            
+            
+            
+            <div id="tab-schedule" class="block animate-fade-in">
+                                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden mb-8">
+                    <div class="p-4 bg-gray-50/50 border-b border-gray-100 font-bold text-gray-600">
+                        Chỉ hiển thị những ca bạn đã đăng ký
+                    </div>
+                    <div class="overflow-x-auto custom-scrollbar pb-2">
+                        <table class="w-full text-center border-collapse min-w-[900px]">
+                            <thead>
+                                <tr>
+                                    <th class="p-4 border-b border-r border-gray-100 bg-gray-50 w-[140px] sticky left-0 z-10">Thời gian</th>
+                                                                            <th class="p-4 border-b border-gray-100 bg-gray-50">
+                                            <div class="text-[11px] font-black text-gray-400 uppercase">Thứ 2</div>
+                                            <div class="text-lg font-black text-espresso mt-1">17/08</div>
+                                        </th>
+                                                                            <th class="p-4 border-b border-gray-100 bg-gray-50">
+                                            <div class="text-[11px] font-black text-gray-400 uppercase">Thứ 3</div>
+                                            <div class="text-lg font-black text-espresso mt-1">18/08</div>
+                                        </th>
+                                                                            <th class="p-4 border-b border-gray-100 bg-gray-50">
+                                            <div class="text-[11px] font-black text-gray-400 uppercase">Thứ 4</div>
+                                            <div class="text-lg font-black text-espresso mt-1">19/08</div>
+                                        </th>
+                                                                            <th class="p-4 border-b border-gray-100 bg-coral/5 border-b-2 border-b-coral">
+                                            <div class="text-[11px] font-black text-coral uppercase">Thứ 5</div>
+                                            <div class="text-lg font-black text-coral mt-1">20/08</div>
+                                        </th>
+                                                                            <th class="p-4 border-b border-gray-100 bg-gray-50">
+                                            <div class="text-[11px] font-black text-gray-400 uppercase">Thứ 6</div>
+                                            <div class="text-lg font-black text-espresso mt-1">21/08</div>
+                                        </th>
+                                                                            <th class="p-4 border-b border-gray-100 bg-gray-50">
+                                            <div class="text-[11px] font-black text-gray-400 uppercase">Thứ 7</div>
+                                            <div class="text-lg font-black text-espresso mt-1">22/08</div>
+                                        </th>
+                                                                            <th class="p-4 border-b border-gray-100 bg-gray-50">
+                                            <div class="text-[11px] font-black text-gray-400 uppercase">Chủ Nhật</div>
+                                            <div class="text-lg font-black text-espresso mt-1">23/08</div>
+                                        </th>
+                                                                    </tr>
+                            </thead>
+                            <tbody>
+                                                                    <tr>
+                                        <td class="p-4 border-b border-r border-gray-100 bg-white sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                                            <div class="font-black text-espresso text-sm">Ca Sáng</div>
+                                            <div class="text-xs text-coral font-bold mt-1">06:00 - 10:00</div>
+                                        </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-coral/5">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                            </tr>
+                                                                    <tr>
+                                        <td class="p-4 border-b border-r border-gray-100 bg-white sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                                            <div class="font-black text-espresso text-sm">Ca Trưa</div>
+                                            <div class="text-xs text-coral font-bold mt-1">10:00 - 14:00</div>
+                                        </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-coral/5">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                            </tr>
+                                                                    <tr>
+                                        <td class="p-4 border-b border-r border-gray-100 bg-white sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                                            <div class="font-black text-espresso text-sm">Ca Chiều</div>
+                                            <div class="text-xs text-coral font-bold mt-1">14:00 - 18:00</div>
+                                        </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-coral/5">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                            </tr>
+                                                                    <tr>
+                                        <td class="p-4 border-b border-r border-gray-100 bg-white sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                                            <div class="font-black text-espresso text-sm">Ca Tối</div>
+                                            <div class="text-xs text-coral font-bold mt-1">18:00 - 22:00</div>
+                                        </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-coral/5">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                                                                                <td class="p-2 border-b border-r border-gray-100 border-dashed bg-white">
+                                                                                            </td>
+                                                                            </tr>
+                                                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            
+            
+            
+            <div id="tab-register" class="hidden animate-fade-in space-y-6">
+                
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    
+                    
+                    <div class="lg:col-span-1">
+                        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-fit sticky top-0">
+                            <h3 class="font-black text-espresso text-lg mb-4 uppercase tracking-wider border-b pb-2">Gửi đơn ca mới</h3>
+                            
+                                                        
+                            <form action="http://localhost/staff/shifts/register" method="POST" class="space-y-4">
+                                <input type="hidden" name="_token" value="gb3fWPFwzN0lStP3Zav9CH2jMYh4ZfBCHreKwWVv" autocomplete="off">                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Ngày làm việc</label>
+                                    <input type="date" id="shift_date_input" name="shift_date" required min="2026-08-20" class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:border-coral focus:outline-none font-bold text-espresso transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Ca làm việc</label>
+                                    <select id="shift_select_input" name="shift_select" required class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:border-coral focus:outline-none bg-white font-medium text-espresso transition-all">
+                                        <optgroup label="Ca Part-time (4 Tiếng)">
+                                             <option value="06:00|4">Ca Sáng (06:00 - 10:00)</option>  <option value="10:00|4">Ca Trưa (10:00 - 14:00)</option>  <option value="14:00|4">Ca Chiều (14:00 - 18:00)</option>  <option value="18:00|4">Ca Tối (18:00 - 22:00)</option>                                         </optgroup>
+                                        <optgroup label="Ca Full-time (8 Tiếng)">
+                                             <option value="06:00|8">Sáng - Trưa (06:00 - 14:00)</option>  <option value="10:00|8">Trưa - Chiều (10:00 - 18:00)</option>  <option value="14:00|8">Chiều - Tối (14:00 - 22:00)</option>                                         </optgroup>
+                                        <optgroup label="Ca Tăng cường (12 Tiếng)">
+                                             <option value="06:00|12">Sáng - Chiều (06:00 - 18:00)</option>  <option value="10:00|12">Trưa - Tối (10:00 - 22:00)</option>                                         </optgroup>
+                                    </select>
+                                </div>
+                                <button type="submit" class="w-full bg-coral text-white font-black py-4 rounded-xl shadow-lg shadow-coral/30 hover:bg-[#d5523b] transition-all uppercase tracking-widest mt-2">
+                                    NỘP ĐƠN ĐĂNG KÝ
+                                </button>
+                                <p class="text-[11px] text-gray-400 mt-2 text-center">* Nhấp vào bảng bên phải để chọn ca nhanh.</p>
+                            </form>
+                        </div>
+                    </div>
+
+                    
+                    <div class="lg:col-span-3">
+                        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                            <h3 class="font-black text-espresso text-lg mb-4 uppercase tracking-wider border-b pb-2 flex items-center justify-between">
+                                <span>Tình Trạng Chỗ Trống (Tuần Này)</span>
+                                <span class="text-xs font-bold bg-gray-100 text-gray-500 px-3 py-1 rounded-lg">Tối đa 4 người/ca</span>
+                            </h3>
+                            
+                            <div class="overflow-x-auto custom-scrollbar pb-2">
+                                <table class="w-full text-center border-collapse min-w-[700px]">
+                                    <thead>
+                                        <tr>
+                                            <th class="p-3 border-b border-gray-100 bg-gray-50 sticky left-0 z-10 w-[120px]">Giờ làm</th>
+                                                                                            <th class="p-3 border-b border-gray-100 bg-gray-50">
+                                                    <div class="text-[10px] font-bold text-gray-400 uppercase">Thứ 2</div>
+                                                    <div class="text-sm font-black text-espresso mt-0.5">17/08</div>
+                                                </th>
+                                                                                            <th class="p-3 border-b border-gray-100 bg-gray-50">
+                                                    <div class="text-[10px] font-bold text-gray-400 uppercase">Thứ 3</div>
+                                                    <div class="text-sm font-black text-espresso mt-0.5">18/08</div>
+                                                </th>
+                                                                                            <th class="p-3 border-b border-gray-100 bg-gray-50">
+                                                    <div class="text-[10px] font-bold text-gray-400 uppercase">Thứ 4</div>
+                                                    <div class="text-sm font-black text-espresso mt-0.5">19/08</div>
+                                                </th>
+                                                                                            <th class="p-3 border-b border-gray-100 bg-gray-50">
+                                                    <div class="text-[10px] font-bold text-gray-400 uppercase">Thứ 5</div>
+                                                    <div class="text-sm font-black text-espresso mt-0.5">20/08</div>
+                                                </th>
+                                                                                            <th class="p-3 border-b border-gray-100 bg-gray-50">
+                                                    <div class="text-[10px] font-bold text-gray-400 uppercase">Thứ 6</div>
+                                                    <div class="text-sm font-black text-espresso mt-0.5">21/08</div>
+                                                </th>
+                                                                                            <th class="p-3 border-b border-gray-100 bg-gray-50">
+                                                    <div class="text-[10px] font-bold text-gray-400 uppercase">Thứ 7</div>
+                                                    <div class="text-sm font-black text-espresso mt-0.5">22/08</div>
+                                                </th>
+                                                                                            <th class="p-3 border-b border-gray-100 bg-gray-50">
+                                                    <div class="text-[10px] font-bold text-gray-400 uppercase">Chủ Nhật</div>
+                                                    <div class="text-sm font-black text-espresso mt-0.5">23/08</div>
+                                                </th>
+                                                                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                                                                    <tr>
+                                                <td class="p-3 border-b border-r border-gray-100 bg-white sticky left-0 z-10">
+                                                    <div class="text-xs font-black text-coral bg-coral/10 px-2 py-1 rounded">06:00 - 10:00</div>
+                                                </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div class="h-[50px] bg-gray-100 rounded-lg flex items-center justify-center opacity-50"><span class="text-[10px] font-bold text-gray-400">Đã qua</span></div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div class="h-[50px] bg-gray-100 rounded-lg flex items-center justify-center opacity-50"><span class="text-[10px] font-bold text-gray-400">Đã qua</span></div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div class="h-[50px] bg-gray-100 rounded-lg flex items-center justify-center opacity-50"><span class="text-[10px] font-bold text-gray-400">Đã qua</span></div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-20', '06:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-21', '06:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-22', '06:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-23', '06:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                            </tr>
+                                                                                    <tr>
+                                                <td class="p-3 border-b border-r border-gray-100 bg-white sticky left-0 z-10">
+                                                    <div class="text-xs font-black text-coral bg-coral/10 px-2 py-1 rounded">10:00 - 14:00</div>
+                                                </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div class="h-[50px] bg-gray-100 rounded-lg flex items-center justify-center opacity-50"><span class="text-[10px] font-bold text-gray-400">Đã qua</span></div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div class="h-[50px] bg-gray-100 rounded-lg flex items-center justify-center opacity-50"><span class="text-[10px] font-bold text-gray-400">Đã qua</span></div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div class="h-[50px] bg-gray-100 rounded-lg flex items-center justify-center opacity-50"><span class="text-[10px] font-bold text-gray-400">Đã qua</span></div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-20', '10:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-21', '10:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-22', '10:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-23', '10:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                            </tr>
+                                                                                    <tr>
+                                                <td class="p-3 border-b border-r border-gray-100 bg-white sticky left-0 z-10">
+                                                    <div class="text-xs font-black text-coral bg-coral/10 px-2 py-1 rounded">14:00 - 18:00</div>
+                                                </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div class="h-[50px] bg-gray-100 rounded-lg flex items-center justify-center opacity-50"><span class="text-[10px] font-bold text-gray-400">Đã qua</span></div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div class="h-[50px] bg-gray-100 rounded-lg flex items-center justify-center opacity-50"><span class="text-[10px] font-bold text-gray-400">Đã qua</span></div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div class="h-[50px] bg-gray-100 rounded-lg flex items-center justify-center opacity-50"><span class="text-[10px] font-bold text-gray-400">Đã qua</span></div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-20', '14:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-21', '14:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-22', '14:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-23', '14:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                            </tr>
+                                                                                    <tr>
+                                                <td class="p-3 border-b border-r border-gray-100 bg-white sticky left-0 z-10">
+                                                    <div class="text-xs font-black text-coral bg-coral/10 px-2 py-1 rounded">18:00 - 22:00</div>
+                                                </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div class="h-[50px] bg-gray-100 rounded-lg flex items-center justify-center opacity-50"><span class="text-[10px] font-bold text-gray-400">Đã qua</span></div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div class="h-[50px] bg-gray-100 rounded-lg flex items-center justify-center opacity-50"><span class="text-[10px] font-bold text-gray-400">Đã qua</span></div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div class="h-[50px] bg-gray-100 rounded-lg flex items-center justify-center opacity-50"><span class="text-[10px] font-bold text-gray-400">Đã qua</span></div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-20', '18:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-21', '18:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-22', '18:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                                                                                        
+                                                    <td class="p-2 border-b border-r border-gray-100 border-dashed transition-colors">
+                                                                                                                    <div onclick="fillForm('2026-08-23', '18:00|4')" class="h-[50px] bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-white transition-colors group">
+                                                                <span class="text-xs font-black text-emerald-600 group-hover:text-white">Còn trống</span>
+                                                                <span class="text-[10px] font-bold text-emerald-500 group-hover:text-emerald-100 mt-0.5">0/4 Người</span>
+                                                            </div>
+                                                                                                            </td>
+                                                                                            </tr>
+                                                                            </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mt-6">
+                    <h3 class="font-black text-espresso text-lg mb-4 uppercase tracking-wider border-b pb-2">Đơn Đăng Ký & Lịch Sử Của Bạn</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-xs uppercase font-bold text-gray-400 bg-gray-50 border-b border-gray-100">
+                                <tr>
+                                    <th class="py-3 px-4 rounded-tl-xl">Ngày làm</th>
+                                    <th class="py-3 px-4">Giờ bắt đầu</th>
+                                    <th class="py-3 px-4">Độ dài ca</th>
+                                    <th class="py-3 px-4 rounded-tr-xl text-center">Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                                                <tr>
+                                    <td colspan="4" class="text-center py-8 text-gray-400 italic font-medium">Bạn chưa đăng ký ca làm nào.</td>
+                                </tr>
+                                                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            
+            
+            <div id="tab-statistics" class="hidden animate-fade-in space-y-6">
+                
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
+                        <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center text-3xl font-black">📅</div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-400 uppercase tracking-wider">Thực làm tuần này</p>
+                            <p class="text-3xl font-black text-espresso mt-1">0 <span class="text-base text-gray-500 font-medium">giờ</span></p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
+                        <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-3xl font-black">📆</div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-400 uppercase tracking-wider">Thực làm tháng 08/2026</p>
+                            <p class="text-3xl font-black text-espresso mt-1">0 <span class="text-base text-gray-500 font-medium">giờ</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                    <h3 class="font-black text-espresso text-lg mb-4 uppercase tracking-wider border-b pb-2">Lịch Sử Chấm Công Chi Tiết</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-xs uppercase font-bold text-gray-400 bg-gray-50 border-b border-gray-100">
+                                <tr>
+                                    <th class="py-3 px-4 rounded-tl-xl w-32">Ngày làm</th>
+                                    <th class="py-3 px-4 text-center">Giờ Vào Ca (Check-in)</th>
+                                    <th class="py-3 px-4 text-center">Giờ Kết Ca (Check-out)</th>
+                                    <th class="py-3 px-4 rounded-tr-xl text-right">Tổng thời gian</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                                                <tr>
+                                    <td colspan="4" class="text-center py-8 text-gray-400 italic font-medium">Bạn chưa có lịch sử làm việc nào được ghi nhận.</td>
+                                </tr>
+                                                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    
+    <style>
+       .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+       .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #ff7043; border-radius: 20px; }
+       .animate-fade-in { animation: fadeIn 0.3s ease-in-out forwards; }
+       @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+
+    <script>
+        function switchTab(tabId) {
+            document.getElementById('tab-schedule').classList.add('hidden');
+            document.getElementById('tab-register').classList.add('hidden');
+            
+            const scheduleBtn = document.getElementById('tab-btn-schedule');
+            const registerBtn = document.getElementById('tab-btn-register');
+            
+            scheduleBtn.className = "pb-3 px-2 font-bold text-gray-400 border-b-4 border-transparent hover:text-coral transition-all uppercase tracking-wider text-sm";
+            registerBtn.className = "pb-3 px-2 font-bold text-gray-400 border-b-4 border-transparent hover:text-coral transition-all uppercase tracking-wider text-sm flex items-center gap-2";
+            
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            const activeBtn = document.getElementById('tab-btn-' + tabId);
+            if (tabId === 'schedule') {
+                activeBtn.className = "pb-3 px-2 font-black text-coral border-b-4 border-coral transition-all uppercase tracking-wider text-sm";
+            } else {
+                activeBtn.className = "pb-3 px-2 font-black text-coral border-b-4 border-coral transition-all uppercase tracking-wider text-sm flex items-center gap-2";
+            }
+        }
+        function switchTab(tabId) {
+            // Danh sách các tab hiện có
+            const tabs = ['schedule', 'register', 'statistics'];
+            
+            // Ẩn tất cả và reset màu nút
+            tabs.forEach(id => {
+                document.getElementById('tab-' + id).classList.add('hidden');
+                document.getElementById('tab-btn-' + id).className = "pb-3 px-2 font-bold text-gray-400 border-b-4 border-transparent hover:text-coral transition-all uppercase tracking-wider text-sm flex items-center gap-2";
+            });
+            
+            // Hiện tab được chọn và tô màu nút
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            document.getElementById('tab-btn-' + tabId).className = "pb-3 px-2 font-black text-coral border-b-4 border-coral transition-all uppercase tracking-wider text-sm flex items-center gap-2";
+        }
+
+        function fillForm(date, timeVal) {
+            const dateInput = document.getElementById('shift_date_input');
+            const selectInput = document.getElementById('shift_select_input');
+            
+            dateInput.value = date;
+            selectInput.value = timeVal;
+            
+            dateInput.classList.add('ring-4', 'ring-coral/50');
+            selectInput.classList.add('ring-4', 'ring-coral/50');
+            setTimeout(() => {
+                dateInput.classList.remove('ring-4', 'ring-coral/50');
+                selectInput.classList.remove('ring-4', 'ring-coral/50');
+            }, 800);
+        }
+
+        function toggleSidebar() { 
+            const sidebar = document.getElementById('sidebar'); 
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (window.innerWidth < 768) {
+                if (sidebar.classList.contains('-translate-x-full')) {
+                    sidebar.classList.remove('-translate-x-full');
+                    if (backdrop) backdrop.classList.remove('hidden');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    if (backdrop) backdrop.classList.add('hidden');
+                }
+            } else {
+                sidebar.classList.toggle('md:w-0');
+            }
+        }
+
+            </script>
+</body>
+</html>

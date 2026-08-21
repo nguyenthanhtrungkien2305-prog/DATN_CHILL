@@ -29,7 +29,7 @@ class CheckoutController extends Controller
 
         $subTotal = 0;
         foreach ($cart as $item) {
-            $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
+            $subTotal += ($item['price'] + ($item['topping_total'] ?? 0)) * $item['quantity'];
         }
 
         $availableVouchers = (new CartController())->getApplicableVouchers($subTotal);
@@ -120,7 +120,7 @@ class CheckoutController extends Controller
         // Tính tổng tiền
         $totalAmount = 0;
         foreach ($cart as $item) {
-            $totalAmount += ($item['price'] + $item['topping_total']) * $item['quantity'];
+            $totalAmount += ($item['price'] + ($item['topping_total'] ?? 0)) * $item['quantity'];
         }
 
         // Đọc voucher từ session

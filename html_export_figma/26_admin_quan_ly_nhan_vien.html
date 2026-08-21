@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Lịch &amp; Lương Nhân Viên - Chill Chill Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style> body { font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', 'Poppins', sans-serif; } </style>
+</head>
+<body class="bg-gray-100 flex h-screen overflow-hidden antialiased relative">
+
+    
+    <div id="admin-sidebar-backdrop" onclick="toggleAdminSidebar()" class="fixed inset-0 bg-black/50 z-40 lg:hidden hidden transition-opacity"></div>
+
+    
+    <aside id="admin-sidebar" class="w-64 bg-[#2B2623] text-white flex flex-col shrink-0 fixed lg:static top-0 bottom-0 left-0 z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out h-full">
+        <div class="h-16 flex items-center justify-between px-4 border-b border-white/10 shrink-0">
+            <h1 class="text-lg font-bold tracking-widest text-[#e8634a]">CHILL CHILL ADMIN</h1>
+            <button type="button" onclick="toggleAdminSidebar()" class="lg:hidden text-gray-400 hover:text-white p-1">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar">
+            
+            
+            <a href="http://localhost/admin" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Tổng quan</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/pos" target="_blank"
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Bán hàng (POS)</span>
+            </a>
+            
+            
+            <a href="http://localhost/admin/products" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Sản phẩm</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/combos" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Combo</span>
+            </a>
+            
+            
+            <a href="http://localhost/admin/categories" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Danh mục</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/posts" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Bài viết</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/vouchers" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Voucher</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/banners" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Banner</span>
+            </a>
+            
+            
+            <a href="http://localhost/orders" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Đơn hàng</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/staff-manager" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap bg-[#e8634a] text-white font-medium">
+                <span>Quản lý Nhân viên</span>
+            </a>
+            
+            
+            <a href="http://localhost/admin/users" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Người dùng</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/feedbacks" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Phản hồi</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/chats" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Hỗ trợ trực tuyến</span>
+            </a>
+            
+        </nav>
+        <div class="p-4 border-t border-white/10 shrink-0">
+            <a href="/" class="block text-center px-4 py-2 bg-white/10 rounded hover:bg-white/20 transition text-sm">← Về trang web</a>
+        </div>
+    </aside>
+
+    
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto w-full bg-gray-100 relative">
+        
+        <header class="lg:hidden bg-[#2B2623] text-white h-14 px-4 flex items-center justify-between shrink-0 shadow-md">
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="toggleAdminSidebar()" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <span class="font-bold text-sm tracking-wider text-[#e8634a]">CHILL CHILL ADMIN</span>
+            </div>
+            <a href="/" class="text-xs bg-white/10 px-2.5 py-1 rounded text-white hover:bg-white/20">Trang chủ</a>
+        </header>
+
+            <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 shrink-0">
+        <h2 class="text-xl font-semibold text-gray-800">Quản Lý Nhân Viên & Lịch Làm Việc</h2>
+        <div class="flex items-center gap-4">
+            <span class="text-sm text-gray-600">Xin chào, <strong>admin</strong></span>
+            <a href="http://localhost/dang-xuat" class="text-sm text-red-500 hover:underline">Đăng xuất</a>
+        </div>
+    </header>
+
+    <div class="p-8">
+        <div class="w-full flex flex-col gap-6">
+
+            
+            
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-3">
+                <div class="flex space-x-6">
+                    <button onclick="switchTab('shifts')" id="tab-btn-shifts" class="pb-2 px-3 font-bold text-[#e8634a] border-b-4 border-[#e8634a] transition-all uppercase tracking-wider text-sm flex items-center gap-2">
+                        Duyệt Lịch Làm Việc
+                                            </button>
+                    <button onclick="switchTab('salary')" id="tab-btn-salary" class="pb-2 px-3 font-bold text-gray-400 border-b-4 border-transparent hover:text-[#e8634a] transition-all uppercase tracking-wider text-sm">
+                        Bảng Lương & Hoa Hồng (Tháng 8/2026)
+                    </button>
+                </div>
+
+                
+                <form action="http://localhost/admin/staff-manager" method="GET" class="flex items-center gap-2">
+                    <input type="hidden" name="month" value="8">
+                    <input type="hidden" name="year" value="2026">
+                    <input type="text" name="keyword" id="staff-search-input" value="" 
+                           placeholder="Lọc tên hoặc SĐỐ nhân viên..." 
+                           class="w-64 sm:w-72 px-3.5 py-1.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-[#e8634a]">
+                    <button type="submit" class="bg-gray-800 text-white px-4 py-1.5 rounded-xl text-sm font-bold hover:bg-gray-700 transition shrink-0">
+                        Tìm
+                    </button>
+                                    </form>
+            </div>
+
+            
+            <div id="tab-shifts" class="w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden block animate-fade-in">
+                <div class="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-gray-800 uppercase tracking-wider text-sm">Đơn đăng ký ca làm chờ duyệt</h3>
+                        <p class="text-xs text-gray-500 mt-0.5">Xem xét và phê duyệt lịch làm việc đăng ký từ nhân viên.</p>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto w-full">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-bold border-b border-gray-100">
+                            <tr>
+                                <th class="p-4 pl-6 w-48">Nhân viên</th>
+                                <th class="p-4">Ngày làm việc</th>
+                                <th class="p-4">Khung giờ</th>
+                                <th class="p-4 text-center">Độ dài ca</th>
+                                <th class="p-4 pr-6 text-right w-64">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                                                        <tr>
+                                <td colspan="5" class="p-10 text-center text-gray-400 font-medium">Hiện tại không có đơn đăng ký ca làm nào phù hợp.</td>
+                            </tr>
+                                                    </tbody>
+                    </table>
+                </div>
+            </div>
+
+            
+            <div id="tab-salary" class="w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hidden animate-fade-in">
+                <div class="p-6 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="font-bold text-gray-800 uppercase tracking-wider text-sm">Bảng tổng kê thu nhập & hoa hồng nhân viên</h3>
+                        <p class="text-xs text-gray-500 mt-0.5">Bấm "Xem chi tiết" để xem báo cáo thống kê theo ngày, tháng, năm của từng nhân viên.</p>
+                    </div>
+
+                    
+                    <form action="http://localhost/admin/staff-manager" method="GET" class="flex items-center gap-2">
+                                                <select name="month" class="bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-bold">
+                                                            <option value="1" >Tháng 1</option>
+                                                            <option value="2" >Tháng 2</option>
+                                                            <option value="3" >Tháng 3</option>
+                                                            <option value="4" >Tháng 4</option>
+                                                            <option value="5" >Tháng 5</option>
+                                                            <option value="6" >Tháng 6</option>
+                                                            <option value="7" >Tháng 7</option>
+                                                            <option value="8" selected>Tháng 8</option>
+                                                            <option value="9" >Tháng 9</option>
+                                                            <option value="10" >Tháng 10</option>
+                                                            <option value="11" >Tháng 11</option>
+                                                            <option value="12" >Tháng 12</option>
+                                                    </select>
+                        <select name="year" class="bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-bold">
+                                                            <option value="2026" selected>2026</option>
+                                                            <option value="2025" >2025</option>
+                                                            <option value="2024" >2024</option>
+                                                    </select>
+                        <button type="submit" class="bg-gray-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-700 transition">Lọc</button>
+                    </form>
+                </div>
+
+                <div class="overflow-x-auto w-full">
+                    <table class="w-full text-left border-collapse min-w-[900px]">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-bold border-b border-gray-100">
+                            <tr>
+                                <th class="p-4 pl-6">Nhân viên</th>
+                                <th class="p-4 text-center">Giờ làm thực tế</th>
+                                <th class="p-4 text-right">Lương cơ bản</th>
+                                <th class="p-4 text-right">Hoa hồng</th>
+                                <th class="p-4 text-right">Tổng thực lãnh</th>
+                                <th class="p-4 pr-6 text-center w-36">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50 text-sm">
+                                                        <tr class="staff-row hover:bg-gray-50/80 transition-colors" 
+                                data-name="huyho" 
+                                data-phone="" 
+                                data-email="huyho@diemcongcoffee.com">
+                                <td class="p-4 pl-6 font-bold text-gray-900">
+                                    <div>huyho</div>
+                                    <div class="text-xs text-gray-400 font-normal">huyho@diemcongcoffee.com</div>
+                                </td>
+                                <td class="p-4 text-center">
+                                    <span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-xs font-bold">0 giờ</span>
+                                </td>
+                                <td class="p-4 text-right font-medium text-gray-700">0đ</td>
+                                <td class="p-4 text-right font-medium text-orange-500">+0đ</td>
+                                <td class="p-4 text-right font-bold text-emerald-600 text-base">0đ</td>
+                                <td class="p-4 pr-6 text-center">
+                                    <a href="http://localhost/admin/staff-manager/detail/5?month=8&amp;year=2026" 
+                                       class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs px-3 py-1.5 rounded-lg transition inline-block">
+                                        Xem Chi Tiết
+                                    </a>
+                                </td>
+                            </tr>
+                                                        <tr class="staff-row hover:bg-gray-50/80 transition-colors" 
+                                data-name="nhanvien1" 
+                                data-phone="0888888888" 
+                                data-email="">
+                                <td class="p-4 pl-6 font-bold text-gray-900">
+                                    <div>nhanvien1</div>
+                                    <div class="text-xs text-gray-400 font-normal">0888888888</div>
+                                </td>
+                                <td class="p-4 text-center">
+                                    <span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-xs font-bold">0 giờ</span>
+                                </td>
+                                <td class="p-4 text-right font-medium text-gray-700">0đ</td>
+                                <td class="p-4 text-right font-medium text-orange-500">+0đ</td>
+                                <td class="p-4 text-right font-bold text-emerald-600 text-base">0đ</td>
+                                <td class="p-4 pr-6 text-center">
+                                    <a href="http://localhost/admin/staff-manager/detail/6?month=8&amp;year=2026" 
+                                       class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs px-3 py-1.5 rounded-lg transition inline-block">
+                                        Xem Chi Tiết
+                                    </a>
+                                </td>
+                            </tr>
+                                                    </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <style>
+        .animate-fade-in { animation: fadeIn 0.3s ease-in-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+
+    <script>
+        function switchTab(tabId) {
+            document.getElementById('tab-shifts').classList.add('hidden');
+            document.getElementById('tab-salary').classList.add('hidden');
+            
+            const shiftsBtn = document.getElementById('tab-btn-shifts');
+            const salaryBtn = document.getElementById('tab-btn-salary');
+            
+            shiftsBtn.className = "pb-2 px-3 font-bold text-gray-400 border-b-4 border-transparent hover:text-[#e8634a] transition-all uppercase tracking-wider text-sm flex items-center gap-2";
+            salaryBtn.className = "pb-2 px-3 font-bold text-gray-400 border-b-4 border-transparent hover:text-[#e8634a] transition-all uppercase tracking-wider text-sm";
+            
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            
+            if (tabId === 'shifts') {
+                shiftsBtn.className = "pb-2 px-3 font-bold text-[#e8634a] border-b-4 border-[#e8634a] transition-all uppercase tracking-wider text-sm flex items-center gap-2";
+            } else {
+                salaryBtn.className = "pb-2 px-3 font-bold text-[#e8634a] border-b-4 border-[#e8634a] transition-all uppercase tracking-wider text-sm";
+            }
+        }
+
+        // Lọc nhanh nhân viên theo từ khóa khi gõ chữ
+        document.getElementById('staff-search-input')?.addEventListener('input', function() {
+            const kw = this.value.trim().toLowerCase();
+            const rows = document.querySelectorAll('.staff-row');
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name') || '';
+                const phone = row.getAttribute('data-phone') || '';
+                const email = row.getAttribute('data-email') || '';
+                if (name.includes(kw) || phone.includes(kw) || email.includes(kw)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    </script>
+    </main>
+
+    
+    <script>
+        function toggleAdminSidebar() {
+            const sidebar = document.getElementById('admin-sidebar');
+            const backdrop = document.getElementById('admin-sidebar-backdrop');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+    </script>
+
+    
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.3); }
+    </style>
+</body>
+</html>

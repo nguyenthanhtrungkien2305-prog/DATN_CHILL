@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Mã Giảm Giá - Chill Chill Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style> body { font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', 'Poppins', sans-serif; } </style>
+</head>
+<body class="bg-gray-100 flex h-screen overflow-hidden antialiased relative">
+
+    
+    <div id="admin-sidebar-backdrop" onclick="toggleAdminSidebar()" class="fixed inset-0 bg-black/50 z-40 lg:hidden hidden transition-opacity"></div>
+
+    
+    <aside id="admin-sidebar" class="w-64 bg-[#2B2623] text-white flex flex-col shrink-0 fixed lg:static top-0 bottom-0 left-0 z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out h-full">
+        <div class="h-16 flex items-center justify-between px-4 border-b border-white/10 shrink-0">
+            <h1 class="text-lg font-bold tracking-widest text-[#e8634a]">CHILL CHILL ADMIN</h1>
+            <button type="button" onclick="toggleAdminSidebar()" class="lg:hidden text-gray-400 hover:text-white p-1">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar">
+            
+            
+            <a href="http://localhost/admin" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Tổng quan</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/pos" target="_blank"
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Bán hàng (POS)</span>
+            </a>
+            
+            
+            <a href="http://localhost/admin/products" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Sản phẩm</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/combos" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Combo</span>
+            </a>
+            
+            
+            <a href="http://localhost/admin/categories" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Danh mục</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/posts" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Bài viết</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/vouchers" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap bg-[#e8634a] text-white font-medium">
+                <span>Quản lý Voucher</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/banners" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Banner</span>
+            </a>
+            
+            
+            <a href="http://localhost/orders" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Đơn hàng</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/staff-manager" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Nhân viên</span>
+            </a>
+            
+            
+            <a href="http://localhost/admin/users" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Người dùng</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/feedbacks" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Quản lý Phản hồi</span>
+            </a>
+
+            
+            <a href="http://localhost/admin/chats" 
+               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap hover:bg-white/10">
+                <span>Hỗ trợ trực tuyến</span>
+            </a>
+            
+        </nav>
+        <div class="p-4 border-t border-white/10 shrink-0">
+            <a href="/" class="block text-center px-4 py-2 bg-white/10 rounded hover:bg-white/20 transition text-sm">← Về trang web</a>
+        </div>
+    </aside>
+
+    
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto w-full bg-gray-100 relative">
+        
+        <header class="lg:hidden bg-[#2B2623] text-white h-14 px-4 flex items-center justify-between shrink-0 shadow-md">
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="toggleAdminSidebar()" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <span class="font-bold text-sm tracking-wider text-[#e8634a]">CHILL CHILL ADMIN</span>
+            </div>
+            <a href="/" class="text-xs bg-white/10 px-2.5 py-1 rounded text-white hover:bg-white/20">Trang chủ</a>
+        </header>
+
+            <header class="hidden lg:flex h-16 bg-white shadow-sm items-center justify-between px-8 shrink-0">
+        <h2 class="text-xl font-semibold text-gray-800">Danh sách Mã Giảm Giá</h2>
+    </header>
+
+    <div class="p-4 md:p-8">
+        
+                        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <p class="text-gray-500 text-xs sm:text-sm">Quản lý các chương trình ưu đãi, mã giảm giá áp dụng cho khách mua hàng.</p>
+            <div class="flex items-center gap-2 shrink-0 flex-wrap">
+                <button type="submit" 
+                        form="bulkDeleteVoucherForm" 
+                        id="bulkDeleteBtn" 
+                        onclick="return confirmBulkDelete(event)" 
+                        disabled 
+                        class="bg-red-500 text-white px-3 py-2 rounded-xl opacity-50 cursor-not-allowed transition font-bold text-xs shadow-sm flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    <span>Xóa mục đã chọn (0)</span>
+                </button>
+
+                <a href="http://localhost/admin/vouchers/create" class="bg-[#e8634a] text-white px-4 py-2 rounded-xl hover:bg-[#d5523b] transition font-bold text-xs shadow-sm whitespace-nowrap">
+                    + Thêm mã giảm giá mới
+                </a>
+            </div>
+        </div>
+
+        
+        <div class="bg-white p-4 rounded-t-2xl border-t border-x border-gray-100 flex items-center justify-between">
+            <form action="http://localhost/admin/vouchers" method="GET" class="w-full flex gap-2">
+                <input type="text" name="search" value="" placeholder="Tìm theo mã..." class="flex-1 px-3 py-2 border rounded-xl focus:outline-none focus:border-[#e8634a] text-xs sm:text-sm">
+                <button type="submit" class="bg-gray-800 text-white px-4 py-2 rounded-xl hover:bg-gray-700 transition text-xs sm:text-sm font-bold">Tìm</button>
+                            </form>
+        </div>
+
+        <form id="bulkDeleteVoucherForm" action="http://localhost/admin/vouchers/bulk-delete" method="POST">
+            <input type="hidden" name="_token" value="gb3fWPFwzN0lStP3Zav9CH2jMYh4ZfBCHreKwWVv" autocomplete="off">            <div class="bg-white rounded-b-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse min-w-[850px]">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-500 text-sm border-b">
+                            <th class="p-4 w-10 text-center">
+                                <input type="checkbox" id="selectAll" class="w-4 h-4 accent-[#e8634a] rounded cursor-pointer" title="Chọn tất cả">
+                            </th>
+                            <th class="p-4 font-medium w-16">ID</th>
+                            <th class="p-4 font-medium">Mã ưu đãi</th>
+                            <th class="p-4 font-medium">Loại giảm</th>
+                            <th class="p-4 font-medium">Mức giảm</th>
+                            <th class="p-4 font-medium">Đơn tối thiểu</th>
+                            <th class="p-4 font-medium text-center">Phân loại</th>
+                            <th class="p-4 font-medium">Giới hạn sử dụng</th>
+                            <th class="p-4 font-medium">Đã dùng</th>
+                            <th class="p-4 font-medium">Thời gian hiệu lực</th>
+                            <th class="p-4 font-medium text-center w-36">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-700 text-sm divide-y divide-gray-50">
+                                                <tr class="border-b hover:bg-gray-50 transition">
+                            <td class="p-4 text-center">
+                                <input type="checkbox" name="ids[]" value="8" class="row-checkbox w-4 h-4 accent-[#e8634a] rounded cursor-pointer">
+                            </td>
+                            <td class="p-4 text-gray-500">8</td>
+                            <td class="p-4 font-bold text-espresso text-base"><span class="bg-orange-50 border border-orange-200 text-[#e8634a] px-2.5 py-1 rounded-md">SUMMER20</span></td>
+                            <td class="p-4">
+                                                                    <span class="px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-600 font-bold">Phần trăm (%)</span>
+                                                            </td>
+                            <td class="p-4 font-bold text-gray-900">
+                                                                    20%
+                                                            </td>
+                            <td class="p-4 font-medium">199.000đ</td>
+                            <td class="p-4 text-center">
+                                                                    <span class="bg-purple-50 text-purple-700 font-bold px-2.5 py-1 rounded-full text-xs border border-purple-200 block whitespace-nowrap">
+                                        👤 Cá nhân: ID #
+                                    </span>
+                                                            </td>
+                            <td class="p-4 text-gray-600 text-xs">
+                                <div>Tổng: <strong>9972 lượt</strong></div>
+                                <div class="text-orange-600 font-semibold mt-0.5">Tối đa 1 lần/khách</div>
+                            </td>
+                            <td class="p-4 font-medium text-[#e8634a]">0</td>
+                            <td class="p-4 text-xs text-gray-500">
+                                <div>Bắt đầu: 12/08/2026 10:31</div>
+                                <div class="mt-1">Kết thúc: 31/08/2026 10:32</div>
+                            </td>
+                            <td class="p-4 text-center">
+                                <div class="flex justify-center gap-2">
+                                    <a href="http://localhost/admin/vouchers/8/edit" class="text-blue-500 hover:text-blue-700 font-medium">Sửa</a>
+                                </div>
+                            </td>
+                        </tr>
+                                                <tr class="border-b hover:bg-gray-50 transition">
+                            <td class="p-4 text-center">
+                                <input type="checkbox" name="ids[]" value="7" class="row-checkbox w-4 h-4 accent-[#e8634a] rounded cursor-pointer">
+                            </td>
+                            <td class="p-4 text-gray-500">7</td>
+                            <td class="p-4 font-bold text-espresso text-base"><span class="bg-orange-50 border border-orange-200 text-[#e8634a] px-2.5 py-1 rounded-md">745810</span></td>
+                            <td class="p-4">
+                                                                    <span class="px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-600 font-bold">Phần trăm (%)</span>
+                                                            </td>
+                            <td class="p-4 font-bold text-gray-900">
+                                                                    20%
+                                                            </td>
+                            <td class="p-4 font-medium">1.000đ</td>
+                            <td class="p-4 text-center">
+                                                                    <span class="bg-amber-50 text-amber-700 font-bold px-2.5 py-1 rounded-full text-xs border border-amber-200 block whitespace-nowrap">
+                                        🎁 Đổi điểm (🏆 3p)
+                                    </span>
+                                                            </td>
+                            <td class="p-4 text-gray-600 text-xs">
+                                <div>Tổng: <strong>10000 lượt</strong></div>
+                                <div class="text-orange-600 font-semibold mt-0.5">Tối đa 1 lần/khách</div>
+                            </td>
+                            <td class="p-4 font-medium text-[#e8634a]">5</td>
+                            <td class="p-4 text-xs text-gray-500">
+                                <div>Bắt đầu: 10/08/2026 23:33</div>
+                                <div class="mt-1">Kết thúc: 31/12/2026 23:33</div>
+                            </td>
+                            <td class="p-4 text-center">
+                                <div class="flex justify-center gap-2">
+                                    <a href="http://localhost/admin/vouchers/7/edit" class="text-blue-500 hover:text-blue-700 font-medium">Sửa</a>
+                                </div>
+                            </td>
+                        </tr>
+                                            </tbody>
+                </table>
+            </div>
+                
+                <div class="p-4 border-t">
+                    
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const selectAll = document.getElementById('selectAll');
+            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+            const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+
+            function updateBulkState() {
+                const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
+                if (bulkDeleteBtn) {
+                    bulkDeleteBtn.disabled = checkedCount === 0;
+                    if (checkedCount > 0) {
+                        bulkDeleteBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-red-500');
+                        bulkDeleteBtn.classList.add('bg-red-600', 'hover:bg-red-700', 'cursor-pointer');
+                        bulkDeleteBtn.querySelector('span').textContent = `Xóa ${checkedCount} mục đã chọn`;
+                    } else {
+                        bulkDeleteBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-red-500');
+                        bulkDeleteBtn.classList.remove('bg-red-600', 'hover:bg-red-700', 'cursor-pointer');
+                        bulkDeleteBtn.querySelector('span').textContent = `Xóa mục đã chọn (0)`;
+                    }
+                }
+                if (selectAll) {
+                    selectAll.checked = rowCheckboxes.length > 0 && checkedCount === rowCheckboxes.length;
+                }
+            }
+
+            if (selectAll) {
+                selectAll.addEventListener('change', function () {
+                    rowCheckboxes.forEach(cb => cb.checked = selectAll.checked);
+                    updateBulkState();
+                });
+            }
+
+            rowCheckboxes.forEach(cb => {
+                cb.addEventListener('change', updateBulkState);
+            });
+
+            window.confirmBulkDelete = function (e) {
+                const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
+                if (checkedCount === 0) {
+                    e.preventDefault();
+                    alert('Vui lòng chọn ít nhất một mục để xóa!');
+                    return false;
+                }
+                return confirm(`Bạn có chắc chắn muốn xóa ${checkedCount} mã giảm giá đã chọn?`);
+            };
+        });
+    </script>
+    </main>
+
+    
+    <script>
+        function toggleAdminSidebar() {
+            const sidebar = document.getElementById('admin-sidebar');
+            const backdrop = document.getElementById('admin-sidebar-backdrop');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+    </script>
+
+    
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.3); }
+    </style>
+</body>
+</html>

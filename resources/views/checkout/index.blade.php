@@ -137,7 +137,7 @@
                         @php $subTotal = 0; @endphp
                         @foreach($cart as $item)
                             @php 
-                                $itemTotal = ($item['price'] + $item['topping_total']) * $item['quantity'];
+                                $itemTotal = ($item['price'] + ($item['topping_total'] ?? 0)) * $item['quantity'];
                                 $subTotal += $itemTotal; 
                             @endphp
                             <div class="flex gap-4 items-start">

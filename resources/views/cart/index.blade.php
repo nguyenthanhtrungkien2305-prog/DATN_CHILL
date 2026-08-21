@@ -12,7 +12,7 @@
             if(session()->has('cart')) {
                 foreach(session('cart') as $item) {
                     $totalItems += $item['quantity'];
-                    $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
+                    $subTotal += ($item['price'] + ($item['topping_total'] ?? 0)) * $item['quantity'];
                 }
             }
         @endphp
@@ -136,7 +136,7 @@
 
                             <div class="flex items-end justify-between mt-auto pt-2">
                                 <div class="font-black {{ $isStandaloneTopping ? 'text-base' : 'text-lg' }} text-espresso">
-                                    {{ number_format(($item['price'] + $item['topping_total']) * $item['quantity'], 0, ',', '.') }} đ
+                                    {{ number_format(($item['price'] + ($item['topping_total'] ?? 0)) * $item['quantity'], 0, ',', '.') }} đ
                                 </div>
 
                                 <div class="flex items-center justify-between border border-espresso/20 rounded-full h-9 w-24 bg-white overflow-hidden">

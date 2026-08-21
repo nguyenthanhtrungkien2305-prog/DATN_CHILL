@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoa Hồng & Ca Làm Việc - Điểm Cộng Coffee</title>
+    <link rel="preload" as="style" href="http://localhost/build/assets/app-alCFGsrb.css" /><link rel="modulepreload" href="http://localhost/build/assets/app-CObaEtiK.js" /><link rel="stylesheet" href="http://localhost/build/assets/app-alCFGsrb.css" /><script type="module" src="http://localhost:8000/build/assets/app-CObaEtiK.js"></script>    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { espresso: '#3e2723', coral: '#ff7043', cream: '#fbe9e7' } } }
+        }
+    </script>
+</head>
+<body class="bg-[#FAF7F2] font-sans antialiased h-screen flex overflow-hidden">
+
+    <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-[90] md:hidden hidden transition-opacity"></div>
+
+<div id="sidebar" class="bg-white h-screen border-r border-espresso/10 flex flex-col shrink-0 transition-all duration-300 ease-in-out fixed md:relative top-0 bottom-0 left-0 z-[100] transform -translate-x-full md:translate-x-0 w-64 md:w-64 overflow-hidden shadow-2xl">
+    <div class="h-[64px] bg-espresso text-white flex items-center justify-between font-bold tracking-widest shrink-0 px-4 border-b border-white/10">
+        <span class="whitespace-nowrap">MENU QUẢN LÝ</span>
+        <button type="button" onclick="toggleSidebar()" class="md:hidden text-white/70 hover:text-white p-1">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto py-4">
+        
+        
+        <div class="">
+            
+            <a href="http://localhost/staff/new-orders" class="flex items-center justify-between px-6 py-4 whitespace-nowrap transition-colors hover:bg-coral/10 hover:text-coral text-espresso border-b border-gray-50 font-bold">
+                <span>Đơn hàng mới</span>
+                <span id="new-order-badge" class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    0
+                </span>
+            </a>
+            
+            <a href="http://localhost/staff/pos" class="flex items-center gap-4 px-6 py-4 whitespace-nowrap transition-colors hover:bg-coral/10 hover:text-coral text-espresso/80 border-b border-gray-50 font-medium">
+                <span>Bán hàng (POS)</span>
+            </a>
+            <div class="my-2 border-t-2 border-gray-100 mx-4"></div>
+        </div>
+        
+        
+        <a href="http://localhost/staff/shifts" class="flex items-center gap-4 px-6 py-4 whitespace-nowrap transition-colors hover:bg-coral/10 hover:text-coral text-espresso/80 border-b border-gray-50 font-medium">
+            <span>Quản lý Ca làm</span>
+        </a>
+
+        <a href="http://localhost/staff/commission" class="flex items-center gap-4 px-6 py-4 whitespace-nowrap transition-colors bg-coral/10 text-coral border-r-4 border-coral font-bold">
+            <span>Báo cáo Hoa hồng</span>
+        </a>
+
+        <a href="http://localhost/staff/salary" class="flex items-center gap-4 px-6 py-4 whitespace-nowrap transition-colors hover:bg-coral/10 hover:text-coral text-espresso/80 border-b border-gray-50 font-medium">
+            <span>Bảng lương</span>
+        </a>
+    </div>
+
+    
+    <div class="mt-auto p-4 border-t border-espresso/10 space-y-3 bg-gray-50/50">
+                    <button onclick="attemptCheckOut()" class="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-coral bg-coral/10 border border-coral/20 font-bold hover:bg-coral hover:text-white transition-all">
+                <span class="text-sm uppercase tracking-wider">KẾT CA (Check-out)</span>
+            </button>
+        
+        <a href="http://localhost/dang-xuat" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-red-500 font-bold border border-red-100 hover:bg-red-50 transition-colors">
+            <span>Đăng xuất</span>
+        </a>
+    </div>
+</div>
+
+<script>
+    function attemptCheckIn() {
+        fetch("http://localhost/staff/attendance/checkin", {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': "gb3fWPFwzN0lStP3Zav9CH2jMYh4ZfBCHreKwWVv" // Nơi hay bị kẹt cache nhất
+            }
+        })
+        .then(async res => {
+            // Nếu phát hiện kẹt Cache (Lỗi 419) -> Tự động F5 lại trang
+            if (res.status === 419) {
+                alert("Mã bảo mật bị kẹt do Cache máy tính. Hệ thống đang tự động làm mới...");
+                window.location.reload(true); 
+                throw new Error("419 CSRF Token Expired");
+            }
+            if (!res.ok) throw new Error("Lỗi Server: " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            alert(data.message);
+            if (data.success) window.location.reload();
+        })
+        .catch(err => {
+            if (err.message !== "419 CSRF Token Expired") {
+                console.error(err);
+                alert("Lỗi kết nối ngầm! Vui lòng ấn F12 xem tab Console.");
+            }
+        });
+    }
+
+    function attemptCheckOut() {
+        fetch("http://localhost/staff/attendance/checkout", {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': "gb3fWPFwzN0lStP3Zav9CH2jMYh4ZfBCHreKwWVv"
+            }
+        })
+        .then(async res => {
+            if (res.status === 419) {
+                alert("Mã bảo mật bị kẹt do Cache máy tính. Hệ thống đang tự động làm mới...");
+                window.location.reload(true);
+                throw new Error("419 CSRF Token Expired");
+            }
+            if (!res.ok) throw new Error("Lỗi Server: " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.href = "http://localhost/staff/shifts"; 
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(err => {
+            if (err.message !== "419 CSRF Token Expired") {
+                console.error(err);
+                alert("Lỗi kết nối ngầm! Vui lòng ấn F12 xem tab Console.");
+            }
+        });
+    }
+
+    </script>
+    <div class="flex-1 flex flex-col h-screen overflow-hidden">
+        
+        
+        <div class="h-[64px] bg-espresso text-white px-4 lg:px-6 flex justify-between items-center shadow-md shrink-0 z-10">
+            <div class="font-bold text-lg flex items-center gap-3">
+                <button onclick="toggleSidebar()" class="p-2 bg-white/10 hover:bg-coral rounded-lg transition-colors flex items-center justify-center focus:outline-none group">
+                    <svg class="w-5 h-5 text-white group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <h1 class="font-serif font-bold tracking-widest uppercase text-base sm:text-lg">BÁO CÁO CA & HOA HỒNG</h1>
+            </div>
+            <div class="text-sm">Xin chào, <span class="font-bold text-coral">admin</span></div>
+        </div>
+
+        
+        <div class="p-6 flex-1 overflow-y-auto custom-scrollbar">
+            
+            
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
+                <div class="absolute right-0 top-0 w-64 h-64 bg-coral/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+                
+                <div class="flex items-center gap-5 z-10">
+                    <div class="w-16 h-16 bg-espresso text-white rounded-2xl flex flex-col items-center justify-center font-black shadow-lg">
+                        <span class="text-xs uppercase opacity-70 font-medium">ID</span>
+                        <span class="text-xl">13</span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black text-espresso">Ca 6 (20:00 - 00:00)</h2>
+                        <p class="text-sm text-gray-500 font-medium mt-1">
+                            🕒 Thời gian: <strong class="text-emerald-600">20:00 - 23:59</strong>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 z-10">
+                    <span class="text-sm font-bold text-espresso/60 uppercase">Đồng đội trong ca:</span>
+                    <span class="text-sm font-bold bg-gray-100 px-3 py-1.5 rounded-lg text-gray-600 shadow-inner">
+                        <span class="text-coral">0</span> nhân sự
+                    </span>
+                </div>
+            </div>
+
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                
+                <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
+                    <p class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Doanh thu toàn ca</p>
+                    <h3 class="text-3xl font-black text-espresso">0đ</h3>
+                    <p class="text-xs text-gray-400 mt-2">Đã hoàn thành <strong>0 đơn hàng</strong></p>
+                </div>
+                
+                
+                <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-3xl border border-gray-200 shadow-sm">
+                    <p class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 flex justify-between">
+                        <span>Quỹ hoa hồng (Ca)</span> <span class="bg-gray-200 text-gray-600 px-2 py-0.5 rounded text-[10px]">2.0% DT</span>
+                    </p>
+                    <h3 class="text-3xl font-black text-gray-700">0đ</h3>
+                    <p class="text-xs text-gray-500 mt-2">Chia đều cho <strong class="text-coral">0</strong> người</p>
+                </div>
+
+                
+                <div class="bg-gradient-to-br from-coral to-[#e05b42] p-6 rounded-3xl shadow-lg shadow-coral/30 text-white relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3"></div>
+                    <p class="text-sm font-bold text-white/80 uppercase tracking-wider mb-1">Hoa hồng của bạn</p>
+                    <h3 class="text-4xl font-black mb-1">+0đ</h3>
+                    <p class="text-xs text-white/90 mt-2 bg-white/20 inline-block px-2 py-1 rounded-md">
+                        Tự động cộng vào lương cuối tháng
+                    </p>
+                </div>
+            </div>
+
+            
+            <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                <div class="px-6 py-5 border-b border-gray-100 bg-gray-50/50">
+                    <h3 class="font-black text-espresso text-lg uppercase tracking-wider">Sản phẩm bán ra (Toàn ca)</h3>
+                </div>
+                <div class="p-6">
+                    <table class="w-full text-left">
+                        <thead class="text-xs uppercase font-bold text-gray-400 border-b border-gray-100">
+                            <tr>
+                                <th class="pb-3">Tên sản phẩm</th>
+                                <th class="pb-3 text-center">Số lượng</th>
+                                <th class="pb-3 text-right">Tổng tiền</th>
+                                <th class="pb-3 text-right">Đóng góp quỹ (2.0%)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            
+                                                        <tr>
+                                <td colspan="4" class="text-center py-8 text-gray-400 font-medium">
+                                    Chưa có đơn hàng nào hoàn thành trong Ca này.
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <style>
+       .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+       .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #ff7043; border-radius: 20px; }
+    </style>
+    <script>
+        function toggleSidebar() { 
+            const sidebar = document.getElementById('sidebar'); 
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (window.innerWidth < 768) {
+                if (sidebar.classList.contains('-translate-x-full')) {
+                    sidebar.classList.remove('-translate-x-full');
+                    if (backdrop) backdrop.classList.remove('hidden');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    if (backdrop) backdrop.classList.add('hidden');
+                }
+            } else {
+                sidebar.classList.toggle('md:w-0');
+            }
+        }
+    </script>
+</body>
+</html>

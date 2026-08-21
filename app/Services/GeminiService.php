@@ -89,80 +89,120 @@ class GeminiService
                 ->take(3)
                 ->get();
 
-            // Nếu hỏi về Cà phê
-            if (str_contains($msgLower, 'cafe') || str_contains($msgLower, 'cà phê') || str_contains($msgLower, 'đắng') || str_contains($msgLower, 'tỉnh táo')) {
-                $cafeProducts = DB::table('products')
-                    ->join('categories', 'products.category_id', '=', 'categories.category_id')
-                    ->where(function($q) {
-                        $q->where('categories.name', 'LIKE', '%cà phê%')
-                          ->orWhere('categories.name', 'LIKE', '%coffee%')
-                          ->orWhere('products.name', 'LIKE', '%cà phê%')
-                          ->orWhere('products.name', 'LIKE', '%cafe%');
-                    })
-                    ->where('products.status', 1)
-                    ->select('products.*')
-                    ->take(3)
-                    ->get();
 
-                if ($cafeProducts->isNotEmpty()) {
-                    $reply = "Dạ, Chill Chill Coffee chào bạn ạ! ☕\n\nĐể giúp bạn tỉnh táo và tràn đầy năng lượng, Chill Chill gợi ý các món Cà phê nguyên chất tuyệt hảo dành cho bạn:\n\n";
-                    foreach ($cafeProducts as $p) {
-                        $url = route('product.show', ['slug' => $p->slug]);
-                        $reply .= "• **{$p->name}**: {$p->description}\n👉 [Đặt mua ngay]({$url})\n\n";
-                    }
-                    $reply .= "Bạn có muốn dùng kèm thêm Topping Trân châu hoặc Thạch cà phê thơm béo không ạ? ✨";
-                    return $reply;
-                }
-            }
 
-            // Nếu hỏi về Trà / Trà trái cây / Giải nhiệt
-            if (str_contains($msgLower, 'trà') || str_contains($msgLower, 'giải nhiệt') || str_contains($msgLower, 'mát') || str_contains($msgLower, 'dâu') || str_contains($msgLower, 'đào') || str_contains($msgLower, 'xoài') || str_contains($msgLower, 'vải')) {
-                $teaProducts = DB::table('products')
-                    ->join('categories', 'products.category_id', '=', 'categories.category_id')
-                    ->where(function($q) {
-                        $q->where('categories.name', 'LIKE', '%trà%')
-                          ->orWhere('products.name', 'LIKE', '%trà%');
-                    })
-                    ->where('products.status', 1)
-                    ->select('products.*')
-                    ->take(3)
-                    ->get();
-
-                if ($teaProducts->isNotEmpty()) {
-                    $reply = "Dạ, thanh mát và sảng khoái là gu của bạn phải không ạ? 🍵🍹\n\nChill Chill gợi ý các món Trà Trái Cây thanh nhiệt cực thơm ngon dành cho bạn:\n\n";
-                    foreach ($teaProducts as $p) {
-                        $url = route('product.show', ['slug' => $p->slug]);
-                        $reply .= "• **{$p->name}**: {$p->description}\n👉 [Thưởng thức ngay]({$url})\n\n";
-                    }
-                    $reply .= "Thêm chút Trân châu hoàng kim hoặc Thạch dừa nữa là chuẩn gu luôn ạ! ✨";
-                    return $reply;
-                }
-            }
-
-            // Nếu hỏi về Bánh ngọt / Ăn kèm
-            if (str_contains($msgLower, 'bánh') || str_contains($msgLower, 'ăn') || str_contains($msgLower, 'ngọt') || str_contains($msgLower, 'cake')) {
+            // 1. Nếu hỏi về Bánh ngọt / Ăn kèm / Tráng miệng
+            if (str_contains($msgLower, 'bánh') || str_contains($msgLower, 'cake') || str_contains($msgLower, 'tráng miệng') || str_contains($msgLower, 'ăn kèm') || str_contains($msgLower, 'bánh ngọt')) {
                 $cakeProducts = DB::table('products')
-                    ->join('categories', 'products.category_id', '=', 'categories.category_id')
-                    ->where(function($q) {
-                        $q->where('categories.name', 'LIKE', '%bánh%')
-                          ->orWhere('products.name', 'LIKE', '%bánh%');
-                    })
-                    ->where('products.status', 1)
-                    ->select('products.*')
+                    ->where('category_id', 4) // ID 4: Bánh Ngọt
+                    ->where('status', 1)
                     ->take(3)
                     ->get();
 
                 if ($cakeProducts->isNotEmpty()) {
                     $reply = "Dạ, nhâm nhi tách trà chiều cùng bánh ngọt là nhất luôn ạ! 🍰🥐\n\nGợi ý các món Bánh tươi nướng mới mỗi ngày tại Chill Chill:\n\n";
                     foreach ($cakeProducts as $p) {
-                        $url = route('product.show', ['slug' => $p->slug]);
-                        $reply .= "• **{$p->name}**: {$p->description}\n👉 [Thêm vào giỏ bánh]({$url})\n\n";
+                        $url = route('product.show', ['slug' => $p->slug]) . '#add-to-cart-' . $p->product_id;
+                        $reply .= "• **{$p->name}**: {$p->description}\n👉 [🛒 Thêm vào giỏ bánh]({$url})\n\n";
                     }
                     return $reply;
                 }
             }
 
-            // Nếu hỏi Combo
+            // 2. Nếu hỏi về Trà sữa (Phải kiểm tra TRƯỚC Trà Trái Cây vì 'trà sữa' chứa từ 'trà')
+            if (str_contains($msgLower, 'trà sữa') || str_contains($msgLower, 'milk tea') || str_contains($msgLower, 'hồng trà sữa') || str_contains($msgLower, 'lục trà sữa')) {
+                $bobaProducts = DB::table('products')
+                    ->where('category_id', 7) // ID 7: Trà sữa
+                    ->where('status', 1)
+                    ->take(3)
+                    ->get();
+
+                if ($bobaProducts->isNotEmpty()) {
+                    $reply = "Dạ, Trà sữa thơm béo ngậy chuẩn gu đây ạ! 🧋✨\n\nChill Chill gợi ý các món Trà Sữa được yêu thích nhất:\n\n";
+                    foreach ($bobaProducts as $p) {
+                        $url = route('product.show', ['slug' => $p->slug]) . '#add-to-cart-' . $p->product_id;
+                        $reply .= "• **{$p->name}**: {$p->description}\n👉 [🛒 Thêm vào giỏ hàng]({$url})\n\n";
+                    }
+                    $reply .= "Nhớ thêm Trân châu đen hoặc Thạch dừa cho tròn vị bạn nhé! ❤️";
+                    return $reply;
+                }
+            }
+
+            // 3. Nếu hỏi về Đá Xay
+            if (str_contains($msgLower, 'đá xay') || str_contains($msgLower, 'smoothie') || str_contains($msgLower, 'matcha') || str_contains($msgLower, 'caramel') || str_contains($msgLower, 'chocolate')) {
+                $iceProducts = DB::table('products')
+                    ->where('category_id', 3) // ID 3: Đá Xay
+                    ->where('status', 1)
+                    ->take(3)
+                    ->get();
+
+                if ($iceProducts->isNotEmpty()) {
+                    $reply = "Dạ, những ly Đá Xay mát lạnh, đậm vị béo thơm đã sẵn sàng phục vụ bạn đây ạ! ❄️🥤\n\nChill Chill gợi ý các món Đá Xay cực 'hot':\n\n";
+                    foreach ($iceProducts as $p) {
+                        $url = route('product.show', ['slug' => $p->slug]) . '#add-to-cart-' . $p->product_id;
+                        $reply .= "• **{$p->name}**: {$p->description}\n👉 [🛒 Thêm vào giỏ hàng]({$url})\n\n";
+                    }
+                    return $reply;
+                }
+            }
+
+            // 4. Nếu hỏi Nước ép / Soda
+            if (str_contains($msgLower, 'nước ép') || str_contains($msgLower, 'soda') || str_contains($msgLower, 'cam vắt') || str_contains($msgLower, 'dưa hấu')) {
+                $otherProducts = DB::table('products')
+                    ->where('category_id', 8) // ID 8: Khác (Soda & Nước ép)
+                    ->where('status', 1)
+                    ->take(3)
+                    ->get();
+
+                if ($otherProducts->isNotEmpty()) {
+                    $reply = "Dạ, Nước ép tươi giàu Vitamin và Soda sảng khoái đây ạ! 🍊🍹\n\nGợi ý dành riêng cho bạn:\n\n";
+                    foreach ($otherProducts as $p) {
+                        $url = route('product.show', ['slug' => $p->slug]) . '#add-to-cart-' . $p->product_id;
+                        $reply .= "• **{$p->name}**: {$p->description}\n👉 [🛒 Thêm vào giỏ hàng]({$url})\n\n";
+                    }
+                    return $reply;
+                }
+            }
+
+            // 5. Nếu hỏi về Cà phê
+            if (str_contains($msgLower, 'cafe') || str_contains($msgLower, 'cà phê') || str_contains($msgLower, 'đắng') || str_contains($msgLower, 'tỉnh táo') || str_contains($msgLower, 'bạc sỉu')) {
+                $cafeProducts = DB::table('products')
+                    ->where('category_id', 1) // ID 1: Cà phê Phin
+                    ->where('status', 1)
+                    ->take(3)
+                    ->get();
+
+                if ($cafeProducts->isNotEmpty()) {
+                    $reply = "Dạ, Chill Chill Coffee chào bạn ạ! ☕\n\nĐể giúp bạn tỉnh táo và tràn đầy năng lượng, Chill Chill gợi ý các món Cà phê nguyên chất tuyệt hảo dành cho bạn:\n\n";
+                    foreach ($cafeProducts as $p) {
+                        $url = route('product.show', ['slug' => $p->slug]) . '#add-to-cart-' . $p->product_id;
+                        $reply .= "• **{$p->name}**: {$p->description}\n👉 [🛒 Thêm vào giỏ hàng]({$url})\n\n";
+                    }
+                    $reply .= "Bạn có muốn dùng kèm thêm Topping Trân châu hoặc Thạch cà phê thơm béo không ạ? ✨";
+                    return $reply;
+                }
+            }
+
+            // 6. Nếu hỏi về Trà trái cây / Giải nhiệt (Kiểm tra SAU Trà Sữa)
+            if (str_contains($msgLower, 'trà') || str_contains($msgLower, 'giải nhiệt') || str_contains($msgLower, 'mát')) {
+                $teaProducts = DB::table('products')
+                    ->where('category_id', 2) // ID 2: Trà Trái Cây
+                    ->where('status', 1)
+                    ->take(3)
+                    ->get();
+
+                if ($teaProducts->isNotEmpty()) {
+                    $reply = "Dạ, thanh mát và sảng khoái là gu của bạn phải không ạ? 🍵🍹\n\nChill Chill gợi ý các món Trà Trái Cây thanh nhiệt cực thơm ngon dành cho bạn:\n\n";
+                    foreach ($teaProducts as $p) {
+                        $url = route('product.show', ['slug' => $p->slug]) . '#add-to-cart-' . $p->product_id;
+                        $reply .= "• **{$p->name}**: {$p->description}\n👉 [🛒 Thưởng thức ngay]({$url})\n\n";
+                    }
+                    $reply .= "Thêm chút Trân châu hoàng kim hoặc Thạch dừa nữa là chuẩn gu luôn ạ! ✨";
+                    return $reply;
+                }
+            }
+
+            // 7. Nếu hỏi Combo
             if (str_contains($msgLower, 'combo') || str_contains($msgLower, 'tiết kiệm') || str_contains($msgLower, 'giảm')) {
                 $combos = DB::table('combos')->where('status', 1)->take(2)->get();
                 if ($combos->isNotEmpty()) {
@@ -179,8 +219,8 @@ class GeminiService
             $reply = "Dạ, Chill Chill Coffee & Tea xin chào bạn ạ! ☕✨\n\nBạn đang muốn chọn đồ uống thanh mát, cà phê đậm vị hay bánh ngọt thơm ngon ạ? Chill Chill gợi ý một số món được yêu thích nhất hôm nay:\n\n";
 
             foreach ($featuredProducts as $p) {
-                $url = route('product.show', ['slug' => $p->slug]);
-                $reply .= "• **{$p->name}**: {$p->description}\n👉 [Xem & Đặt ngay]({$url})\n\n";
+                $url = route('product.show', ['slug' => $p->slug]) . '#add-to-cart-' . $p->product_id;
+                $reply .= "• **{$p->name}**: {$p->description}\n👉 [🛒 Thêm vào giỏ hàng]({$url})\n\n";
             }
 
             $reply .= "Bạn cần Chill Chill tư vấn thêm chi tiết món nào không ạ? ❤️";
@@ -203,6 +243,7 @@ class GeminiService
                 ->join('sizes', 'product_variants.size_id', '=', 'sizes.size_id')
                 ->join('categories', 'products.category_id', '=', 'categories.category_id')
                 ->select(
+                    'products.product_id',
                     'products.name', 
                     'products.description', 
                     'products.slug', 
@@ -226,16 +267,17 @@ class GeminiService
                     foreach ($catProducts->groupBy('name') as $name => $variants) {
                         $desc = $variants->first()->description;
                         $slug = $variants->first()->slug;
+                        $pId  = $variants->first()->product_id;
                         
                         $pricesText = [];
                         foreach ($variants as $v) {
                             $pricesText[] = $v->size_name . ": " . number_format($v->price) . "đ";
                         }
                         
-                        // Sinh link chi tiết sản phẩm
-                        $url = route('product.show', ['slug' => $slug]);
+                        // Sinh link thêm nhanh vào giỏ hàng
+                        $url = route('product.show', ['slug' => $slug]) . '#add-to-cart-' . $pId;
                         
-                        $menuText .= "- **{$name}**: {$desc} (Giá: " . implode(', ', $pricesText) . "). Xem chi tiết: [Đặt mua ngay]({$url})\n";
+                        $menuText .= "- **{$name}**: {$desc} (Giá: " . implode(', ', $pricesText) . "). Thêm vào giỏ hàng: [🛒 Thêm vào giỏ hàng]({$url})\n";
                     }
                     $menuText .= "\n";
                 }
@@ -255,12 +297,10 @@ class GeminiService
 
         return "Bạn là Trợ lý ảo AI cực kỳ dễ thương, chu đáo của quán cà phê 'Chill Chill Coffee & Tea'.
 Nhiệm vụ của bạn:
-1. Chào hỏi và nói chuyện với khách hàng bằng tiếng Việt tự nhiên, thân thiện, sử dụng các đại từ xưng hô lịch sự nhưng gần gũi (ví dụ: 'Dạ, Chill Chill chào bạn ạ!', 'Chill Chill khuyên bạn...', 'Chúc bạn yêu ngày mới tốt lành...').
-2. Trực tiếp gợi ý đồ uống/bánh ngọt từ thực đơn của quán dựa theo nhu cầu, sở thích của khách (như muốn uống thanh mát, ít ngọt, ngọt ngào, đậm vị cà phê, v.v.).
-3. CHỈ gợi ý các món có trong menu được liệt kê ở dưới. Nếu khách hỏi những món không có trong menu, hãy khéo léo nói rằng quán chưa có món đó nhưng gợi ý một món thay thế tương tự có trong menu của quán.
-4. Cung cấp đường link chi tiết của đồ uống dưới dạng link markdown đẹp (ví dụ: [Đặt mua ngay](URL)) để khách có thể click vào xem ngay thông tin biến thể và thêm vào giỏ hàng. Hãy sử dụng chính xác URL được cung cấp trong danh sách thực đơn bên dưới.
-5. Luôn khuyên khách thêm topping phù hợp (như trân châu, thạch, trân châu trắng, v.v.) để đồ uống ngon hơn.
-6. Trả lời ngắn gọn, có bố cục rõ ràng, sử dụng các icon/emoji liên quan tới cà phê (☕, 🍵, 🍹, 🍰, ✨) để đoạn chat sinh động.
+1. Chào hỏi và nói chuyện với khách hàng bằng tiếng Việt tự nhiên, thân thiện, sử dụng các đại từ xưng hô lịch sự nhưng gần gũi.
+2. NGUYÊN TẮC BẮT BUỘC VỀ DANH MỤC: Khi khách hàng hỏi về một Danh mục cụ thể (Ví dụ: 'Bánh ngọt', 'Trà trái cây', 'Cà phê', 'Trà sữa', 'Đá xay', 'Nước ép'), bạn CHỈ ĐƯỢC GỢI Ý CÁC MÓN THUỘC ĐÚNG DANH MỤC ĐÓ trong danh sách bên dưới. Tuyệt đối KHÔNG ĐƯỢC nhầm lẫn đưa đồ uống vào danh mục bánh hoặc ngược lại!
+3. CHỈ gợi ý các món có trong menu được liệt kê ở dưới. Cung cấp đường link chi tiết của đồ uống dưới dạng link markdown đẹp (ví dụ: [Đặt mua ngay](URL)).
+4. Trả lời ngắn gọn, có bố cục rõ ràng, sử dụng các icon/emoji liên quan tới cà phê (☕, 🍵, 🍹, 🍰, ✨) để đoạn chat sinh động.
 
 Dưới đây là Menu thực tế của quán để bạn tham khảo:\n" . $menuText;
     }

@@ -156,7 +156,7 @@ class CartController extends Controller
 
         $subTotal = 0;
         foreach ($cart as $item) {
-            $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
+            $subTotal += ($item['price'] + ($item['topping_total'] ?? 0)) * $item['quantity'];
         }
 
         self::checkAndRecalculateVoucher();
@@ -196,7 +196,17 @@ class CartController extends Controller
         // Gọi bộ lọc xử lý Topping
         $cleanToppings = $this->parseToppings($request->input('toppings', []));
 
-        $product = DB::table('products')->where('product_id', $productId)->first();
+        $product = null;
+        if ($productId) {
+            $product = DB::table('products')->where('product_id', $productId)->first();
+        }
+
+        if (!$product) {
+            $slug = $request->input('slug', $productId);
+            if ($slug) {
+                $product = DB::table('products')->where('slug', $slug)->first();
+            }
+        }
 
         if (!$product) {
             return response()->json(['success' => false, 'message' => 'Món này hiện không còn tồn tại hoặc đã ngừng kinh doanh!']);
@@ -491,7 +501,7 @@ class CartController extends Controller
         if (empty($cart)) return response()->json(['success' => false, 'message' => 'Giỏ hàng đang trống!']);
 
         $subTotal = 0;
-        foreach ($cart as $item) $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
+        foreach ($cart as $item) $subTotal += ($item['price'] + ($item['topping_total'] ?? 0)) * $item['quantity'];
 
         $voucher = DB::table('vouchers')->where('code', $code)->first();
         if (!$voucher) return response()->json(['success' => false, 'message' => 'Mã giảm giá không hợp lệ!']);
@@ -515,7 +525,6 @@ class CartController extends Controller
                 ]);
             }
 
-<<<<<<< Updated upstream
             if ($isAssignedUser && $voucher->assigned_user_id != $userId) {
                 return response()->json([
                     'success' => false,
@@ -531,10 +540,6 @@ class CartController extends Controller
                     ->where('is_used', 0)
                     ->count();
             }
-=======
-        $usagePerUser = isset($voucher->usage_per_user) ? (int)$voucher->usage_per_user : (isset($voucher->user_limit) ? (int)$voucher->user_limit : 1);
-        if ($usagePerUser <= 0) $usagePerUser = 1;
->>>>>>> Stashed changes
 
             if ($unusedInWallet <= 0) {
                 return response()->json([
@@ -543,15 +548,11 @@ class CartController extends Controller
                 ]);
             }
         } else {
-<<<<<<< Updated upstream
             // Kiểm tra giới hạn lượt sử dụng / 1 khách hàng (Chỉ áp dụng cho Mã công khai)
-            $usagePerUser = isset($voucher->usage_per_user) ? $voucher->usage_per_user : 1;
-            if ($usagePerUser !== null && $usagePerUser > 0) {
-                $customerPhone = auth()->check() ? auth()->user()->phone : trim($request->input('phone', ''));
-=======
-            // Kiểm tra số lượt đã sử dụng theo lịch sử đơn hàng của tài khoản / số điện thoại
+            $usagePerUser = isset($voucher->usage_per_user) ? (int)$voucher->usage_per_user : (isset($voucher->user_limit) ? (int)$voucher->user_limit : 1);
+            if ($usagePerUser <= 0) $usagePerUser = 1;
+            
             $customerPhone = auth()->check() ? auth()->user()->phone : trim($request->input('phone', ''));
->>>>>>> Stashed changes
 
             $userUsedCount = 0;
             if ($userId) {
@@ -605,7 +606,7 @@ class CartController extends Controller
 
         $cart = session()->get('cart', []);
         $subTotal = 0;
-        foreach ($cart as $item) $subTotal += ($item['price'] + $item['topping_total']) * $item['quantity'];
+        foreach ($cart as $item) $subTotal += ($item['price'] + ($item['topping_total'] ?? 0)) * $item['quantity'];
 
         $voucherSession = session()->get('voucher');
         $voucher = DB::table('vouchers')->where('voucher_id', $voucherSession['voucher_id'])->first();

@@ -76,7 +76,6 @@ class OrderController extends Controller
         $currentStatus = $order->status;
         $newStatus = $request->status;
 
-<<<<<<< Updated upstream
         // BẢNG QUY TẮC LUỒNG TRẠNG THÁI (State Machine)
         $validTransitions = [
             // Từ "Chờ xác nhận": Chỉ được sang "Đang pha chế" hoặc "Hủy"
@@ -118,9 +117,6 @@ class OrderController extends Controller
                 DB::table('vouchers')->where('voucher_id', $order->voucher_id)->decrement('used_count');
             }
         }
-
-=======
->>>>>>> Stashed changes
         DB::table('orders')->where('order_id', $id)->update([
             'status' => $newStatus,
             'updated_at' => now('Asia/Ho_Chi_Minh')

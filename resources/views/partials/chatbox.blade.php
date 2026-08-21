@@ -320,6 +320,51 @@
         }
     }
 
+    function addFromChatToCart(identifier, e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (!identifier) return;
+
+        let payload = {
+            _token: '{{ csrf_token() }}',
+            product_id: identifier,
+            slug: identifier,
+            quantity: 1
+        };
+
+        fetch('{{ route('cart.add') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (typeof showToast === 'function') {
+                    showToast('🎉 ' + data.message, 'success');
+                } else {
+                    alert(data.message);
+                }
+                if (typeof updateCartBadge === 'function') {
+                    updateCartBadge(data.cart_count);
+                }
+            } else {
+                if (typeof showToast === 'function') {
+                    showToast('Lỗi: ' + data.message, 'error');
+                } else {
+                    alert(data.message);
+                }
+            }
+        })
+        .catch(err => console.error('Lỗi thêm giỏ hàng từ chat:', err));
+    }
+
     function formatMessageText(text) {
         if (!text) return '';
         let escaped = escapeHTML(text);
@@ -327,8 +372,36 @@
         // 1. Chuyển đổi Markdown **text** thành <strong>text</strong>
         escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-espresso">$1</strong>');
         
-        // 2. Chuyển đổi Markdown link [Label](URL) thành thẻ <a> với icon
+        // 2. Chuyển đổi Markdown link [Label](URL) thành Nút Thêm Vào Giỏ Hàng Trực Tiếp
         escaped = escaped.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, url) => {
+            let identifier = null;
+
+            // 1. Tìm hash #add-to-cart-123
+            let matchHash = url.match(/#add-to-cart-(\d+)/);
+            if (matchHash) {
+                identifier = matchHash[1];
+            }
+
+            // 2. Tìm slug từ URL /san-pham/slug-xxx
+            if (!identifier) {
+                let matchSlugPath = url.match(/\/san-pham\/([^#?]+)/);
+                if (matchSlugPath) {
+                    identifier = matchSlugPath[1];
+                }
+            }
+
+            // 3. Tìm số ID dạng -24-177417390134 hoặc cuối slug
+            if (!identifier) {
+                let matchId = url.match(/-(\d+)-\d+$/);
+                if (matchId) {
+                    identifier = matchId[1];
+                }
+            }
+
+            if (identifier) {
+                return `<button type="button" onclick="addFromChatToCart('${identifier}', event)" class="inline-flex items-center gap-1.5 font-bold text-white bg-coral hover:bg-[#d5523b] active:scale-95 transition-all mt-2 px-3.5 py-1.5 rounded-full shadow-md text-xs cursor-pointer border border-coral/30 hover:shadow-lg"><svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg> ${label}</button>`;
+            }
+
             return `<a href="${url}" target="_blank" class="inline-flex items-center gap-1 font-bold text-coral hover:underline hover:text-[#d5523b] transition-colors mt-1 bg-coral/10 px-2.5 py-1 rounded-full border border-coral/20 shadow-2xs"><svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg> ${label}</a>`;
         });
         
